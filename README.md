@@ -9,7 +9,7 @@ A Game Boy ROM disassembler.
 - Supports ROMs with multiple banks
 - Supports .sym files to define labels, code, data and text blocks
 - Outputs a makefile to rebuild the ROM
-- Uses defines from hardware.inc v2.5 for hardware registers ([source](http://www.devrs.com/gb/asmcode.php#asmmisc))
+- Uses defines from hardware.inc v2.6 for hardware registers ([source](https://github.com/tobiasvl/hardware.inc))
 - Slow on large ROMs
 
 
