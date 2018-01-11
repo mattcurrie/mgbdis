@@ -1,2 +1,4 @@
 __pycache__/
 disassembly/
+test/
+tmp/
