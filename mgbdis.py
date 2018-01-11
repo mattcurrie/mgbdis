@@ -267,7 +267,10 @@ class Bank:
         labels = list()
 
         if address in self.labelled_addresses:
-            labels.append(self.labelled_addresses[address] + '::')
+            if self.labelled_addresses[address][0] == '.':
+                labels.append(self.labelled_addresses[address] + ':')
+            else:
+                labels.append(self.labelled_addresses[address] + '::')
 
         return labels
 
@@ -277,7 +280,10 @@ class Bank:
 
         if address in self.labelled_addresses:
             # if the address has a specific label then just use that
-            labels.append(self.labelled_addresses[address] + '::')
+            if self.labelled_addresses[address][0] == '.':
+                labels.append(self.labelled_addresses[address] + ':')
+            else:
+                labels.append(self.labelled_addresses[address] + '::')
         else:
             # otherwise check generated ones
             for instruction_name in ['call', 'jp', 'jr']:
