@@ -318,11 +318,13 @@ class Bank:
 
 
     def append_labels_to_output(self, labels):
-        # add an empty line if the label is not already preceeeded by one
+        self.append_empty_line_if_none_already()
+        self.append_output('\n'.join(labels))
+
+
+    def append_empty_line_if_none_already(self):
         if len(self.output) > 0 and self.output[len(self.output) - 1] != '':
             self.append_output('')
-
-        self.append_output('\n'.join(labels))
 
 
     def disassemble(self, rom, first_pass = False):
@@ -346,6 +348,7 @@ class Bank:
             block = self.blocks[start_address]
             end_address = start_address + block['length']
             self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address)
+            self.append_empty_line_if_none_already()
 
         return '\n'.join(self.output)
 
