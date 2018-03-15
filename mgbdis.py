@@ -134,12 +134,18 @@ def abort(message):
 
 
 def hex_word(value):
-    return '${:04x}'.format(value)
+    return format_hex('${:04x}'.format(value))
 
 
 def hex_byte(value):
-    return '${:02x}'.format(value)
+    return format_hex('${:02x}'.format(value))
 
+
+def format_hex(hex_string):
+    if uppercase_hex:
+        return hex_string.upper()
+    else:
+        return hex_string.lower()
 
 def bytes_to_string(data):
     return ' '.join(hex_byte(byte) for byte in data)
@@ -294,7 +300,9 @@ class Bank:
 
 
     def format_label(self, instruction_name, address):
-        return '{0}_{1:03x}_{2:04x}'.format(self.instruction_label_prefixes[instruction_name], self.bank_number, address)
+        formatted_bank = format_hex('{:03x}'.format(self.bank_number))
+        formatted_address = format_hex('{:04x}'.format(address))
+        return '{0}_{1}_{2}'.format(self.instruction_label_prefixes[instruction_name], formatted_bank, formatted_address)
 
 
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
@@ -430,7 +438,7 @@ class Bank:
                 if full_value in hardware_labels:
                     operand_values.append('[{}]'.format(hardware_labels[full_value]))
                 else:
-                    operand_values.append('[$ff00+' + hex_byte(value) + ']')
+                    operand_values.append('[{0}+{1}]'.format(format_hex('$ff00'), hex_byte(value)))
 
             elif operand == 'd8':
                 length += 1
@@ -853,11 +861,13 @@ app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(v
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
+parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
+uppercase_hex = args.uppercase_hex
 
 rom = ROM(args.rom_path)
 rom.disassemble(args.output_dir)
