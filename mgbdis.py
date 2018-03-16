@@ -166,8 +166,9 @@ def to_signed(value):
 
 class Bank:
 
-    def __init__(self, number):
+    def __init__(self, number, print_hex):
         self.bank_number = number
+        self.print_hex = print_hex
         self.blocks = dict()
         self.disassembled_addresses = set()
         self.labelled_addresses = dict()
@@ -311,7 +312,7 @@ class Bank:
             operands=', '.join(operands)
         )
 
-        if address is not None and source_bytes is not None:
+        if self.print_hex and address is not None and source_bytes is not None:
             return '{0:<50}; {1}: {2}'.format(instruction, hex_word(address), bytes_to_string(source_bytes))
         else:
             return '{0:<50}'.format(instruction)
@@ -626,7 +627,7 @@ class Bank:
 
 class ROM:
 
-    def __init__(self, rom_path):
+    def __init__(self, rom_path, print_hex):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load()
@@ -641,7 +642,7 @@ class ROM:
 
         self.banks = dict()
         for bank in range(0, self.num_banks):
-            self.banks[bank] = Bank(bank)
+            self.banks[bank] = Bank(bank, print_hex)
 
         self.init_symbols()
 
@@ -862,6 +863,7 @@ parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
+parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -869,5 +871,5 @@ args = parser.parse_args()
 debug = args.debug
 uppercase_hex = args.uppercase_hex
 
-rom = ROM(args.rom_path)
+rom = ROM(args.rom_path, args.print_hex)
 rom.disassemble(args.output_dir)
