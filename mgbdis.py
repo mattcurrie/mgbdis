@@ -166,9 +166,10 @@ def to_signed(value):
 
 class Bank:
 
-    def __init__(self, number, print_hex):
+    def __init__(self, number, print_hex, align_operands):
         self.bank_number = number
         self.print_hex = print_hex
+        self.operand_padding = 4 if align_operands else 0
         self.blocks = dict()
         self.disassembled_addresses = set()
         self.labelled_addresses = dict()
@@ -307,8 +308,9 @@ class Bank:
 
 
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
-        instruction = '        {instruction_name} {operands}'.format(
+        instruction = '        {instruction_name:<{operand_padding}} {operands}'.format(
             instruction_name=instruction_name, 
+            operand_padding=self.operand_padding,
             operands=', '.join(operands)
         )
 
@@ -627,7 +629,7 @@ class Bank:
 
 class ROM:
 
-    def __init__(self, rom_path, print_hex):
+    def __init__(self, rom_path, print_hex, align_operands):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load()
@@ -642,7 +644,7 @@ class ROM:
 
         self.banks = dict()
         for bank in range(0, self.num_banks):
-            self.banks[bank] = Bank(bank, print_hex)
+            self.banks[bank] = Bank(bank, print_hex, align_operands)
 
         self.init_symbols()
 
@@ -864,6 +866,7 @@ parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
+parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -871,5 +874,5 @@ args = parser.parse_args()
 debug = args.debug
 uppercase_hex = args.uppercase_hex
 
-rom = ROM(args.rom_path, args.print_hex)
+rom = ROM(args.rom_path, args.print_hex, args.align_operands)
 rom.disassemble(args.output_dir)
