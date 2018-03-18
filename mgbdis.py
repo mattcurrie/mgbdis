@@ -166,13 +166,13 @@ def to_signed(value):
 
 class Bank:
 
-    def __init__(self, number, print_hex, align_operands):
+    def __init__(self, number, symbols, print_hex, align_operands):
         self.bank_number = number
         self.print_hex = print_hex
         self.operand_padding = 4 if align_operands else 0
         self.blocks = dict()
         self.disassembled_addresses = set()
-        self.labelled_addresses = dict()
+        self.symbols = symbols
 
         if number == 0:
             self.memory_base_address = 0
@@ -193,9 +193,6 @@ class Bank:
             'jr': 'jr'
         })
 
-        # each bank defaults to having a single code block
-        self.add_block(self.memory_base_address, 'code', 0x4000)
-
         self.disassemble_block_range = dict({
             'code': self.process_code_in_range,
             'data': self.process_data_in_range,
@@ -208,22 +205,16 @@ class Bank:
             self.target_addresses[instruction_name].add(address)
 
 
-    def add_block(self, address, block_type, length):
-        if address >= self.memory_base_address:
-            self.blocks[address] = {
-                'type': block_type, 
-                'length': length
-            }
-
 
     def resolve_blocks(self):
-        block_start_addresses = sorted(self.blocks.keys())
+        blocks = self.symbols.get_blocks(self.bank_number)
+        block_start_addresses = sorted(blocks.keys())
         resolved_blocks = dict()
 
         for index in range(len(block_start_addresses)):
 
             start_address = block_start_addresses[index]
-            block = self.blocks[start_address]
+            block = blocks[start_address]
             end_address = start_address + block['length']
 
             # check if there is another block after this block
@@ -257,13 +248,14 @@ class Bank:
         self.blocks = resolved_blocks
 
 
-    def get_label_for_instruction_operand(self, instruction_name, address):
+    def get_label_for_jump_target(self, instruction_name, address):
         if address not in self.disassembled_addresses:
             return None
 
-        if address in self.labelled_addresses:
+        label = self.symbols.get_label(self.bank_number, address)
+        if label is not None:
             # if the address has a specific label then just use that
-            return self.labelled_addresses[address]
+            return label
 
         if address in self.target_addresses[instruction_name]:
             return self.format_label(instruction_name, address)
@@ -274,11 +266,13 @@ class Bank:
     def get_labels_for_non_code_address(self, address):
         labels = list()
 
-        if address in self.labelled_addresses:
-            if self.labelled_addresses[address][0] == '.':
-                labels.append(self.labelled_addresses[address] + ':')
+        label = self.symbols.get_label(self.bank_number, address)
+        if label is not None:
+            is_local = label.startswith('.')
+            if is_local:
+                labels.append(label + ':')
             else:
-                labels.append(self.labelled_addresses[address] + '::')
+                labels.append(label + '::')
 
         return labels
 
@@ -286,12 +280,14 @@ class Bank:
     def get_labels_for_address(self, address):
         labels = list()
 
-        if address in self.labelled_addresses:
+        label = self.symbols.get_label(self.bank_number, address)
+        if label is not None:
             # if the address has a specific label then just use that
-            if self.labelled_addresses[address][0] == '.':
-                labels.append(self.labelled_addresses[address] + ':')
+            is_local = label.startswith('.')
+            if is_local:
+                labels.append(label + ':')
             else:
-                labels.append(self.labelled_addresses[address] + '::')
+                labels.append(label + '::')
         else:
             # otherwise check generated ones
             for instruction_name in ['call', 'jp', 'jr']:
@@ -517,7 +513,7 @@ class Bank:
                         self.add_label(instruction_name, mem_address)
                     else:
                         # fetch the label name
-                        label = self.get_label_for_instruction_operand(instruction_name, mem_address)
+                        label = self.get_label_for_jump_target(instruction_name, mem_address)
                         if label is not None:
                             # remove the address from operand values and use the label instead
                             operand_values.pop()
@@ -625,7 +621,93 @@ class Bank:
         if len(values):
             self.append_output(self.format_data(values))
 
+class Symbols:
+    def __init__(self):
+        self.symbols = dict()
+        self.blocks = dict()
 
+    def load_sym_file(self, symbols_path):
+        f = open(symbols_path, 'r')
+
+        for line in f:
+            # ignore comments and empty lines
+            if line[0] != ';' and len(line.strip()):
+                self.add_symbol_definition(line)
+
+        f.close()
+
+
+    def add_symbol_definition(self, symbol_def):
+        try:
+            location, label = symbol_def.split()
+            bank, address = location.split(':')
+            bank = int(bank, 16)
+            address = int(address, 16)
+        except:
+            print("Ignored invalid symbol definition: {}\n".format(symbol_def))
+        else:
+            label_parts = label.split(':')
+            is_block_definition = label[0] == '.' and len(label_parts) == 2
+
+            if is_block_definition:
+                # add a block
+                block_type = label_parts[0].lower()
+                data_length = int(label_parts[1], 16)
+
+                if block_type in ['.byt', '.data']:
+                    self.add_block(bank, address, 'data', data_length)
+
+                elif block_type in ['.asc', '.text']:
+                    self.add_block(bank, address, 'text', data_length)
+
+                elif block_type in ['.asc', '.code']:
+                    self.add_block(bank, address, 'code', data_length)
+
+            else:
+                # add the label
+                self.add_label(bank, address, label)
+
+    def add_block(self, bank, address, block_type, length):
+        memory_base_address = 0x0000 if bank == 0 else 0x4000
+
+        if address >= memory_base_address:
+            blocks = self.get_blocks(bank)
+            blocks[address] = {
+                'type': block_type,
+                'length': length
+            }
+
+    def add_label(self, bank, address, label):
+        if bank not in self.symbols:
+            self.symbols[bank] = dict()
+
+        is_symbol_banked = 0x4000 <= address < 0x8000
+        if is_symbol_banked:
+            self.symbols[bank][address] = label
+        else:
+            self.symbols[0][address] = label
+
+    def get_label(self, bank, address):
+        # attempt to find a banked symbol
+        is_symbol_banked = 0x4000 <= address < 0x8000
+        if is_symbol_banked and bank in self.symbols and address in self.symbols[bank]:
+            return self.symbols[bank][address]
+
+        # attempt to find a symbol in non-banked space (stored as bank 0)
+        if 0 in self.symbols and address in self.symbols[0]:
+            return self.symbols[0][address]
+
+        return None
+
+    def get_blocks(self, bank):
+        memory_base_address = 0x0000 if bank == 0 else 0x4000
+
+        if bank not in self.blocks:
+            self.blocks[bank] = dict()
+            # each bank defaults to having a single code block
+            self.add_block(bank, memory_base_address, 'code', 0x4000)
+
+        return self.blocks[bank]
 
 class ROM:
 
@@ -638,16 +720,15 @@ class ROM:
 
         print('ROM MD5 hash:', hashlib.md5(self.data).hexdigest())
 
+        self.symbols = self.load_symbols()
+
         # add some bytes to avoid an index out of range error
         # when processing last few instructions in the rom
         self.data += b'\x00\x00'
 
         self.banks = dict()
         for bank in range(0, self.num_banks):
-            self.banks[bank] = Bank(bank, print_hex, align_operands)
-
-        self.init_symbols()
-
+            self.banks[bank] = Bank(bank, self.symbols, print_hex, align_operands)
 
     def load(self):
         if os.path.isfile(self.rom_path):
@@ -683,64 +764,26 @@ class ROM:
                 self.cb_instruction_operands[cb_opcode] = list()
 
 
-    def init_symbols(self):
+    def load_symbols(self):
+        symbols = Symbols()
+
         for symbol_def in default_symbols:
-            self.add_symbol_definition(symbol_def)
+            symbols.add_symbol_definition(symbol_def)
 
         if self.supports_gbc():
             for symbol_def in gbc_symbols:
-                self.add_symbol_definition(symbol_def)
+                symbols.add_symbol_definition(symbol_def)
 
-        self.load_sym_file()
+        symbols_path = os.path.splitext(self.rom_path)[0] + '.sym'
+        if os.path.isfile(symbols_path):
+            print('Processing symbol file "{}"...'.format(symbols_path))
+            symbols.load_sym_file(symbols_path)
 
-
-    def add_symbol_definition(self, symbol_def):
-        try:
-            location, label = symbol_def.split()
-            bank, address = location.split(':')
-            bank = int(bank, 16)
-            address = int(address, 16)
-        except:
-            print("Ignored invalid symbol definition: {}\n".format(symbol_def))
-        else:
-            label_parts = label.split(':')
-
-            if label[0] == '.' and len(label_parts) == 2:
-                block_type = label_parts[0].lower()
-                data_length = int(label_parts[1], 16)
-
-                if block_type in ['.byt', '.data']:
-                    self.banks[bank].add_block(address, 'data', data_length)
-
-                elif block_type in ['.asc', '.text']:
-                    self.banks[bank].add_block(address, 'text', data_length)
-
-                elif block_type in ['.asc', '.code']:
-                    self.banks[bank].add_block(address, 'code', data_length)
-
-            else:
-                # add the label
-                self.banks[bank].labelled_addresses[address] = label
+        return symbols
 
 
     def supports_gbc(self):
         return ((self.data[0x143] & 0x80) == 0x80)
-
-
-    def load_sym_file(self):
-        filepath = os.path.splitext(self.rom_path)[0] + '.sym'
-
-        if os.path.isfile(filepath):
-            print('Processing symbol file "{}"...'.format(filepath))
-
-            f = open(filepath, 'r')
-
-            for line in f:
-                # ignore comments and empty lines
-                if line[0] != ';' and len(line.strip()):
-                    self.add_symbol_definition(line)
-
-            f.close()
 
 
     def disassemble(self, output_dir):
