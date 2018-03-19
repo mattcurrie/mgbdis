@@ -474,10 +474,11 @@ class Bank:
                 else:
                     operand_values.append('@-' + hex_byte(relative_value * -1))
 
+                target_bank = value // 0x4000
+
                 # convert to banked value so it can be used as a label
                 value = rom_address_to_mem_address(value)
 
-                target_bank = value // 0x4000
                 if self.bank_number != target_bank:
                     # don't use labels for relative jumps across banks
                     value = None
