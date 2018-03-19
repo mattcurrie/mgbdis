@@ -200,10 +200,9 @@ class Bank:
         })
 
 
-    def add_label(self, instruction_name, address):
+    def add_target_address(self, instruction_name, address):
         if address not in self.target_addresses[instruction_name]:
             self.target_addresses[instruction_name].add(address)
-
 
 
     def resolve_blocks(self):
@@ -296,7 +295,7 @@ class Bank:
             else:
                 labels.append(label + '::')
         else:
-            # otherwise check generated ones
+            # otherwise, if the address was marked as a target address, generate a label
             for instruction_name in ['call', 'jp', 'jr']:
                 if address in self.target_addresses[instruction_name]:
                     labels.append(self.format_label(instruction_name, address) + ':')
@@ -530,7 +529,7 @@ class Bank:
 
                     if self.first_pass:
                         # add the label
-                        self.add_label(instruction_name, mem_address)
+                        self.add_target_address(instruction_name, mem_address)
                     else:
                         # fetch the label name
                         label = self.get_label_for_jump_target(instruction_name, mem_address)
