@@ -255,7 +255,8 @@ class Bank:
         return self.symbols.get_label(self.bank_number, value)
 
     def get_label_for_jump_target(self, instruction_name, address):
-        if address not in self.disassembled_addresses:
+        is_in_switchable_bank = 0x4000 <= address < 0x8000
+        if is_in_switchable_bank and address not in self.disassembled_addresses:
             return None
 
         label = self.symbols.get_label(self.bank_number, address)
@@ -524,19 +525,19 @@ class Bank:
             if instruction_name in ['jr', 'jp', 'call'] and value is not None and value < 0x8000:
                 mem_address = rom_address_to_mem_address(value)
 
-                # dont allow switched banks to create labels in bank 0
-                if (mem_address < 0x4000 and self.bank_number == 0) or (mem_address >= 0x4000 and self.bank_number > 0):
-
-                    if self.first_pass:
+                if self.first_pass:
+                    # dont allow switched banks to create labels in bank 0
+                    is_address_in_current_bank = (mem_address < 0x4000 and self.bank_number == 0) or (mem_address >= 0x4000 and self.bank_number > 0)
+                    if is_address_in_current_bank:
                         # add the label
                         self.add_target_address(instruction_name, mem_address)
-                    else:
-                        # fetch the label name
-                        label = self.get_label_for_jump_target(instruction_name, mem_address)
-                        if label is not None:
-                            # remove the address from operand values and use the label instead
-                            operand_values.pop()
-                            operand_values.append(label)
+                else:
+                    # fetch the label name
+                    label = self.get_label_for_jump_target(instruction_name, mem_address)
+                    if label is not None:
+                        # remove the address from operand values and use the label instead
+                        operand_values.pop()
+                        operand_values.append(label)
                             
 
         # check the instruction is not spanning 2 banks
