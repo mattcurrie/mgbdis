@@ -247,6 +247,13 @@ class Bank:
 
         self.blocks = resolved_blocks
 
+    def get_label_for_instruction_operand(self, value):
+        # an operand value lower than $100 is more probably an actual value than an address:
+        # don't lookup symbols for it
+        if value <= 0x100:
+            return None
+
+        return self.symbols.get_label(self.bank_number, value)
 
     def get_label_for_jump_target(self, instruction_name, address):
         if address not in self.disassembled_addresses:
@@ -415,7 +422,11 @@ class Bank:
             elif operand == '[a16]':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                operand_values.append('[' + hex_word(value) + ']')
+                label = self.get_label_for_instruction_operand(value)
+                if label:
+                    operand_values.append('[' + label + ']')
+                else:
+                    operand_values.append('[' + hex_word(value) + ']')
 
                 # rgbds converts "ld [$ff40],a" into "ld [$ff00+40],a" automatically,
                 # so use a macro to encode it as data to ensure exact binary reproduction of the rom
@@ -433,8 +444,12 @@ class Bank:
                 length += 1
                 value = rom.data[pc + 1]
                 full_value = 0xff00 + value
-
-                if full_value in hardware_labels:
+                label = self.get_label_for_instruction_operand(full_value)
+                if label is not None:
+                    # when referencing a label, we need to explicitely tell rgbds to use the short load opcode
+                    instruction_name = 'ldh'
+                    operand_values.append('[{}]'.format(label))
+                elif full_value in hardware_labels:
                     operand_values.append('[{}]'.format(hardware_labels[full_value]))
                 else:
                     operand_values.append('[{0}+{1}]'.format(format_hex('$ff00'), hex_byte(value)))
@@ -447,7 +462,11 @@ class Bank:
             elif operand == 'd16':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                operand_values.append(hex_word(value))
+                label = self.get_label_for_instruction_operand(value)
+                if label is not None:
+                    operand_values.append(label)
+                else:
+                    operand_values.append(hex_word(value))
 
             elif operand == 'r8':
                 length += 1
