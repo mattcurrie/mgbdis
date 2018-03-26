@@ -45,6 +45,7 @@ default_symbols = [
     '00:0060 .code:8',
 
     '00:0100 Boot',
+    '00:0100 .code:4',
     '00:0104 HeaderLogo',
     '00:0104 .data:30',
     '00:0134 HeaderTitle',
