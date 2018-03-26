@@ -255,9 +255,17 @@ class Bank:
         return self.symbols.get_label(self.bank_number, value)
 
     def get_label_for_jump_target(self, instruction_name, address):
-        is_in_switchable_bank = 0x4000 <= address < 0x8000
-        if is_in_switchable_bank and address not in self.disassembled_addresses:
-            return None
+        if self.bank_number == 0:
+            if address not in self.disassembled_addresses:
+                return None
+        else:
+            # TODO: if target address is in bank 0 then should check if that address
+            # has been disassembled in bank 0. requires access to bank 0 from 
+            # other bank objects
+
+            is_in_switchable_bank = 0x4000 <= address < 0x8000
+            if is_in_switchable_bank and address not in self.disassembled_addresses:
+                return None
 
         label = self.symbols.get_label(self.bank_number, address)
         if label is not None:
