@@ -3,7 +3,7 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie'
-__version__ = '1.0.1'
+__version__ = '1.1'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
@@ -11,6 +11,7 @@ import argparse
 import glob
 import hashlib
 import os
+import png
 from shutil import copyfile
 
 from instruction_set import instructions, cb_instructions
@@ -197,7 +198,8 @@ class Bank:
         self.disassemble_block_range = dict({
             'code': self.process_code_in_range,
             'data': self.process_data_in_range,
-            'text': self.process_text_in_range    
+            'text': self.process_text_in_range,
+            'image': self.process_image_in_range    
         })
 
 
@@ -228,21 +230,24 @@ class Bank:
 
             resolved_blocks[start_address] = {
                 'type': block['type'],
-                'length': end_address - start_address
+                'length': end_address - start_address,
+                'arguments': block['arguments'],
             }
 
             if next_start_address is None and (end_address != self.memory_base_address + 0x4000):
                 # no more blocks and didn't finish at the end of the block, so finish up with a code block
                 resolved_blocks[end_address] = {
                     'type': 'code',
-                    'length': (self.memory_base_address + 0x4000) - end_address
+                    'length': (self.memory_base_address + 0x4000) - end_address,
+                    'arguments': None                   
                 }
 
             if next_start_address is not None and end_address < next_start_address:
                 # we have another block, but there is a gap until the next block, so fill in the gap with a code block
                 resolved_blocks[end_address] = {
                     'type': 'code',
-                    'length': next_start_address - end_address
+                    'length': next_start_address - end_address,
+                    'arguments': None                    
                 }
 
         self.blocks = resolved_blocks
@@ -319,6 +324,10 @@ class Bank:
         return '{0}_{1}_{2}'.format(self.instruction_label_prefixes[instruction_name], formatted_bank, formatted_address)
 
 
+    def format_image_label(self, address):
+        return 'image_{0:03x}_{1:04x}'.format(self.bank_number, address)
+
+
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
         instruction = '        {instruction_name:<{operand_padding}} {operands}'.format(
             instruction_name=instruction_name, 
@@ -370,13 +379,13 @@ class Bank:
             start_address = block_start_addresses[index]
             block = self.blocks[start_address]
             end_address = start_address + block['length']
-            self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address)
+            self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, block['arguments'])
             self.append_empty_line_if_none_already()
 
         return '\n'.join(self.output)
 
 
-    def process_code_in_range(self, rom, start_address, end_address):
+    def process_code_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Disassembling code in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -586,7 +595,7 @@ class Bank:
                     self.append_output('')
 
 
-    def process_data_in_range(self, rom, start_address, end_address):
+    def process_data_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -612,7 +621,7 @@ class Bank:
                 values = list()
 
 
-    def process_text_in_range(self, rom, start_address, end_address):
+    def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -650,6 +659,27 @@ class Bank:
         if len(values):
             self.append_output(self.format_data(values))
 
+    def process_image_in_range(self, rom, start_address, end_address, arguments = None):
+        if not self.first_pass and debug:
+            print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
+        
+        if self.first_pass:
+            return
+
+        mem_address = rom_address_to_mem_address(start_address)
+        labels = self.get_labels_for_non_code_address(mem_address)
+        if len(labels):
+            self.append_labels_to_output(labels)
+            basename = labels[0].rstrip(':')
+        else:
+            basename = self.format_image_label(mem_address)
+
+        full_filename = rom.write_image(basename, arguments, '2bpp', rom.data[start_address:end_address])
+        self.append_output(self.format_instruction('INCBIN', ['\"' + full_filename + '\"']))
+
+
+
+
 class Symbols:
     def __init__(self):
         self.symbols = dict()
@@ -676,7 +706,7 @@ class Symbols:
             print("Ignored invalid symbol definition: {}\n".format(symbol_def))
         else:
             label_parts = label.split(':')
-            is_block_definition = label[0] == '.' and len(label_parts) == 2
+            is_block_definition = label[0] == '.' and len(label_parts) >= 2
 
             if is_block_definition:
                 # add a block
@@ -684,26 +714,40 @@ class Symbols:
                 data_length = int(label_parts[1], 16)
 
                 if block_type in ['.byt', '.data']:
-                    self.add_block(bank, address, 'data', data_length)
+                    block_type = 'data'
 
                 elif block_type in ['.asc', '.text']:
-                    self.add_block(bank, address, 'text', data_length)
+                    block_type = 'text'
 
-                elif block_type in ['.asc', '.code']:
-                    self.add_block(bank, address, 'code', data_length)
+                elif block_type in ['.code']:
+                    block_type = 'code'
+
+                elif block_type in ['.image']:
+                    block_type = 'image'
+
+                else:
+                    return
+
+                if len(label_parts) == 3:
+                    arguments = label_parts[2]
+                else:
+                    arguments = None
+                
+                self.add_block(bank, address, block_type, data_length, arguments)
 
             else:
                 # add the label
                 self.add_label(bank, address, label)
 
-    def add_block(self, bank, address, block_type, length):
+    def add_block(self, bank, address, block_type, length, arguments = None):
         memory_base_address = 0x0000 if bank == 0 else 0x4000
 
         if address >= memory_base_address:
             blocks = self.get_blocks(bank)
             blocks[address] = {
                 'type': block_type,
-                'length': length
+                'length': length,
+                'arguments': arguments
             }
 
     def add_label(self, bank, address, label):
@@ -746,6 +790,9 @@ class ROM:
         self.load()
         self.split_instructions()
         self.has_ld_long = False
+
+        self.image_output_directory = 'gfx'
+        self.image_dependencies = []
 
         print('ROM MD5 hash:', hashlib.md5(self.data).hexdigest())
 
@@ -823,7 +870,7 @@ class ROM:
             if not args.overwrite:
                 abort('Output directory "{}" already exists!'.format(self.output_directory))
 
-            if not os.path.isdir:
+            if not os.path.isdir(self.output_directory):
                 abort('Output path "{}" already exists and is not a directory!'.format(self.output_directory))
         else:
             os.makedirs(self.output_directory)
@@ -831,6 +878,8 @@ class ROM:
 
         print('Generating labels...')
         self.generate_labels()
+
+        self.image_dependencies = []
 
         print('Generating disassembly', end='')
         if debug:
@@ -908,6 +957,109 @@ ENDM
         f.close()
 
 
+    def write_image(self, basename, arguments, image_format, data):
+
+        # defaults
+        width = 128
+        palette = 0xe4
+
+        # process arguments
+        if arguments is not None:
+            for argument in arguments.split(','):
+                if len(argument) > 1:
+                    if argument[0] == 'w':
+                        # width is in decimal
+                        width = int(argument[1:], 10)
+
+                    elif argument[0] == 'p':
+                        palette = int(argument[1:], 16)
+
+        image_output_path = os.path.join(self.output_directory, self.image_output_directory)
+        if os.path.exists(image_output_path):
+            if not os.path.isdir(image_output_path):
+                abort('File already exists named "{}". Cannot store images!'.format(image_output_path))
+        else:
+            os.makedirs(image_output_path)
+
+        relative_path = os.path.join(self.image_output_directory, basename + '.' + image_format)
+        self.image_dependencies.append(relative_path)
+        path = os.path.join(self.output_directory, self.image_output_directory, basename + '.png')
+
+        bytes_per_tile_row = 2  # 8 pixels at 2 bits per pixel
+        bytes_per_tile = bytes_per_tile_row * 8  # 8 rows per tile
+
+        num_tiles = len(data) // bytes_per_tile
+        tiles_per_row = width // 8
+
+        # if we have fewer tiles than the number of tiles per row, or if an odd number of tiles
+        if (num_tiles < tiles_per_row) or (num_tiles & 1):            
+            # then just make a single row of tiles
+            tiles_per_row = num_tiles
+            width = num_tiles * 8
+
+        tile_rows = (num_tiles / tiles_per_row)
+        if not tile_rows.is_integer():
+            abort('Invalid length ${:0x} or width {} for image block: {}'.format(len(data), width, basename))
+
+        height = int(tile_rows) * 8
+
+        pixel_data = self.convert_to_pixel_data(data, width, height)
+        rgb_palette = self.convert_palette_to_rgb(palette)
+
+        f = open(path, 'wb')
+        w = png.Writer(width, height, alpha=False, bitdepth=2, palette=rgb_palette)
+        w.write(f, pixel_data)
+        f.close()
+
+        return relative_path
+
+
+    def convert_to_pixel_data(self, data, width, height):
+        result = []
+        for y in range(0, height):
+            row = []
+            for x in range(0, width):
+                offset = self.coordinate_to_tile_offset(x, y, width)
+
+                if offset < len(data):
+                    # extract the color from the two bytes of tile data at the offset
+                    shift = (7 - (x & 7))
+                    mask = (1 << shift)
+                    color = ((data[offset] & mask) >> shift) + (((data[offset + 1] & mask) >> shift) << 1)
+                else:
+                    color = 0
+
+                row.append(color)
+            result.append(row)
+
+        return result
+
+
+    def coordinate_to_tile_offset(self, x, y, width):
+        bytes_per_tile_row = 2  # 8 pixels at 2 bits per pixel
+        bytes_per_tile = bytes_per_tile_row * 8  # 8 rows per tile
+        tiles_per_row = width // 8
+        
+        tile_y = y // 8
+        tile_x = x // 8
+        row_of_tile = y & 7
+
+        return (tile_y * tiles_per_row * bytes_per_tile) + (tile_x * bytes_per_tile) + (row_of_tile * bytes_per_tile_row)
+
+
+    def convert_palette_to_rgb(self, palette):
+        col0 = 255 - (((palette & 0x03)     ) << 6)
+        col1 = 255 - (((palette & 0x0C) >> 2) << 6)
+        col2 = 255 - (((palette & 0x30) >> 4) << 6)
+        col3 = 255 - (((palette & 0xC0) >> 6) << 6)
+        return [
+            (col0, col0, col0),
+            (col1, col1, col1),
+            (col2, col2, col2),
+            (col3, col3, col3)
+        ]
+
+
     def write_makefile(self):
         rom_extension = 'gb'
         if self.supports_gbc():
@@ -916,17 +1068,29 @@ ENDM
         path = os.path.join(self.output_directory, 'Makefile')
         f = open(path, 'w')
 
+        if len(self.image_dependencies):
+            f.write('IMAGE_DEPS = {}\n\n'.format(' '.join(self.image_dependencies)))
+
         f.write('all: game.{}\n\n'.format(rom_extension))
 
-        f.write('game.o: game.asm bank_*.asm\n')
+        f.write('%.2bpp: %.png\n')
+        f.write('\trgbgfx -o $@ $<\n\n')
+
+        if len(self.image_dependencies):
+            f.write('game.o: game.asm bank_*.asm $(IMAGE_DEPS)\n')
+        else:
+            f.write('game.o: game.asm bank_*.asm\n')
+
         f.write('\trgbasm -o game.o game.asm\n\n')
 
         f.write('game.{}: game.o\n'.format(rom_extension))
-        f.write('\trgblink -n game.sym -m $*.map -o $@ $<\n')
+        f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
         f.write('\trgbfix -v -p 255 $@\n\n')
+        f.write('\tmd5 $@\n\n')
 
         f.write('clean:\n')
-        f.write('\trm -f game.o game.{}\n'.format(rom_extension))
+        f.write('\trm -f game.o game.{} game.sym game.map\n'.format(rom_extension))
+        f.write('\tfind . \\( -iname \'*.1bpp\' -o -iname \'*.2bpp\' \\) -exec rm {} +')
 
         f.close()
 
