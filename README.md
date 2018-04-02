@@ -75,6 +75,11 @@ Adding a label for 1280 bytes of tile data, with a width of 128 pixels and palet
 02:791a .image:500:w128,pe4
 ```
 
+Resulting image:
+
+![Imgur](https://i.imgur.com/2duQ7Py.png)
+
+
 ## Notes
 
 - RGBDS optimises instructions like ```LD [$FF40],a``` to ```LDH [$FF00+40],a```, so these are encoded as data bytes using a macro to ensure exact reproduction of the original ROM (thanks to ISSOtm).
