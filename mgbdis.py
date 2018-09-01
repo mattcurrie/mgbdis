@@ -144,7 +144,7 @@ def hex_byte(value):
 
 
 def format_hex(hex_string):
-    if uppercase_hex:
+    if style['uppercase_hex']:
         return hex_string.upper()
     else:
         return hex_string.lower()
@@ -168,10 +168,9 @@ def to_signed(value):
 
 class Bank:
 
-    def __init__(self, number, symbols, print_hex, align_operands):
+    def __init__(self, number, symbols, style):
+        self.style = style
         self.bank_number = number
-        self.print_hex = print_hex
-        self.operand_padding = 4 if align_operands else 0
         self.blocks = dict()
         self.disassembled_addresses = set()
         self.symbols = symbols
@@ -329,13 +328,14 @@ class Bank:
 
 
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
-        instruction = '        {instruction_name:<{operand_padding}} {operands}'.format(
+        instruction = '{indentation}{instruction_name:<{operand_padding}} {operands}'.format(
+            indentation=self.style['indentation'],
             instruction_name=instruction_name, 
-            operand_padding=self.operand_padding,
+            operand_padding=self.style['operand_padding'],
             operands=', '.join(operands)
         )
 
-        if self.print_hex and address is not None and source_bytes is not None:
+        if self.style['print_hex'] and address is not None and source_bytes is not None:
             return '{0:<50}; {1}: {2}'.format(instruction, hex_word(address), bytes_to_string(source_bytes))
         else:
             return '{0}'.format(instruction.rstrip())
@@ -784,7 +784,7 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, print_hex, align_operands):
+    def __init__(self, rom_path, style):
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load()
@@ -804,7 +804,7 @@ class ROM:
 
         self.banks = dict()
         for bank in range(0, self.num_banks):
-            self.banks[bank] = Bank(bank, self.symbols, print_hex, align_operands)
+            self.banks[bank] = Bank(bank, self.symbols, style)
 
     def load(self):
         if os.path.isfile(self.rom_path):
@@ -1103,12 +1103,20 @@ parser.add_argument('--output-dir', default='disassembly', help='Directory to wr
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
+parser.add_argument('--indent-spaces', help='Number of spaces to use to indent instructions', type=int, default=4)
+parser.add_argument('--indent-tabs', help='Use tabs for indenting instructions', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
-uppercase_hex = args.uppercase_hex
 
-rom = ROM(args.rom_path, args.print_hex, args.align_operands)
+style = {
+    'uppercase_hex': args.uppercase_hex,
+    'print_hex': args.print_hex,
+    'indentation': '\t' if args.indent_tabs else ' ' * args.indent_spaces,
+    'operand_padding': 4 if args.align_operands else 0
+}
+
+rom = ROM(args.rom_path, style)
 rom.disassemble(args.output_dir)
