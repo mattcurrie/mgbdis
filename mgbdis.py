@@ -338,7 +338,7 @@ class Bank:
         if self.print_hex and address is not None and source_bytes is not None:
             return '{0:<50}; {1}: {2}'.format(instruction, hex_word(address), bytes_to_string(source_bytes))
         else:
-            return '{0:<50}'.format(instruction)
+            return '{0}'.format(instruction.rstrip())
 
 
     def format_data(self, data):
