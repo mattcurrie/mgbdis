@@ -224,7 +224,7 @@ instructions = {
     0xd0: 'ret nc',
     0xd1: 'pop de',
     0xd2: 'jp nc,a16',
-    0xd3: 'DB $d3',
+    0xd3: 'db $d3',
     0xd4: 'call nc,a16',
     0xd5: 'push de',
     0xd6: 'sub d8',
@@ -232,34 +232,34 @@ instructions = {
     0xd8: 'ret c',
     0xd9: 'reti',
     0xda: 'jp c,a16',
-    0xdb: 'DB $db',
+    0xdb: 'db $db',
     0xdc: 'call c,a16',
-    0xdd: 'DB $dd',
+    0xdd: 'db $dd',
     0xde: 'sbc d8',
     0xdf: 'rst $18',
 
-    0xe0: 'ld [$ff00+a8],a',
+    0xe0: 'ldh [a8],a',
     0xe1: 'pop hl',
-    0xe2: 'ld [$ff00+c],a',
-    0xe3: 'DB $e3',
-    0xe4: 'DB $e4',
+    0xe2: 'ld [c],a',
+    0xe3: 'db $e3',
+    0xe4: 'db $e4',
     0xe5: 'push hl',
     0xe6: 'and d8',
     0xe7: 'rst $20',
     0xe8: 'add sp,r8',
     0xe9: 'jp hl',
     0xea: 'ld [a16],a',
-    0xeb: 'DB $eb',
-    0xec: 'DB $ec',
-    0xed: 'DB $ed',
+    0xeb: 'db $eb',
+    0xec: 'db $ec',
+    0xed: 'db $ed',
     0xee: 'xor d8',
     0xef: 'rst $28',
 
-    0xf0: 'ld a,[$ff00+a8]',
+    0xf0: 'ldh a,[a8]',
     0xf1: 'pop af',
-    0xf2: 'ld a,[$ff00+c]',
+    0xf2: 'ld a,[c]',
     0xf3: 'di',
-    0xf4: 'DB $f4',
+    0xf4: 'db $f4',
     0xf5: 'push af',
     0xf6: 'or d8',
     0xf7: 'rst $30',
@@ -267,8 +267,8 @@ instructions = {
     0xf9: 'ld sp,hl',
     0xfa: 'ld a,[a16]',
     0xfb: 'ei',
-    0xfc: 'DB $fc',
-    0xfd: 'DB $fd',
+    0xfc: 'db $fc',
+    0xfd: 'db $fd',
     0xfe: 'cp d8',
     0xff: 'rst $38',
 
@@ -548,4 +548,51 @@ cb_instructions = {
     0xfd: 'set 7,l',
     0xfe: 'set 7,[hl]',
     0xff: 'set 7,a'
+}
+
+instruction_variants = {
+    'hli': {
+        'hl+': {
+            0x22: 'ld [hl+],a',
+            0x2a: 'ld a,[hl+]',
+            0x32: 'ld [hl-],a',
+            0x3a: 'ld a,[hl-]'
+        },
+        'hli': {
+            0x22: 'ld [hli],a',
+            0x2a: 'ld a,[hli]',
+            0x32: 'ld [hld],a',
+            0x3a: 'ld a,[hld]'
+        },
+        'ldi': {
+            0x22: 'ldi [hl],a',
+            0x2a: 'ldi a,[hl]',
+            0x32: 'ldd [hl],a',
+            0x3a: 'ldd a,[hl]'
+        }
+    },
+    'ldh_a8': {      
+        'ldh_a8': {
+            0xe0: 'ldh [a8],a',
+            0xf0: 'ldh a,[a8]'
+        },
+        'ldh_ffa8': {
+            0xe0: 'ldh [$ffa8],a',
+            0xf0: 'ldh a,[$ffa8]'
+        },
+        'ld_ff00_a8': {
+            0xe0: 'ld [$ff00+a8],a',
+            0xf0: 'ld a,[$ff00+a8]'
+        }
+    },
+    'ld_c': {      
+        'ld_c': {
+            0xe2: 'ld [c],a',
+            0xf2: 'ld a,[c]'
+        },
+        'ld_ff00_c': {
+            0xe2: 'ld [$ff00+c],a',
+            0xf2: 'ld a,[$ff00+c]'
+        }
+    }
 }

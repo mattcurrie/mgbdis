@@ -14,7 +14,7 @@ import os
 import png
 from shutil import copyfile
 
-from instruction_set import instructions, cb_instructions
+from instruction_set import instructions, cb_instructions, instruction_variants
 
 default_symbols = [
     '00:0000 RST_00',
@@ -130,6 +130,12 @@ hardware_labels = {
     0xFF23: 'rNR44',
 }
 
+ldh_a8_formatters = {
+    'ldh_a8': lambda value: '[{0}]'.format(hex_byte(value)),
+    'ld_ff00_a8': lambda value: '[{0}+{1}]'.format(hex_word(0xff00), hex_byte(value)),
+    'ldh_ffa8': lambda value: '[{0}]'.format(hex_word(0xff00 + value)),
+}
+
 def abort(message):
     print(message)
     os._exit(1)
@@ -164,6 +170,19 @@ def to_signed(value):
     if value > 127:
         return (256 - value) * -1
     return value
+
+def apply_style_to_instructions(style, instructions):
+    # set undefined opcodes to use db/DB
+    for opcode, instruction in instructions.items():
+        if instruction.startswith('db '):
+            instructions[opcode] = style['db'] + ' ' + hex_byte(opcode)
+
+    # set instruction variants
+    for variant_name, variants in instruction_variants.items():
+        for opcode, instruction in variants[style[variant_name]].items():
+            instructions[opcode] = instruction
+
+    return instructions
 
 
 class Bank:
@@ -342,7 +361,7 @@ class Bank:
 
 
     def format_data(self, data):
-        return self.format_instruction('DB', data)
+        return self.format_instruction(self.style['db'], data)
 
 
     def append_output(self, text):
@@ -424,7 +443,7 @@ class Bank:
                 length += 1
             else:
                 # otherwise handle it as a data byte
-                instruction_name = 'DB'
+                instruction_name = self.style['db']
                 operands = [hex_byte(opcode)]
 
 
@@ -458,7 +477,7 @@ class Bank:
                     operand_values.pop()
                     operand_values.append(hex_word(value))
 
-            elif operand == '[$ff00+a8]':
+            elif operand == '[$ff00+a8]' or operand == '[a8]' or operand == '[$ffa8]':
                 length += 1
                 value = rom.data[pc + 1]
                 full_value = 0xff00 + value
@@ -470,7 +489,8 @@ class Bank:
                 elif full_value in hardware_labels:
                     operand_values.append('[{}]'.format(hardware_labels[full_value]))
                 else:
-                    operand_values.append('[{0}+{1}]'.format(format_hex('$ff00'), hex_byte(value)))
+                    # use one of the ldh_a8_formatters formatters
+                    operand_values.append(ldh_a8_formatters[self.style['ldh_a8']](value))
 
             elif operand == 'd8':
                 length += 1
@@ -518,7 +538,7 @@ class Bank:
 
                 if target_bank < self.bank_number:
                     # output as data, otherwise RGBDS will complain
-                    instruction_name = 'DB'
+                    instruction_name = self.style['db']
                     operand_values = [hex_byte(opcode), hex_byte(rom.data[pc + 1])]
 
                     # exit the loop to avoid processing the operands any further
@@ -532,6 +552,9 @@ class Bank:
                     operand_values.append('sp-' + hex_byte(abs(value)))
                 else:
                     operand_values.append('sp+' + hex_byte(value))
+
+            elif operand == '[$ff00+c]':
+                operand_values.append('[{0}+c]'.format(hex_word(0xff00)))
 
             elif type(operand) is str:
                 operand_values.append(operand)
@@ -562,7 +585,7 @@ class Bank:
         if pc + length - 1 >= end_address:
             # must handle it as data
             length = 1
-            instruction_name = 'DB'
+            instruction_name = self.style['db']
             operand_values = [hex_byte(opcode)]
 
         self.pc += length
@@ -1105,6 +1128,10 @@ parser.add_argument('--print-hex', help='Print the hexadecimal representation ne
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
 parser.add_argument('--indent-spaces', help='Number of spaces to use to indent instructions', type=int, default=4)
 parser.add_argument('--indent-tabs', help='Use tabs for indenting instructions', action='store_true')
+parser.add_argument('--uppercase-db', help='Use uppercase for DB data declarations', action='store_true')
+parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type instructions.', type=str, default='hl+', choices=['hl+', 'hli', 'ldi'])
+parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
+parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ld_ff00_c'])
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -1115,8 +1142,13 @@ style = {
     'uppercase_hex': args.uppercase_hex,
     'print_hex': args.print_hex,
     'indentation': '\t' if args.indent_tabs else ' ' * args.indent_spaces,
-    'operand_padding': 4 if args.align_operands else 0
+    'operand_padding': 4 if args.align_operands else 0,
+    'db': 'DB' if args.uppercase_db else 'db',
+    'hli': args.hli,
+    'ldh_a8': args.ldh_a8,
+    'ld_c': args.ld_c
 }
+instructions = apply_style_to_instructions(style, instructions)
 
 rom = ROM(args.rom_path, style)
 rom.disassemble(args.output_dir)
