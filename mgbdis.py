@@ -435,8 +435,7 @@ class Bank:
             instruction_name = rom.instruction_names[opcode]
             operands = rom.instruction_operands[opcode]
 
-
-        if instruction_name == 'stop' or instruction_name == 'halt':
+        if instruction_name == 'stop' or (instruction_name == 'halt' and not self.style['disable_halt_nops']):
             if rom.data[pc + 1] == 0x00:
                 # rgbds adds a nop instruction after a stop/halt, so if that instruction 
                 # exists then we can insert it as a stop/halt command with length 2
@@ -808,6 +807,7 @@ class Symbols:
 class ROM:
 
     def __init__(self, rom_path, style):
+        self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load()
@@ -1104,7 +1104,10 @@ ENDM
         else:
             f.write('game.o: game.asm bank_*.asm\n')
 
-        f.write('\trgbasm -o game.o game.asm\n\n')
+        parameters = []
+        if self.style['disable_halt_nops']:
+            parameters.append('-h')
+        f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
 
         f.write('game.{}: game.o\n'.format(rom_extension))
         f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
@@ -1132,6 +1135,7 @@ parser.add_argument('--uppercase-db', help='Use uppercase for DB data declaratio
 parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type instructions.', type=str, default='hl+', choices=['hl+', 'hli', 'ldi'])
 parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ld_ff00_c'])
+parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -1146,7 +1150,8 @@ style = {
     'db': 'DB' if args.uppercase_db else 'db',
     'hli': args.hli,
     'ldh_a8': args.ldh_a8,
-    'ld_c': args.ld_c
+    'ld_c': args.ld_c,
+    'disable_halt_nops': args.disable_halt_nops,
 }
 instructions = apply_style_to_instructions(style, instructions)
 
