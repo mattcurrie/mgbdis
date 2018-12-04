@@ -3,7 +3,7 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie'
-__version__ = '1.2'
+__version__ = '1.3'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
@@ -466,15 +466,16 @@ class Bank:
 
                 # rgbds converts "ld [$ff40],a" into "ld [$ff00+40],a" automatically,
                 # so use a macro to encode it as data to ensure exact binary reproduction of the rom
-                if value >= 0xff00 and (opcode == 0xea or opcode == 0xfa):
-                    rom.has_ld_long = True
+                if not self.style['disable_auto_ldh']:
+                    if value >= 0xff00 and (opcode == 0xea or opcode == 0xfa):
+                        rom.has_ld_long = True
 
-                    # use ld_long macro
-                    instruction_name = 'ld_long'
+                        # use ld_long macro
+                        instruction_name = 'ld_long'
 
-                    # cannot wrap the address value with square brackets
-                    operand_values.pop()
-                    operand_values.append(hex_word(value))
+                        # cannot wrap the address value with square brackets
+                        operand_values.pop()
+                        operand_values.append(hex_word(value))
 
             elif operand == '[$ff00+a8]' or operand == '[a8]' or operand == '[$ffa8]':
                 length += 1
@@ -1107,6 +1108,8 @@ ENDM
         parameters = []
         if self.style['disable_halt_nops']:
             parameters.append('-h')
+        if self.style['disable_auto_ldh']:
+            parameters.append('-L')
         f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
 
         f.write('game.{}: game.o\n'.format(rom_extension))
@@ -1136,6 +1139,7 @@ parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type inst
 parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ld_ff00_c'])
 parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
+parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -1152,6 +1156,7 @@ style = {
     'ldh_a8': args.ldh_a8,
     'ld_c': args.ld_c,
     'disable_halt_nops': args.disable_halt_nops,
+    'disable_auto_ldh': args.disable_auto_ldh,
 }
 instructions = apply_style_to_instructions(style, instructions)
 
