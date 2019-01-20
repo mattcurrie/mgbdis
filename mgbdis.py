@@ -128,6 +128,8 @@ hardware_labels = {
     0xFF21: 'rNR42',
     0xFF22: 'rNR43',
     0xFF23: 'rNR44',
+    0xFF76: 'rPCM12',
+    0xFF77: 'rPCM34',    
 }
 
 ldh_a8_formatters = {

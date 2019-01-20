@@ -21,6 +21,7 @@
 ;* Rev 2.4 - 27-Apr-13 : Added some cart defines (AntonioND)
 ;* Rev 2.5 - 03-May-15 : Fixed format (AntonioND)
 ;* Rev 2.6 - 09-Apr-16 : Added GBC OAM and cart defines (AntonioND)
+;* Rev 2.7 - 19-Jan-19 : Added rPCMXX (ISSOtm)
 
 ; If all of these are already defined, don't do it again.
 
@@ -30,7 +31,7 @@ HARDWARE_INC SET 1
 rev_Check_hardware_inc : MACRO
 ;NOTE: REVISION NUMBER CHANGES MUST BE ADDED
 ;TO SECOND PARAMETER IN FOLLOWING LINE.
-    IF  \1 > 2.6 ;PUT REVISION NUMBER HERE
+    IF  \1 > 2.7 ;PUT REVISION NUMBER HERE
         WARN    "Version \1 or later of 'hardware.inc' is required."
     ENDC
 ENDM
@@ -650,6 +651,26 @@ rAUD4POLY EQU rNR43
 ; --
 rNR44 EQU $FF23
 rAUD4GO EQU rNR44 ; silly name!
+
+
+; --
+; -- PCM12 ($FF76)
+; -- Sound channel 1&2 PCM amplitude (R)
+; --
+; -- Bit 7-4 - Copy of sound channel 2's PCM amplitude
+; -- Bit 3-0 - Copy of sound channel 1's PCM amplitude
+; --
+rPCM12 EQU $FF76
+
+
+; --
+; -- PCM34 ($FF77)
+; -- Sound channel 3&4 PCM amplitude (R)
+; --
+; -- Bit 7-4 - Copy of sound channel 4's PCM amplitude
+; -- Bit 3-0 - Copy of sound channel 3's PCM amplitude
+; --
+rPCM34 EQU $FF77
 
 ;***************************************************************************
 ;*
