@@ -31,7 +31,7 @@ There are also a number of options available to control the formatting and instr
 
 Symbol files allow you to indicate where code, data, test and image data blocks are in the ROM. 
 
-The instructions of the Game Boy CPU (LR35902) have different lengths, and data can be interleaved with code in the ROM, so it is not possible to always accurately identify where an instruction starts and stops. Defining code blocks in a symbol file can help to avoid problems with mgbdis trying to disassemble in the middle of an instruction. 
+The instructions of the Game Boy CPU (SM83) have different lengths, and data can be interleaved with code in the ROM, so it is not possible to always accurately identify where an instruction starts and stops. Defining code blocks in a symbol file can help to avoid problems with mgbdis trying to disassemble in the middle of an instruction. 
 
 If you do not have a symbol file, you can try generating one with my Game Boy emulator - [Beaten Dying Moon](https://mattcurrie.com/bdm-demo/). It can generate a symbol file with code block definitions based on the the addresses of the instructions that have actually been executed while you have been playing the game, avoiding instruction alignment issues.
 
