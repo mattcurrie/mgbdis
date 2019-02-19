@@ -5,7 +5,7 @@ A Game Boy ROM disassembler.
 
 ## Features
 
-- Generates assembly code compatible with RGBDS
+- Generates assembly code compatible with RGBDS (v0.3.8+ recommended, see [Notes](#notes))
 - Supports ROMs with multiple banks
 - Supports .sym files to define labels, code, data, text and image blocks
 - Outputs a makefile to rebuild the ROM

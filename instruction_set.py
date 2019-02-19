@@ -590,6 +590,10 @@ instruction_variants = {
             0xe2: 'ld [c],a',
             0xf2: 'ld a,[c]'
         },
+        'ldh_c': {
+            0xe2: 'ldh [c],a',
+            0xf2: 'ldh a,[c]'
+        },
         'ld_ff00_c': {
             0xe2: 'ld [$ff00+c],a',
             0xf2: 'ld a,[$ff00+c]'

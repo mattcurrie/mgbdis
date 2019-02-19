@@ -1139,7 +1139,7 @@ parser.add_argument('--indent-tabs', help='Use tabs for indenting instructions',
 parser.add_argument('--uppercase-db', help='Use uppercase for DB data declarations', action='store_true')
 parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type instructions.', type=str, default='hl+', choices=['hl+', 'hli', 'ldi'])
 parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
-parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ld_ff00_c'])
+parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ldh_c', 'ld_ff00_c'])
 parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
 parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
