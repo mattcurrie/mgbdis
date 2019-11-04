@@ -91,7 +91,7 @@ Resulting image:
 
 ## Notes
 
-- RGBDS optimises instructions like ```LD [$FF40],a``` to ```LDH [$FF00+40],a```, so these are encoded as data bytes using a macro to ensure exact reproduction of the original ROM (thanks to ISSOtm). RGBDS >= v0.3.7 has an option to disable this optimisation. Use ```--disable-auto-ldh``` with mgbdis to disable the macro.
+- For constant expressions, RGBDS will by default optimise instructions like ```LD [$FF40],a``` to ```LDH [$FF00+40],a```, so these are encoded as data bytes using a macro to ensure exact reproduction of the original ROM (thanks to ISSOtm). RGBDS >= v0.3.7 has an option to disable this optimisation. Use ```--disable-auto-ldh``` with mgbdis to disable the macro.
 - RGBDS automatically adds ```NOP``` instructions after ```STOP``` and ```HALT```, so the disassembler will output these as data bytes if the instruction is not followed by a ```NOP``` in the original ROM. Use ```--disable-halt-nops``` with mgbdis to instruct RGBDS to disable inserting automatic ```NOP``` instructions after ```HALT``` instructions.
 - RGBDS v0.3.6 has an off by one error for some ```JR``` instructions, causing the assembled ROM to not match the original.
 - RGBDS v0.3.7 ```rgbfix``` generates an invalid global checksum in the ROM header, causing the assembled ROM to not match the original.
