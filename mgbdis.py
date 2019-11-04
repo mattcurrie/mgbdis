@@ -627,7 +627,8 @@ class Bank:
 
                 # if a new label is after a normal instruction, add comment
                 if not (
-                    instruction_name == 'jr' or
+                    instruction_name == 'nop' or
+                    (instruction_name == 'jr' and len(operand_values) == 1) or
                     (instruction_name == 'jp' and len(operand_values) == 1) or
                     (instruction_name == 'ret' and len(operand_values) == 0)
                 ):
