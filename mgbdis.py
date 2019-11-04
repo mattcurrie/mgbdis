@@ -632,7 +632,11 @@ class Bank:
                     (instruction_name == 'jp' and len(operand_values) == 1) or
                     (instruction_name == 'ret' and len(operand_values) == 0)
                 ):
-                    self.append_output(';\tfallthrough')
+                    comment_spacing = style['indentation']
+                    # remove one space character for the semicolon
+                    if ' ' in comment_spacing:
+                        comment_spacing = comment_spacing[1:]
+                    self.append_output(';' + comment_spacing + 'fallthrough')
 
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
