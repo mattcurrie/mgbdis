@@ -621,6 +621,18 @@ class Bank:
             instruction_bytes = rom.data[pc:pc + length]
             self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes))
 
+            # Add a "fallthrough" comment before labels in pret style
+            next_labels = self.get_labels_for_address(pc_mem_address + length)
+            if style['pret_style'] and len(next_labels) > 0:
+
+                # if a new label is after a normal instruction, add comment
+                if not (
+                    instruction_name == 'jr' or
+                    (instruction_name == 'jp' and len(operand_values) == 1) or
+                    (instruction_name == 'ret' and len(operand_values) == 0)
+                ):
+                    self.append_output(';\tfallthrough')
+
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
                 if not (
