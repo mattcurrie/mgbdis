@@ -623,16 +623,15 @@ class Bank:
 
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
-                if (
+                if not (
                     instruction_name == 'jr' or
                     (instruction_name == 'jp' and len(operand_values) > 1) or
                     (instruction_name == 'ret' and len(operand_values) > 0)
                 ):
-                    # conditional or jr
                     self.append_output('')
-                else:
-                    # always executes
-                    self.append_output('')
+
+                # add an extra new line after any return or jump
+                if not style['pret_style']:
                     self.append_output('')
 
 
