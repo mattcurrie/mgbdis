@@ -299,7 +299,10 @@ class Bank:
             return label
 
         if address in self.target_addresses[instruction_name]:
-            return self.format_label(instruction_name, address)
+            if style['pret_style']:
+                return self.format_label_pret(address)
+            else:
+                return self.format_label(instruction_name, address)
 
         return None
 
@@ -333,7 +336,11 @@ class Bank:
             # otherwise, if the address was marked as a target address, generate a label
             for instruction_name in ['call', 'jp', 'jr']:
                 if address in self.target_addresses[instruction_name]:
-                    labels.append(self.format_label(instruction_name, address) + ':')
+                    if style['pret_style']:
+                        labels.append(self.format_label_pret(address) + ': ' + self.format_label_comment(address))
+                        break # Exit early to avoid unecessary duplicates
+                    else:
+                        labels.append(self.format_label(instruction_name, address) + ':')
 
         return labels
 
@@ -343,6 +350,15 @@ class Bank:
         formatted_address = format_hex('{:04x}'.format(address))
         return '{0}_{1}_{2}'.format(self.instruction_label_prefixes[instruction_name], formatted_bank, formatted_address)
 
+    def format_label_pret(self, address):
+        formatted_address = format_hex('{:04x}'.format(self.rom_base_address + address))
+        return 'Func_{0}'.format(formatted_address)
+
+    def format_label_comment(self, address):
+        formatted_bank = format_hex('{:01x}'.format(self.bank_number))
+        formatted_address = format_hex('{:04x}'.format(address))
+        formatted_global = format_hex('{:04x}'.format(self.rom_base_address + address))
+        return '; {0} ({1}:{2})'.format(formatted_global, formatted_bank, formatted_address)
 
     def format_image_label(self, address):
         return 'image_{0:03x}_{1:04x}'.format(self.bank_number, address)
@@ -1142,6 +1158,7 @@ parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type i
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ldh_c', 'ld_ff00_c'])
 parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
 parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
+parser.add_argument('--pret-style', help='Use pret style labels, with location comments following them.', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
@@ -1159,6 +1176,7 @@ style = {
     'ld_c': args.ld_c,
     'disable_halt_nops': args.disable_halt_nops,
     'disable_auto_ldh': args.disable_auto_ldh,
+    'pret_style' : args.pret_style,
 }
 instructions = apply_style_to_instructions(style, instructions)
 
