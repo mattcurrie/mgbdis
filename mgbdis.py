@@ -1157,7 +1157,49 @@ ENDM
 
         f.close()
 
+class StyleArg:
 
+    def __init__(self, name, default=None, choices=None, type="bool", help="" ):
+        self.name = name
+        if default == None:
+            if type == "str":
+                default = ""
+            elif type == "bool":
+                default = False
+        self.default = default
+        self.choices = choices
+        self.type = type
+        self.help = help
+
+    # returns None if there's an issue.
+    def validate_argument(self, value_string):
+        if self.type == "bool":
+            if value_string.lower() in ["true","yes"]:
+                return True
+            elif value_string.lower() in ["false","no"]:
+                return False
+            else: return None
+        elif self.type == "str":
+            if self.choices != None:
+                if value_string in self.choices:
+                    return None
+            return value_string
+
+        return None
+
+def parse_style_args(possible_args, input_args):
+    style = dict()
+    for arg in input_args:
+        split_arg = arg.split("=")
+        if len(split_arg) != 2:
+            return "ERROR"
+        for arg_type in possible_args:
+            if arg_type.name == split_arg[0]:
+                arg_value = arg_type.validate_argument(split_arg[1])
+                if arg_value == None:
+                    return "ERROR"
+                style[split_arg[0]] = arg_value
+    return style
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
