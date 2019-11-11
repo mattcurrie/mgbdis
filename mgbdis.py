@@ -1157,6 +1157,20 @@ ENDM
 
         f.close()
 
+def print_style_usage(styles):
+    help_offset = 32
+    for style in styles:
+        style_message = style.name
+        if style.choices != None and len(style.choices) > 0:
+            style_message += "=["
+            for choice in style.choices:
+                style_message += choice + "/"
+            style_message = style_message[:-1] + "]"
+        if style.help != None and len(style.help) > 0:
+            style_message += " "*(help_offset-len(style_message))
+            style_message += style.help
+        print(style_message)
+
 class StyleArg:
 
     def __init__(self, name, default=None, choices=None, type="bool", help="" ):
@@ -1167,7 +1181,12 @@ class StyleArg:
             elif type == "bool":
                 default = False
         self.default = default
-        self.choices = choices
+
+        # bool can only be yes/true or no/false. only show one to limit name length
+        if type == "bool":
+            self.choices = ["yes","no"]
+        else:
+            self.choices = choices
         self.type = type
         self.help = help
 
@@ -1200,6 +1219,11 @@ def parse_style_args(possible_args, input_args):
                     return "ERROR"
                 style[split_arg[0]] = arg_value
     return style
+
+da= [
+StyleArg('fallthrough', type='bool', help='Adds a comment when one routine bleeds into the next.'),
+StyleArg('ld_c', type='str', choices=['ld_c','ldh_c','ld_ff00_c'], help='Mnemonic to use for \'ld [c], a\' type instructions.')
+]
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
