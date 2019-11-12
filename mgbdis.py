@@ -1162,10 +1162,7 @@ def print_style_usage(styles):
     for style in styles:
         style_message = style.name
         if style.choices != None and len(style.choices) > 0:
-            style_message += "=["
-            for choice in style.choices:
-                style_message += choice + "/"
-            style_message = style_message[:-1] + "]"
+            style_message += "=" + style.get_formatted_choices()
         if style.help != None and len(style.help) > 0:
             style_message += " "*(help_offset-len(style_message))
             style_message += style.help
@@ -1190,40 +1187,51 @@ class StyleArg:
         self.type = type
         self.help = help
 
-    # returns None if there's an issue.
+    def get_formatted_choices(self):
+        formatted_choices = "["
+        for choice in self.choices:
+            formatted_choices += choice + "/"
+        return formatted_choices[:-1] + "]"
+
+    # aborts with message if there's an issue.
     def validate_argument(self, value_string):
         if self.type == "bool":
             if value_string.lower() in ["true","yes"]:
                 return True
             elif value_string.lower() in ["false","no"]:
                 return False
-            else: return None
+            else:
+                abort("Style Error: '" + self.name + "' does not accept '" + value_string + "'. Please use True/False or Yes/No")
         elif self.type == "str":
             if self.choices != None:
-                if value_string in self.choices:
-                    return None
+                if value_string not in self.choices:
+                    abort("Style Error: '" + self.name + "' does not accept '" + value_string + "'. Possible choices: " + self.get_formatted_choices())
             return value_string
 
-        return None
+        abort("Style Error: Unable to parse type of '" + self.type + "' for '" + self.name + "'")
 
 def parse_style_args(possible_args, input_args):
     style = dict()
     for arg in input_args:
         split_arg = arg.split("=")
         if len(split_arg) != 2:
-            return "ERROR"
+            abort("Style Error: Incorrectly formatted style, '" + arg + "'. Please use the format style=option")
+        parsed = False
         for arg_type in possible_args:
             if arg_type.name == split_arg[0]:
                 arg_value = arg_type.validate_argument(split_arg[1])
-                if arg_value == None:
-                    return "ERROR"
+                parsed = True
+                break
                 style[split_arg[0]] = arg_value
+        if not parsed:
+            abort("Style Error: Could not find style named '" + split_arg[0] + "'")
     return style
 
-da= [
+style_options = [
 StyleArg('fallthrough', type='bool', help='Adds a comment when one routine bleeds into the next.'),
-StyleArg('ld_c', type='str', choices=['ld_c','ldh_c','ld_ff00_c'], help='Mnemonic to use for \'ld [c], a\' type instructions.')
+StyleArg('ld_c', type='str', choices=['ld_c','ldh_c','ld_ff00_c'], help='Mnemonic to use for \'ld [c], a\' type instructions.'),
 ]
+
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
