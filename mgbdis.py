@@ -1157,7 +1157,8 @@ ENDM
 
         f.close()
 
-def print_style_usage(styles):
+def get_style_usage_text_usage(styles):
+    final = ""
     help_offset = 32
     for style in styles:
         style_message = style.name
@@ -1166,7 +1167,8 @@ def print_style_usage(styles):
         if style.help != None and len(style.help) > 0:
             style_message += " "*(help_offset-len(style_message))
             style_message += style.help
-        print(style_message)
+        final += style_message + "\n"
+    return final
 
 class StyleArg:
 
@@ -1237,6 +1239,8 @@ app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(v
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
+parser.add_argument('--style', type=str, nargs='+', help='Change style options using the format style=option. Use --style_usage for more info')
+parser.add_argument('--style-usage', help='Shows usage text for style arguments.', action='store_true')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
@@ -1254,6 +1258,9 @@ parser.add_argument('--debug', help='Display debug output', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
+
+if args.style_usage:
+    abort(get_style_usage_text_usage(style_options))
 
 style = {
     'uppercase_hex': args.uppercase_hex,
