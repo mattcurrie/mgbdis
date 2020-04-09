@@ -69,13 +69,15 @@ Adding a label for 16 bytes of text:
 
 ### Image
 
-The ```.image``` magic label allows you to define blocks of 2 bits per pixel tile data in the ROM.  Images are output as PNG files in the ```/gfx``` directory of the disassembly, and are converted back to 2bpp tile data by the makefile using rgbgfx.  If a label is specified at the address of the image block then it will be used for the name of the PNG file.
+The ```.image``` magic label allows you to define blocks of 1 or 2 bits per pixel tile data in the ROM.  Images are output as PNG files in the ```/gfx``` directory of the disassembly, and are converted back to 1bpp or 2bpp tile data by the makefile using rgbgfx.  If a label is specified at the address of the image block then it will be used for the name of the PNG file.
 
 The block length in bytes should be a multiple of 16, as each tile requires 16 bytes of image data.
 
 The image width in pixels can be specified as a decimal number prefixed with ```w```. The width value should be a multiple of 8, and the combination of block length and image width must result in a rectangluar image without any empty tiles. The default image width is ```128``` pixels, or if the block length indicates an odd number of tiles, then an image with a single row of tiles will be generated.
 
 The palette is a byte sized value which selects the shades of grey to use when generating the image. It uses the same format as the BGP register at ```0xFF47```.  The value can be specified in hexidecimal prefixed with ```p```. The default palette is ```E4```.
+
+The default is to treat it as 2 bits per pixel tile data. A ```1bpp``` option can be supplied to treat the data as 1 bit per pixel tile data.
 
 Adding a label for 1280 bytes of tile data, with a width of 128 pixels and palette 0xE4:
 
@@ -88,6 +90,17 @@ Resulting image:
 
 ![Imgur](https://i.imgur.com/2duQ7Py.png)
 
+
+Example for 1bpp tile data:
+
+```
+05:4000 Font
+05:4000 .image:200:w128,1bpp
+```
+
+Resulting image:
+
+![Imgur](https://i.imgur.com/iX5FCXL.png)
 
 ## Notes
 
