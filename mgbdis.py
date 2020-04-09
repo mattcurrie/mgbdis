@@ -699,7 +699,7 @@ class Bank:
         else:
             basename = self.format_image_label(mem_address)
 
-        full_filename = rom.write_image(basename, arguments, '2bpp', rom.data[start_address:end_address])
+        full_filename = rom.write_image(basename, arguments, rom.data[start_address:end_address])
         self.append_output(self.format_instruction('INCBIN', ['\"' + full_filename + '\"']))
 
 
@@ -983,11 +983,12 @@ ENDM
         f.close()
 
 
-    def write_image(self, basename, arguments, image_format, data):
+    def write_image(self, basename, arguments, data):
 
         # defaults
         width = 128
         palette = 0xe4
+        bpp = 2
 
         # process arguments
         if arguments is not None:
@@ -1000,6 +1001,9 @@ ENDM
                     elif argument[0] == 'p':
                         palette = int(argument[1:], 16)
 
+                    elif argument == '1bpp':
+                        bpp = 1
+
         image_output_path = os.path.join(self.output_directory, self.image_output_directory)
         if os.path.exists(image_output_path):
             if not os.path.isdir(image_output_path):
@@ -1007,11 +1011,11 @@ ENDM
         else:
             os.makedirs(image_output_path)
 
-        relative_path = os.path.join(self.image_output_directory, basename + '.' + image_format)
+        relative_path = os.path.join(self.image_output_directory, basename + '.' + "{}bpp".format(bpp))
         self.image_dependencies.append(relative_path)
         path = os.path.join(self.output_directory, self.image_output_directory, basename + '.png')
 
-        bytes_per_tile_row = 2  # 8 pixels at 2 bits per pixel
+        bytes_per_tile_row = bpp  # 8 pixels at 1 or 2 bits per pixel
         bytes_per_tile = bytes_per_tile_row * 8  # 8 rows per tile
 
         num_tiles = len(data) // bytes_per_tile
@@ -1029,8 +1033,8 @@ ENDM
 
         height = int(tile_rows) * 8
 
-        pixel_data = self.convert_to_pixel_data(data, width, height)
-        rgb_palette = self.convert_palette_to_rgb(palette)
+        pixel_data = self.convert_to_pixel_data(data, width, height, bpp)
+        rgb_palette = self.convert_palette_to_rgb(palette, bpp)
 
         f = open(path, 'wb')
         w = png.Writer(width, height, alpha=False, bitdepth=2, palette=rgb_palette)
@@ -1040,18 +1044,21 @@ ENDM
         return relative_path
 
 
-    def convert_to_pixel_data(self, data, width, height):
+    def convert_to_pixel_data(self, data, width, height, bpp):
         result = []
         for y in range(0, height):
             row = []
             for x in range(0, width):
-                offset = self.coordinate_to_tile_offset(x, y, width)
+                offset = self.coordinate_to_tile_offset(x, y, width, bpp)
 
                 if offset < len(data):
-                    # extract the color from the two bytes of tile data at the offset
+                    # extract the color from the one or two bytes of tile data at the offset
                     shift = (7 - (x & 7))
                     mask = (1 << shift)
-                    color = ((data[offset] & mask) >> shift) + (((data[offset + 1] & mask) >> shift) << 1)
+                    if bpp == 2:
+                        color = ((data[offset] & mask) >> shift) + (((data[offset + 1] & mask) >> shift) << 1)
+                    else:
+                        color = ((data[offset] & mask) >> shift)
                 else:
                     color = 0
 
@@ -1061,8 +1068,8 @@ ENDM
         return result
 
 
-    def coordinate_to_tile_offset(self, x, y, width):
-        bytes_per_tile_row = 2  # 8 pixels at 2 bits per pixel
+    def coordinate_to_tile_offset(self, x, y, width, bpp):
+        bytes_per_tile_row = bpp  # 8 pixels at 1 or 2 bits per pixel
         bytes_per_tile = bytes_per_tile_row * 8  # 8 rows per tile
         tiles_per_row = width // 8
         
@@ -1073,17 +1080,23 @@ ENDM
         return (tile_y * tiles_per_row * bytes_per_tile) + (tile_x * bytes_per_tile) + (row_of_tile * bytes_per_tile_row)
 
 
-    def convert_palette_to_rgb(self, palette):
+    def convert_palette_to_rgb(self, palette, bpp):
         col0 = 255 - (((palette & 0x03)     ) << 6)
         col1 = 255 - (((palette & 0x0C) >> 2) << 6)
         col2 = 255 - (((palette & 0x30) >> 4) << 6)
         col3 = 255 - (((palette & 0xC0) >> 6) << 6)
-        return [
-            (col0, col0, col0),
-            (col1, col1, col1),
-            (col2, col2, col2),
-            (col3, col3, col3)
-        ]
+        if bpp == 2:
+            return [
+                (col0, col0, col0),
+                (col1, col1, col1),
+                (col2, col2, col2),
+                (col3, col3, col3)
+            ]
+        else:
+            return [
+                (col0, col0, col0),
+                (col3, col3, col3)
+            ]
 
 
     def write_makefile(self):
@@ -1101,6 +1114,9 @@ ENDM
 
         f.write('%.2bpp: %.png\n')
         f.write('\trgbgfx -o $@ $<\n\n')
+
+        f.write('%.1bpp: %.png\n')
+        f.write('\trgbgfx -d 1 -o $@ $<\n\n')
 
         if len(self.image_dependencies):
             f.write('game.o: game.asm bank_*.asm $(IMAGE_DEPS)\n')
