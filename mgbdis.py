@@ -130,7 +130,7 @@ hardware_labels = {
     0xFF22: 'rNR43',
     0xFF23: 'rNR44',
     0xFF76: 'rPCM12',
-    0xFF77: 'rPCM34',    
+    0xFF77: 'rPCM34',
 }
 
 ldh_a8_formatters = {
@@ -201,7 +201,7 @@ class Bank:
             self.memory_base_address = 0
             self.rom_base_address = 0
         else:
-            self.memory_base_address = 0x4000            
+            self.memory_base_address = 0x4000
             self.rom_base_address = (number - 1) * 0x4000
 
         self.target_addresses = dict({
@@ -220,7 +220,7 @@ class Bank:
             'code': self.process_code_in_range,
             'data': self.process_data_in_range,
             'text': self.process_text_in_range,
-            'image': self.process_image_in_range    
+            'image': self.process_image_in_range
         })
 
 
@@ -244,7 +244,7 @@ class Bank:
             next_start_address = None
             if index < len(block_start_addresses) - 1:
                 next_start_address = block_start_addresses[index + 1]
-                
+
                 # if the next block starts before this one finishes, then adjust end address
                 if next_start_address < end_address:
                     end_address = next_start_address
@@ -260,7 +260,7 @@ class Bank:
                 resolved_blocks[end_address] = {
                     'type': 'code',
                     'length': (self.memory_base_address + 0x4000) - end_address,
-                    'arguments': None                   
+                    'arguments': None
                 }
 
             if next_start_address is not None and end_address < next_start_address:
@@ -268,7 +268,7 @@ class Bank:
                 resolved_blocks[end_address] = {
                     'type': 'code',
                     'length': next_start_address - end_address,
-                    'arguments': None                    
+                    'arguments': None
                 }
 
         self.blocks = resolved_blocks
@@ -287,7 +287,7 @@ class Bank:
                 return None
         else:
             # TODO: if target address is in bank 0 then should check if that address
-            # has been disassembled in bank 0. requires access to bank 0 from 
+            # has been disassembled in bank 0. requires access to bank 0 from
             # other bank objects
 
             is_in_switchable_bank = 0x4000 <= address < 0x8000
@@ -352,7 +352,7 @@ class Bank:
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
         instruction = '{indentation}{instruction_name:<{operand_padding}} {operands}'.format(
             indentation=self.style['indentation'],
-            instruction_name=instruction_name, 
+            instruction_name=instruction_name,
             operand_padding=self.style['operand_padding'],
             operands=', '.join(operands)
         )
@@ -440,7 +440,7 @@ class Bank:
 
         if instruction_name == 'stop' or (instruction_name == 'halt' and not self.style['disable_halt_nops']):
             if rom.data[pc + 1] == 0x00:
-                # rgbds adds a nop instruction after a stop/halt, so if that instruction 
+                # rgbds adds a nop instruction after a stop/halt, so if that instruction
                 # exists then we can insert it as a stop/halt command with length 2
                 length += 1
             else:
@@ -457,7 +457,7 @@ class Bank:
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
                 operand_values.append(hex_word(value))
-            
+
             elif operand == '[a16]':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
@@ -516,7 +516,7 @@ class Bank:
                     operand_values.append('-' + hex_byte(abs(value)))
                 else:
                     operand_values.append(hex_byte(value))
-                
+
             elif operand == 'pc+r8':
                 length += 1
                 value = to_signed(rom.data[pc + 1])
@@ -550,7 +550,7 @@ class Bank:
             elif operand == 'sp+r8':
                 length += 1
                 value = to_signed(rom.data[pc + 1])
-                
+
                 if value < 0:
                     operand_values.append('sp-' + hex_byte(abs(value)))
                 else:
@@ -564,7 +564,7 @@ class Bank:
 
             else:
                 operand_values.append(hex_byte(operand))
-            
+
 
             if instruction_name in ['jr', 'jp', 'call'] and value is not None and value < 0x8000:
                 mem_address = rom_address_to_mem_address(value)
@@ -582,7 +582,7 @@ class Bank:
                         # remove the address from operand values and use the label instead
                         operand_values.pop()
                         operand_values.append(label)
-                            
+
 
         # check the instruction is not spanning 2 banks
         if pc + length - 1 >= end_address:
@@ -688,7 +688,7 @@ class Bank:
     def process_image_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
-        
+
         if self.first_pass:
             return
 
@@ -758,7 +758,7 @@ class Symbols:
                     arguments = label_parts[2]
                 else:
                     arguments = None
-                
+
                 self.add_block(bank, address, block_type, data_length, arguments)
 
             else:
@@ -836,7 +836,7 @@ class ROM:
     def load(self):
         if os.path.isfile(self.rom_path):
             print('Loading "{}"...'.format(self.rom_path))
-            self.data = open(self.rom_path, 'rb').read()  
+            self.data = open(self.rom_path, 'rb').read()
             self.rom_size = len(self.data)
             self.num_banks = self.rom_size // 0x4000
         else:
@@ -921,7 +921,7 @@ class ROM:
 
         print('\nDisassembly generated in "{}"'.format(self.output_directory))
 
-        
+
     def generate_labels(self):
         for bank in range(0, self.num_banks):
             self.banks[bank].disassemble(rom, True)
@@ -938,7 +938,7 @@ class ROM:
         self.write_header(f)
         f.write(self.banks[bank].disassemble(rom))
 
-        f.close()        
+        f.close()
 
 
     def write_header(self, f):
@@ -956,7 +956,7 @@ class ROM:
 
     def write_game_asm(self):
         path = os.path.join(self.output_directory, 'game.asm')
-        f = open(path, 'w')        
+        f = open(path, 'w')
 
         self.write_header(f)
 
@@ -964,12 +964,12 @@ class ROM:
 
             f.write(
 """ld_long: MACRO
-    IF STRLWR("\\1") == "a" 
+    IF STRLWR("\\1") == "a"
         ; ld a, [$ff40]
         db $FA
         dw \\2
-    ELSE 
-        IF STRLWR("\\2") == "a" 
+    ELSE
+        IF STRLWR("\\2") == "a"
             ; ld [$ff40], a
             db $EA
             dw \\1
@@ -1024,7 +1024,7 @@ ENDM
         tiles_per_row = width // 8
 
         # if we have fewer tiles than the number of tiles per row, or if an odd number of tiles
-        if (num_tiles < tiles_per_row) or (num_tiles & 1):            
+        if (num_tiles < tiles_per_row) or (num_tiles & 1):
             # then just make a single row of tiles
             tiles_per_row = num_tiles
             width = num_tiles * 8
@@ -1074,7 +1074,7 @@ ENDM
         bytes_per_tile_row = bpp  # 8 pixels at 1 or 2 bits per pixel
         bytes_per_tile = bytes_per_tile_row * 8  # 8 rows per tile
         tiles_per_row = width // 8
-        
+
         tile_y = y // 8
         tile_x = x // 8
         row_of_tile = y & 7
