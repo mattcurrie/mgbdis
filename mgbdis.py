@@ -2,8 +2,9 @@
 
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
-__author__ = 'Matt Currie'
-__version__ = '1.3'
+__author__ = 'Matt Currie and contributors'
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis']
+__version__ = '1.4'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
@@ -942,7 +943,8 @@ class ROM:
 
     def write_header(self, f):
         f.write('; Disassembly of "{}"\n'.format(os.path.basename(self.rom_path)))
-        f.write('; This file was created with {}\n'.format(app_name))
+        f.write('; This file was created with:\n')
+        f.write('; {}\n'.format(app_name))
         f.write('; https://github.com/mattcurrie/mgbdis\n\n')
 
 
