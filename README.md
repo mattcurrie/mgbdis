@@ -7,7 +7,7 @@ A Game Boy ROM disassembler.
 
 - Generates assembly code compatible with RGBDS (v0.3.8+ recommended, see [Notes](#notes))
 - Supports ROMs with multiple banks
-- Supports .sym files to define labels, code, data, text and image blocks
+- Supports .sym files to define labels, code, data, text, image blocks, and comments
 - Outputs a makefile to rebuild the ROM
 - Uses defines from hardware.inc v2.7 for hardware registers ([source](https://github.com/tobiasvl/hardware.inc))
 - Slow on large ROMs
@@ -40,6 +40,8 @@ To use a symbol file with mgbdis, it should exist in the same directory as the R
 All values (except for image widths) should be in hexadecimal.  Entries start with a bank number followed by the address in memory.  
 
 Block types can be defined by using the ```.code```, ```.data```, ```.text```, and ```.image``` magic labels, followed by the length of the block in bytes.
+
+Comments to add to the assembly code should start with `;;`, followed by the bank and address.
 
 ### Code
 
@@ -101,6 +103,24 @@ Example for 1bpp tile data:
 Resulting image:
 
 ![Imgur](https://i.imgur.com/iX5FCXL.png)
+
+### Comments
+
+You may like to add comments to the resulting assembly files, for instance, if you are only able to share the symbol file for licensing reasons:
+
+```
+01:ad43 Check_Health
+;; 01:a4d3 Updates player health if they're being hit
+```
+
+Resulting assembly file:
+
+```
+Check_Health:
+; Updates player health if they're being hit
+    push BC
+    ...
+```
 
 ## Notes
 
