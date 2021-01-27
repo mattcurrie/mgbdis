@@ -3,8 +3,8 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie and contributors'
-__credits__ = ['mattcurrie', 'kemenaran', 'bnzis']
-__version__ = '1.4'
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'issotm']
+__version__ = '1.5'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
@@ -144,9 +144,11 @@ def abort(message):
     os._exit(1)
 
 
+def hex_long(value):
+    return format_hex('${:08x}'.format(value))
+
 def hex_word(value):
     return format_hex('${:04x}'.format(value))
-
 
 def hex_byte(value):
     return format_hex('${:02x}'.format(value))
@@ -260,7 +262,7 @@ class Bank:
                 resolved_blocks[end_address] = {
                     'type': 'code',
                     'length': (self.memory_base_address + 0x4000) - end_address,
-                    'arguments': None
+                    'arguments': []
                 }
 
             if next_start_address is not None and end_address < next_start_address:
@@ -268,7 +270,7 @@ class Bank:
                 resolved_blocks[end_address] = {
                     'type': 'code',
                     'length': next_start_address - end_address,
-                    'arguments': None
+                    'arguments': []
                 }
 
         self.blocks = resolved_blocks
@@ -363,7 +365,13 @@ class Bank:
             return '{0}'.format(instruction.rstrip())
 
 
-    def format_data(self, data):
+    def format_longs(self, data):
+        return self.format_instruction(self.style['dl'], data)
+
+    def format_words(self, data):
+        return self.format_instruction(self.style['dw'], data)
+
+    def format_bytes(self, data):
         return self.format_instruction(self.style['db'], data)
 
 
@@ -401,13 +409,13 @@ class Bank:
             start_address = block_start_addresses[index]
             block = self.blocks[start_address]
             end_address = start_address + block['length']
-            self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, block['arguments'])
+            self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, *block['arguments'])
             self.append_empty_line_if_none_already()
 
         return '\n'.join(self.output)
 
 
-    def process_code_in_range(self, rom, start_address, end_address, arguments = None):
+    def process_code_in_range(self, rom, start_address, end_address):
         if not self.first_pass and debug:
             print('Disassembling code in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -621,33 +629,67 @@ class Bank:
                     self.append_output('')
 
 
-    def process_data_in_range(self, rom, start_address, end_address, arguments = None):
+    def process_data_in_range(self, rom, start_address, end_address, fmt = "b16"):
         if not self.first_pass and debug:
-            print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
+            print('Outputting data in range: {} - {} with format {}'.format(hex_word(start_address), hex_word(end_address), fmt))
+
+        # parse format string into a list
+        formatters = {
+            'b': (1, hex_byte, self.format_bytes),
+            'w': (2, hex_word, self.format_words),
+            'l': (4, hex_long, self.format_longs),
+        }
+        fmt_elems = list()
+        for elem in fmt.split(','):
+            fmt_elems.append({
+                'byte_size': formatters[elem[0]][0],
+                'fmt_func': formatters[elem[0]][1],
+                'line_func': formatters[elem[0]][2],
+                'len': int(elem[1:]),
+            })
 
         values = list()
+        i = 0
 
+        def flush():
+            nonlocal values
+            self.append_output(fmt_elems[i]['line_func'](values))
+            values = list()
+
+        rem_len = fmt_elems[i]['len'] # number of values remaining to emit before
+        bytes = list()
         for address in range(start_address, end_address):
             mem_address = rom_address_to_mem_address(address)
 
             labels = self.get_labels_for_non_code_address(mem_address)
             if len(labels):
                 # add any existing values to the output and reset the list
-                if len(values) > 0:
-                    self.append_output(self.format_data(values))
-                    values = list()
+                if len(values) != 0:
+                    rem_len -= len(values)
+                    flush()
+                assert len(bytes) == 0, "How to handle trailing bytes?"
 
                 self.append_labels_to_output(labels)
 
-            values.append(hex_byte(rom.data[address]))
+            bytes.append(rom.data[address])
+            if len(bytes) == fmt_elems[i]['byte_size']:
+                values.append(fmt_elems[i]['fmt_func'](int.from_bytes(bytes, "little")))
+                bytes = list()
 
             # output max of 16 bytes per line, and ensure any remaining values are output
-            if len(values) == 16 or (address == end_address - 1 and len(values)):
-                self.append_output(self.format_data(values))
-                values = list()
+            if len(values) == rem_len:
+                flush()
+                i = (i + 1) % len(fmt_elems)
+                rem_len = fmt_elems[i]['len']
+
+        # output any data remaining
+        if len(values) != 0:
+            flush()
+        if len(bytes) != 0:
+            self.append_output(self.format_bytes([ hex_byte(b) for b in bytes ]) + " ; trailing bytes")
 
 
-    def process_text_in_range(self, rom, start_address, end_address, arguments = None):
+    def process_text_in_range(self, rom, start_address, end_address):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -665,7 +707,7 @@ class Bank:
                     text = ''
 
                 if len(values):
-                    self.append_output(self.format_data(values))
+                    self.append_output(self.format_bytes(values))
                     values = list()
 
                 self.append_labels_to_output(labels)
@@ -683,9 +725,9 @@ class Bank:
             values.append('"{}"'.format(text))
 
         if len(values):
-            self.append_output(self.format_data(values))
+            self.append_output(self.format_bytes(values))
 
-    def process_image_in_range(self, rom, start_address, end_address, arguments = None):
+    def process_image_in_range(self, rom, start_address, end_address, base_name = None):
         if not self.first_pass and debug:
             print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
@@ -700,7 +742,7 @@ class Bank:
         else:
             basename = self.format_image_label(mem_address)
 
-        full_filename = rom.write_image(basename, arguments, rom.data[start_address:end_address])
+        full_filename = rom.write_image(basename, base_name, rom.data[start_address:end_address])
         self.append_output(self.format_instruction('INCBIN', ['\"' + full_filename + '\"']))
 
 
@@ -754,18 +796,13 @@ class Symbols:
                 else:
                     return
 
-                if len(label_parts) == 3:
-                    arguments = label_parts[2]
-                else:
-                    arguments = None
-
-                self.add_block(bank, address, block_type, data_length, arguments)
+                self.add_block(bank, address, block_type, data_length, label_parts[2:])
 
             else:
                 # add the label
                 self.add_label(bank, address, label)
 
-    def add_block(self, bank, address, block_type, length, arguments = None):
+    def add_block(self, bank, address, block_type, length, arguments):
         memory_base_address = 0x0000 if bank == 0 else 0x4000
 
         if address >= memory_base_address:
@@ -804,7 +841,7 @@ class Symbols:
         if bank not in self.blocks:
             self.blocks[bank] = dict()
             # each bank defaults to having a single code block
-            self.add_block(bank, memory_base_address, 'code', 0x4000)
+            self.add_block(bank, memory_base_address, 'code', 0x4000, [])
 
         return self.blocks[bank]
 
@@ -1172,6 +1209,8 @@ style = {
     'indentation': '\t' if args.indent_tabs else ' ' * args.indent_spaces,
     'operand_padding': 4 if args.align_operands else 0,
     'db': 'DB' if args.uppercase_db else 'db',
+    'dw': 'DW' if args.uppercase_db else 'dw',
+    'dl': 'DL' if args.uppercase_db else 'dl',
     'hli': args.hli,
     'ldh_a8': args.ldh_a8,
     'ld_c': args.ld_c,
