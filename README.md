@@ -1,4 +1,4 @@
-# mgbdis 
+# mgbdis
 
 A Game Boy ROM disassembler.
 
@@ -29,15 +29,15 @@ There are also a number of options available to control the formatting and instr
 
 ## Symbol Files
 
-Symbol files allow you to indicate where code, data, test and image data blocks are in the ROM. 
+Symbol files allow you to indicate where code, data, test and image data blocks are in the ROM.
 
-The instructions of the Game Boy CPU (SM83) have different lengths, and data can be interleaved with code in the ROM, so it is not possible to always accurately identify where an instruction starts and stops. Defining code blocks in a symbol file can help to avoid problems with mgbdis trying to disassemble in the middle of an instruction. 
+The instructions of the Game Boy CPU (SM83) have different lengths, and data can be interleaved with code in the ROM, so it is not possible to always accurately identify where an instruction starts and stops. Defining code blocks in a symbol file can help to avoid problems with mgbdis trying to disassemble in the middle of an instruction.
 
 If you do not have a symbol file, you can try generating one with my Game Boy emulator - [Beaten Dying Moon](https://mattcurrie.com/bdm-demo/). It can generate a symbol file with code block definitions based on the the addresses of the instructions that have actually been executed while you have been playing the game, avoiding instruction alignment issues.
 
 To use a symbol file with mgbdis, it should exist in the same directory as the ROM and have the same name, except change the extension to be ```.sym```.
 
-All values (except for image widths) should be in hexadecimal.  Entries start with a bank number followed by the address in memory.  
+All values (except for image widths) should be in hexadecimal.  Entries start with a bank number followed by the address in memory.
 
 Block types can be defined by using the ```.code```, ```.data```, ```.text```, and ```.image``` magic labels, followed by the length of the block in bytes.
 
@@ -56,6 +56,31 @@ Adding a label for 512 bytes of data:
 ```
 0d:4800 Level_Data
 0d:4800 .data:200
+```
+
+It's possible to specify a format after the length, the default being `b16`.
+Supported types are `b` for bytes, `w` for words, `l` for longs.
+Each entry must be one such character, followed its repeat count.
+As per RGBDS convention, words are 2 bytes, and longs 4 bytes, all little-endian.
+
+For example, to format 19 bytes as entries of 1 word then 3 bytes each:
+
+```
+2a:4321 .data:13:b3,w1
+```
+
+Example output:
+
+```
+
+    db $43, $41, $52
+    dw $4c49
+    db $4c, $4f, $4e
+    dw $5020
+    db $4c, $41, $59
+    dw $5245
+    db $20, $56, $65
+    db $72 ; trailing bytes
 ```
 
 ### Text
