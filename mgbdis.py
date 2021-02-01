@@ -815,11 +815,11 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, style):
+    def __init__(self, rom_path, style, tiny):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
-        self.load()
+        self.load(tiny)
         self.split_instructions()
         self.has_ld_long = False
 
@@ -836,11 +836,14 @@ class ROM:
 
         size = self.rom_size
         self.banks = list()
-        for bank in range(0, self.num_banks):
-            self.banks.append(Bank(bank, self.symbols, style, min(size, 0x4000)))
-            size -= 0x4000
+        if tiny:
+            self.banks.append(Bank(0, self.symbols, style, min(size, 0x8000)))
+        else:
+            for bank in range(self.num_banks):
+                self.banks.append(Bank(bank, self.symbols, style, min(size, 0x4000)))
+                size -= 0x4000
 
-    def load(self):
+    def load(self, tiny):
         if os.path.isfile(self.rom_path):
             print('Loading "{}"...'.format(self.rom_path))
             self.data = open(self.rom_path, 'rb').read()
@@ -849,8 +852,12 @@ class ROM:
                 abort("ROM is too small, doesn't even contain a header!")
             self.num_banks = self.rom_size // 0x4000
             if self.rom_size % 0x4000 != 0:
-                warn(f"ROM size (${self.rom_size:x}) is not a multiple of $4000!")
+                warn(f"ROM size (${self.rom_size:04x}) is not a multiple of $4000!")
                 self.num_banks += 1 # Count that incomplete bank
+            if tiny:
+                if self.num_banks > 2:
+                    abort(f"ROM is ${self.rom_size:04x} bytes large, tiny ROMs can only be $8000 at most")
+                self.num_banks = 1
         else:
             abort('"{}" not found'.format(self.rom_path))
 
@@ -1174,6 +1181,7 @@ parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic inse
 parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
+parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
@@ -1192,5 +1200,5 @@ style = {
 }
 instructions = apply_style_to_instructions(style, instructions)
 
-rom = ROM(args.rom_path, style)
+rom = ROM(args.rom_path, style, args.tiny)
 rom.disassemble(args.output_dir)
