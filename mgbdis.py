@@ -581,11 +581,13 @@ class Bank:
                 mem_address = rom_address_to_mem_address(value)
 
                 if self.first_pass:
-                    # dont allow switched banks to create labels in bank 0
-                    is_address_in_current_bank = (mem_address < 0x4000 and self.bank_number == 0) or (mem_address >= 0x4000 and self.bank_number > 0)
-                    if is_address_in_current_bank:
-                        # add the label
+                    # add the label
+                    if mem_address >= self.memory_base_address and mem_address < self.memory_base_address + self.size:
+                        # label in cur bank
                         self.add_target_address(instruction_name, mem_address)
+                    elif mem_address < 0x4000 and self.bank0:
+                        # label in fixed bank
+                        self.bank0.add_target_address(instruction_name, mem_address)
                 else:
                     # fetch the label name
                     label = self.get_label_for_jump_target(instruction_name, mem_address)
