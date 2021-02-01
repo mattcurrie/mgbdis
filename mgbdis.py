@@ -546,7 +546,7 @@ class Bank:
                 # convert to banked value so it can be used as a label
                 value = rom_address_to_mem_address(value)
 
-                if self.bank_number != target_bank:
+                if value < self.memory_base_address or value >= self.memory_base_address + self.size:
                     # don't use labels for relative jumps across banks
                     value = None
 
