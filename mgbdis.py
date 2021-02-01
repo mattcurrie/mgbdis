@@ -194,13 +194,14 @@ def apply_style_to_instructions(style, instructions):
 
 class Bank:
 
-    def __init__(self, number, symbols, style, size):
+    def __init__(self, number, symbols, style, bank0, size):
         self.style = style
         self.bank_number = number
         self.blocks = dict()
         self.disassembled_addresses = set()
         self.symbols = symbols
         self.size = size
+        self.bank0 = bank0
 
         if number == 0:
             self.memory_base_address = 0
@@ -278,28 +279,33 @@ class Bank:
 
         self.blocks = resolved_blocks
 
+    def get_label(self, address):
+        if self.bank_number != 0 and address < 0x4000:
+            return self.bank0.symbols.get_label(0, address)
+        return self.symbols.get_label(self.bank_number, address)
+
     def get_label_for_instruction_operand(self, value):
         # an operand value lower than $100 is more probably an actual value than an address:
         # don't lookup symbols for it
         if value <= 0x100:
             return None
 
-        return self.symbols.get_label(self.bank_number, value)
+        return self.get_label(value)
 
     def get_label_for_jump_target(self, instruction_name, address):
         if self.bank_number == 0:
             if address not in self.disassembled_addresses:
                 return None
         else:
-            # TODO: if target address is in bank 0 then should check if that address
-            # has been disassembled in bank 0. requires access to bank 0 from
-            # other bank objects
-
             is_in_switchable_bank = 0x4000 <= address < 0x8000
-            if is_in_switchable_bank and address not in self.disassembled_addresses:
+            # if target address is in bank 0 then check if that address has been
+            # disassembled in bank 0
+            if not is_in_switchable_bank:
+                return self.bank0.get_label_for_jump_target(instruction_name, address)
+            if address not in self.disassembled_addresses:
                 return None
 
-        label = self.symbols.get_label(self.bank_number, address)
+        label = self.get_label(address)
         if label is not None:
             # if the address has a specific label then just use that
             return label
@@ -313,7 +319,7 @@ class Bank:
     def get_labels_for_non_code_address(self, address):
         labels = list()
 
-        label = self.symbols.get_label(self.bank_number, address)
+        label = self.get_label(address)
         if label is not None:
             is_local = label.startswith('.')
             if is_local:
@@ -327,7 +333,7 @@ class Bank:
     def get_labels_for_address(self, address):
         labels = list()
 
-        label = self.symbols.get_label(self.bank_number, address)
+        label = self.get_label(address)
         if label is not None:
             # if the address has a specific label then just use that
             is_local = label.startswith('.')
@@ -835,13 +841,13 @@ class ROM:
         self.data += b'\x00\x00'
 
         size = self.rom_size
-        self.banks = list()
         if tiny:
-            self.banks.append(Bank(0, self.symbols, style, min(size, 0x8000)))
+            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x8000))]
         else:
-            for bank in range(self.num_banks):
-                self.banks.append(Bank(bank, self.symbols, style, min(size, 0x4000)))
+            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x4000))]
+            for bank in range(1, self.num_banks):
                 size -= 0x4000
+                self.banks.append(Bank(bank, self.symbols, style, self.banks[0], min(size, 0x4000)))
 
     def load(self, tiny):
         if os.path.isfile(self.rom_path):
