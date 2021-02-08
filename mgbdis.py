@@ -830,6 +830,7 @@ class ROM:
         self.load(tiny)
         self.split_instructions()
         self.has_ld_long = False
+        self.tiny = tiny
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1160,7 +1161,10 @@ ENDM
         f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
 
         f.write('game.{}: game.o\n'.format(rom_extension))
-        f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
+        if self.tiny:
+            f.write('\trgblink --tiny -n game.sym -m game.map -o $@ $<\n')
+        else:
+            f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
         f.write('\trgbfix -v -p 255 $@\n\n')
         f.write('\tmd5 $@\n\n')
 
