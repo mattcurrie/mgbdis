@@ -723,9 +723,10 @@ class Bank:
 
 
 class Symbols:
-    def __init__(self):
+    def __init__(self, bank_size):
         self.symbols = dict()
         self.blocks = dict()
+        self.bank_size = bank_size
 
     def load_sym_file(self, symbols_path):
         f = open(symbols_path, 'r')
@@ -785,7 +786,7 @@ class Symbols:
         memory_base_address = 0x0000 if bank == 0 else 0x4000
 
         if address >= memory_base_address:
-            blocks = self.blocks.setdefault(bank, dict())
+            blocks = self.get_blocks(bank, self.bank_size)
             blocks[address] = {
                 'type': block_type,
                 'length': length,
@@ -796,7 +797,7 @@ class Symbols:
         if bank not in self.symbols:
             self.symbols[bank] = dict()
 
-        is_symbol_banked = 0x4000 <= address < 0x8000
+        is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked:
             self.symbols[bank][address] = label
         else:
@@ -804,7 +805,7 @@ class Symbols:
 
     def get_label(self, bank, address):
         # attempt to find a banked symbol
-        is_symbol_banked = 0x4000 <= address < 0x8000
+        is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked and bank in self.symbols and address in self.symbols[bank]:
             return self.symbols[bank][address]
 
@@ -820,7 +821,7 @@ class Symbols:
         if bank not in self.blocks:
             self.blocks[bank] = dict()
             # each bank defaults to having a single code block
-            self.add_block(bank, memory_base_address, 'code', size)
+            self.add_block(bank, memory_base_address, 'code', self.bank_size)
 
         return self.blocks[bank]
 
@@ -899,7 +900,7 @@ class ROM:
 
 
     def load_symbols(self):
-        symbols = Symbols()
+        symbols = Symbols(0x8000 if self.tiny else 0x4000)
 
         for symbol_def in default_symbols:
             symbols.add_symbol_definition(symbol_def)
