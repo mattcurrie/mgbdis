@@ -533,24 +533,27 @@ class Bank:
                 value = to_signed(rom.data[pc + 1])
 
                 # calculate the absolute address for the jump
-                value = pc + 2 + value
+                rom_address = pc + 2 + value
 
-                relative_value = value - pc
+                relative_value = rom_address - pc
                 if relative_value >= 0:
                     operand_values.append('@+' + hex_byte(relative_value))
                 else:
                     operand_values.append('@-' + hex_byte(relative_value * -1))
 
-                target_bank = value // 0x4000
-
                 # convert to banked value so it can be used as a label
-                value = rom_address_to_mem_address(value)
+                value = rom_address_to_mem_address(rom_address)
 
-                if value < self.memory_base_address or value >= self.memory_base_address + self.size:
+                # is the jump target is in this bank?
+                if (rom_address >= self.rom_base_address + self.memory_base_address and 
+                    rom_address < self.rom_base_address + self.memory_base_address + self.size):
+                    # yep!
+                    pass
+                else:
                     # don't use labels for relative jumps across banks
                     value = None
 
-                if target_bank < self.bank_number:
+                if rom_address < self.rom_base_address + self.memory_base_address:
                     # output as data, otherwise RGBDS will complain
                     instruction_name = self.style['db']
                     operand_values = [hex_byte(opcode), hex_byte(rom.data[pc + 1])]
