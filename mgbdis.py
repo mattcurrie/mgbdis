@@ -14,6 +14,7 @@ import hashlib
 import os
 import png
 from shutil import copyfile
+from shutil import which
 
 from instruction_set import instructions, cb_instructions, instruction_variants
 
@@ -1170,7 +1171,10 @@ ENDM
         else:
             f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
         f.write('\trgbfix -v -p 255 $@\n\n')
-        f.write('\tmd5sum $@\n\n')
+        if which("md5") is not None:
+            f.write('\tmd5 $@\n\n')
+        else:
+            f.write('\tmd5sum $@\n\n')
 
         f.write('clean:\n')
         f.write('\trm -f game.o game.{} game.sym game.map\n'.format(rom_extension))
