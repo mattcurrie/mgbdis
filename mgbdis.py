@@ -1170,7 +1170,7 @@ ENDM
         else:
             f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
         f.write('\trgbfix -v -p 255 $@\n\n')
-        f.write('\tmd5 $@\n\n')
+        f.write('\tmd5sum $@\n\n')
 
         f.write('clean:\n')
         f.write('\trm -f game.o game.{} game.sym game.map\n'.format(rom_extension))
