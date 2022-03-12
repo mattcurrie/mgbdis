@@ -12,6 +12,18 @@ A Game Boy ROM disassembler.
 - Uses defines from hardware.inc v2.7 for hardware registers ([source](https://github.com/tobiasvl/hardware.inc))
 - Slow on large ROMs
 
+## Requirements
+
+To be able to use this tool you will require to install the [Rendex Game Boy Development System (RGBDS)](https://github.com/gbdev/rgbds) tool.
+
+```sh
+# install the libpng module required in building rgbds
+sudo apt-get install libpng-dev
+
+git clone https://github.com/gbdev/rgbds.git
+cd rgbds && make
+sudo make install
+```
 
 ## Usage
 
