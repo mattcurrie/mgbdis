@@ -311,7 +311,10 @@ class Bank:
             return label
 
         if address in self.target_addresses[instruction_name]:
-            return self.format_label(instruction_name, address)
+            if style['pret_style']:
+                return self.format_label_pret(address)
+            else:
+                return self.format_label(instruction_name, address)
 
         return None
 
@@ -345,7 +348,11 @@ class Bank:
             # otherwise, if the address was marked as a target address, generate a label
             for instruction_name in ['call', 'jp', 'jr']:
                 if address in self.target_addresses[instruction_name]:
-                    labels.append(self.format_label(instruction_name, address) + ':')
+                    if style['pret_style']:
+                        labels.append(self.format_label_pret(address) + ': ' + self.format_label_comment(address))
+                        break # Exit early to avoid unecessary duplicates
+                    else:
+                        labels.append(self.format_label(instruction_name, address) + ':')
 
         return labels
 
@@ -355,6 +362,15 @@ class Bank:
         formatted_address = format_hex('{:04x}'.format(address))
         return '{0}_{1}_{2}'.format(self.instruction_label_prefixes[instruction_name], formatted_bank, formatted_address)
 
+    def format_label_pret(self, address):
+        formatted_address = format_hex('{:04x}'.format(self.rom_base_address + address))
+        return 'Func_{0}'.format(formatted_address)
+
+    def format_label_comment(self, address):
+        formatted_bank = format_hex('{:01x}'.format(self.bank_number))
+        formatted_address = format_hex('{:04x}'.format(address))
+        formatted_global = format_hex('{:04x}'.format(self.rom_base_address + address))
+        return '; {0} ({1}:{2})'.format(formatted_global, formatted_bank, formatted_address)
 
     def format_image_label(self, address):
         return 'image_{0:03x}_{1:04x}'.format(self.bank_number, address)
@@ -622,18 +638,34 @@ class Bank:
             instruction_bytes = rom.data[pc:pc + length]
             self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes))
 
+            # Add a "fallthrough" comment before labels in pret style
+            next_labels = self.get_labels_for_address(pc_mem_address + length)
+            if style['pret_style'] and len(next_labels) > 0:
+
+                # if a new label is after a normal instruction, add comment
+                if not (
+                    instruction_name == 'nop' or
+                    (instruction_name == 'jr' and len(operand_values) == 1) or
+                    (instruction_name == 'jp' and len(operand_values) == 1) or
+                    (instruction_name == 'ret' and len(operand_values) == 0)
+                ):
+                    comment_spacing = style['indentation']
+                    # remove one space character for the semicolon
+                    if ' ' in comment_spacing:
+                        comment_spacing = comment_spacing[1:]
+                    self.append_output(';' + comment_spacing + 'fallthrough')
+
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
-                if (
+                if not (
                     instruction_name == 'jr' or
                     (instruction_name == 'jp' and len(operand_values) > 1) or
                     (instruction_name == 'ret' and len(operand_values) > 0)
                 ):
-                    # conditional or jr
                     self.append_output('')
-                else:
-                    # always executes
-                    self.append_output('')
+
+                # add an extra new line after any return or jump
+                if not style['pret_style']:
                     self.append_output('')
 
 
@@ -1178,12 +1210,90 @@ ENDM
 
         f.close()
 
+def get_style_usage_text_usage(styles):
+    final = ""
+    help_offset = 32
+    for style in styles:
+        style_message = style.name
+        if style.choices != None and len(style.choices) > 0:
+            style_message += "=" + style.get_formatted_choices()
+        if style.help != None and len(style.help) > 0:
+            style_message += " "*(help_offset-len(style_message))
+            style_message += style.help
+        final += style_message + "\n"
+    return final
+
+class StyleArg:
+
+    def __init__(self, name, default=None, choices=None, type="bool", help="" ):
+        self.name = name
+        if default == None:
+            if type == "str":
+                default = ""
+            elif type == "bool":
+                default = False
+        self.default = default
+
+        # bool can only be yes/true or no/false. only show one to limit name length
+        if type == "bool":
+            self.choices = ["yes","no"]
+        else:
+            self.choices = choices
+        self.type = type
+        self.help = help
+
+    def get_formatted_choices(self):
+        formatted_choices = "["
+        for choice in self.choices:
+            formatted_choices += choice + "/"
+        return formatted_choices[:-1] + "]"
+
+    # aborts with message if there's an issue.
+    def validate_argument(self, value_string):
+        if self.type == "bool":
+            if value_string.lower() in ["true","yes"]:
+                return True
+            elif value_string.lower() in ["false","no"]:
+                return False
+            else:
+                abort("Style Error: '" + self.name + "' does not accept '" + value_string + "'. Please use True/False or Yes/No")
+        elif self.type == "str":
+            if self.choices != None:
+                if value_string not in self.choices:
+                    abort("Style Error: '" + self.name + "' does not accept '" + value_string + "'. Possible choices: " + self.get_formatted_choices())
+            return value_string
+
+        abort("Style Error: Unable to parse type of '" + self.type + "' for '" + self.name + "'")
+
+def parse_style_args(possible_args, input_args):
+    style = dict()
+    for arg in input_args:
+        split_arg = arg.split("=")
+        if len(split_arg) != 2:
+            abort("Style Error: Incorrectly formatted style, '" + arg + "'. Please use the format style=option")
+        parsed = False
+        for arg_type in possible_args:
+            if arg_type.name == split_arg[0]:
+                arg_value = arg_type.validate_argument(split_arg[1])
+                parsed = True
+                break
+                style[split_arg[0]] = arg_value
+        if not parsed:
+            abort("Style Error: Could not find style named '" + split_arg[0] + "'")
+    return style
+
+style_options = [
+StyleArg('fallthrough', type='bool', help='Adds a comment when one routine bleeds into the next.'),
+StyleArg('ld_c', type='str', choices=['ld_c','ldh_c','ld_ff00_c'], help='Mnemonic to use for \'ld [c], a\' type instructions.'),
+]
 
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
+parser.add_argument('--style', type=str, nargs='+', help='Change style options using the format style=option. Use --style_usage for more info')
+parser.add_argument('--style-usage', help='Shows usage text for style arguments.', action='store_true')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
@@ -1195,12 +1305,16 @@ parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type i
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ldh_c', 'ld_ff00_c'])
 parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
 parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
+parser.add_argument('--pret-style', help='Use pret style labels, with location comments following them.', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
+
+if args.style_usage:
+    abort(get_style_usage_text_usage(style_options))
 
 style = {
     'uppercase_hex': args.uppercase_hex,
@@ -1213,6 +1327,7 @@ style = {
     'ld_c': args.ld_c,
     'disable_halt_nops': args.disable_halt_nops,
     'disable_auto_ldh': args.disable_auto_ldh,
+    'pret_style' : args.pret_style,
 }
 instructions = apply_style_to_instructions(style, instructions)
 
