@@ -197,7 +197,7 @@ class Bank:
     def __init__(self, number, symbols, style, bank0, size):
         self.style = style
         self.bank_number = number
-        self.blocks = dict()
+        self.blocks = {}
         self.disassembled_addresses = set()
         self.symbols = symbols
         self.size = size
@@ -238,7 +238,7 @@ class Bank:
     def resolve_blocks(self):
         blocks = self.symbols.get_blocks(self.bank_number, self.size)
         block_start_addresses = sorted(blocks.keys())
-        resolved_blocks = dict()
+        resolved_blocks = {}
 
         for index in range(len(block_start_addresses)):
 
@@ -317,7 +317,7 @@ class Bank:
 
 
     def get_labels_for_non_code_address(self, address):
-        labels = list()
+        labels = []
 
         label = self.get_label(address)
         if label is not None:
@@ -331,7 +331,7 @@ class Bank:
 
 
     def get_labels_for_address(self, address):
-        labels = list()
+        labels = []
 
         label = self.get_label(address)
         if label is not None:
@@ -398,7 +398,7 @@ class Bank:
         if first_pass:
             self.resolve_blocks()
 
-        self.output = list()
+        self.output = []
 
         if self.bank_number == 0:
             self.append_output('SECTION "ROM Bank ${0:03x}", ROM0[$0]'.format(self.bank_number))
@@ -434,7 +434,7 @@ class Bank:
         opcode = rom.data[pc]
         comment = None
         operands = None
-        operand_values = list()
+        operand_values = []
 
         if opcode not in instructions:
             abort('Unhandled opcode: {} at {}'.format(hex_byte(opcode), hex_word(pc)))
@@ -641,7 +641,7 @@ class Bank:
         if not self.first_pass and debug:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
-        values = list()
+        values = []
 
         for address in range(start_address, end_address):
             mem_address = rom_address_to_mem_address(address)
@@ -651,7 +651,7 @@ class Bank:
                 # add any existing values to the output and reset the list
                 if len(values) > 0:
                     self.append_output(self.format_data(values))
-                    values = list()
+                    values = []
 
                 self.append_labels_to_output(labels)
 
@@ -660,14 +660,14 @@ class Bank:
             # output max of 16 bytes per line, and ensure any remaining values are output
             if len(values) == 16 or (address == end_address - 1 and len(values)):
                 self.append_output(self.format_data(values))
-                values = list()
+                values = []
 
 
     def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
-        values = list()
+        values = []
         text = ''
 
         for address in range(start_address, end_address):
@@ -682,7 +682,7 @@ class Bank:
 
                 if len(values):
                     self.append_output(self.format_data(values))
-                    values = list()
+                    values = []
 
                 self.append_labels_to_output(labels)
 
@@ -724,8 +724,8 @@ class Bank:
 
 class Symbols:
     def __init__(self, bank_size):
-        self.symbols = dict()
-        self.blocks = dict()
+        self.symbols = {}
+        self.blocks = {}
         self.bank_size = bank_size
 
     def load_sym_file(self, symbols_path):
@@ -795,7 +795,7 @@ class Symbols:
 
     def add_label(self, bank, address, label):
         if bank not in self.symbols:
-            self.symbols[bank] = dict()
+            self.symbols[bank] = {}
 
         is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked:
@@ -819,7 +819,7 @@ class Symbols:
         memory_base_address = 0x0000 if bank == 0 else 0x4000
 
         if bank not in self.blocks:
-            self.blocks[bank] = dict()
+            self.blocks[bank] = {}
             # each bank defaults to having a single code block
             self.add_block(bank, memory_base_address, 'code', self.bank_size)
 
@@ -877,10 +877,10 @@ class ROM:
 
     def split_instructions(self):
         # split the instructions and operands
-        self.instruction_names = dict()
-        self.instruction_operands = dict()
-        self.cb_instruction_name = dict()
-        self.cb_instruction_operands = dict()
+        self.instruction_names = {}
+        self.instruction_operands = {}
+        self.cb_instruction_name = {}
+        self.cb_instruction_operands = {}
 
         for opcode in instructions:
             instruction_parts = instructions[opcode].split()
@@ -888,7 +888,7 @@ class ROM:
             if len(instruction_parts) > 1:
                 self.instruction_operands[opcode] = instruction_parts[1].split(',')
             else:
-                self.instruction_operands[opcode] = list()
+                self.instruction_operands[opcode] = []
 
         for cb_opcode in cb_instructions:
             instruction_parts = cb_instructions[cb_opcode].split()
@@ -896,7 +896,7 @@ class ROM:
             if len(instruction_parts) > 1:
                 self.cb_instruction_operands[cb_opcode] = instruction_parts[1].split(',')
             else:
-                self.cb_instruction_operands[cb_opcode] = list()
+                self.cb_instruction_operands[cb_opcode] = []
 
 
     def load_symbols(self):
