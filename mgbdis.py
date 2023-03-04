@@ -4,7 +4,7 @@
 
 __author__ = 'Matt Currie and contributors'
 __credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm']
-__version__ = '1.6'
+__version__ = '2.0'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
