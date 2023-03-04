@@ -149,12 +149,17 @@ def abort(message):
 
 
 def hex_word(value):
-    return format_hex('${:04x}'.format(value))
+    if style['uppercase_hex']:
+        return f'${value:04X}'
+    else:
+        return f'${value:04x}'        
 
 
 def hex_byte(value):
-    return format_hex('${:02x}'.format(value))
-
+    if style['uppercase_hex']:
+        return f'${value:02X}'
+    else:
+        return f'${value:02x}'   
 
 def format_hex(hex_string):
     if style['uppercase_hex']:
@@ -351,9 +356,9 @@ class Bank:
 
 
     def format_label(self, instruction_name, address):
-        formatted_bank = format_hex('{:03x}'.format(self.bank_number))
-        formatted_address = format_hex('{:04x}'.format(address))
-        return '{0}_{1}_{2}'.format(self.instruction_label_prefixes[instruction_name], formatted_bank, formatted_address)
+        formatted_bank = format_hex(f'{self.bank_number:03x}')
+        formatted_address = format_hex(f'{address:04x}')
+        return f'{self.instruction_label_prefixes[instruction_name]}_{formatted_bank}_{formatted_address}'                
 
 
     def format_image_label(self, address):
@@ -361,17 +366,12 @@ class Bank:
 
 
     def format_instruction(self, instruction_name, operands, address = None, source_bytes = None):
-        instruction = '{indentation}{instruction_name:<{operand_padding}} {operands}'.format(
-            indentation=self.style['indentation'],
-            instruction_name=instruction_name,
-            operand_padding=self.style['operand_padding'],
-            operands=', '.join(operands)
-        )
+        instruction = f"{self.style['indentation']}{instruction_name:<{self.style['operand_padding']}} {', '.join(operands)}"
 
         if self.style['print_hex'] and address is not None and source_bytes is not None:
-            return '{0:<50}; {1}: {2}'.format(instruction, hex_word(address), bytes_to_string(source_bytes))
+            return f"{instruction:<50}; {hex_word(address)}: {bytes_to_string(source_bytes)}"
         else:
-            return '{0}'.format(instruction.rstrip())
+            return instruction.rstrip()
 
 
     def format_data(self, data):
