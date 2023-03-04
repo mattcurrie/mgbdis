@@ -1126,7 +1126,9 @@ class ROM:
 
         parameters = ['--preserve-ld']
         if self.style['disable_halt_nops']:
-            parameters.append('-h')
+            parameters.append('--halt-without-nop')
+        else:
+            parameters.append('--nop-after-halt')
         f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
 
         f.write('game.{}: game.o\n'.format(rom_extension))
