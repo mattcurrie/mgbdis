@@ -478,19 +478,6 @@ class Bank:
                 else:
                     operand_values.append('[' + hex_word(value) + ']')
 
-                # rgbds converts "ld [$ff40],a" into "ld [$ff00+40],a" automatically,
-                # so use a macro to encode it as data to ensure exact binary reproduction of the rom
-                if not self.style['disable_auto_ldh']:
-                    if value >= 0xff00 and (opcode == 0xea or opcode == 0xfa):
-                        rom.has_ld_long = True
-
-                        # use ld_long macro
-                        instruction_name = 'ld_long'
-
-                        # cannot wrap the address value with square brackets
-                        operand_values.pop()
-                        operand_values.append(hex_word(value))
-
             elif operand == '[$ff00+a8]' or operand == '[a8]' or operand == '[$ffa8]':
                 length += 1
                 value = rom.data[pc + 1]
@@ -833,7 +820,6 @@ class ROM:
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
-        self.has_ld_long = False
         self.tiny = tiny
 
         self.image_output_directory = 'gfx'
@@ -992,25 +978,6 @@ class ROM:
 
         self.write_header(f)
 
-        if self.has_ld_long:
-
-            f.write(
-"""ld_long: MACRO
-    IF STRLWR("\\1") == "a"
-        ; ld a, [$ff40]
-        db $FA
-        dw \\2
-    ELSE
-        IF STRLWR("\\2") == "a"
-            ; ld [$ff40], a
-            db $EA
-            dw \\1
-        ENDC
-    ENDC
-ENDM
-
-""")
-
         f.write('INCLUDE "hardware.inc"')
         for bank in range(0, self.num_banks):
             f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
@@ -1157,11 +1124,9 @@ ENDM
         else:
             f.write('game.o: game.asm bank_*.asm\n')
 
-        parameters = []
+        parameters = ['--preserve-ld']
         if self.style['disable_halt_nops']:
             parameters.append('-h')
-        if self.style['disable_auto_ldh']:
-            parameters.append('-L')
         f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
 
         f.write('game.{}: game.o\n'.format(rom_extension))
@@ -1194,7 +1159,6 @@ parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type inst
 parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ldh_c', 'ld_ff00_c'])
 parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
-parser.add_argument('--disable-auto-ldh', help='Disable RGBDS\'s automatic optimisation of \'ld [$ff00+a8], a\' to \'ldh [a8], a\' instructions. Requires RGBDS >= v0.3.7', action='store_true')
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
@@ -1212,7 +1176,6 @@ style = {
     'ldh_a8': args.ldh_a8,
     'ld_c': args.ld_c,
     'disable_halt_nops': args.disable_halt_nops,
-    'disable_auto_ldh': args.disable_auto_ldh,
 }
 instructions = apply_style_to_instructions(style, instructions)
 
