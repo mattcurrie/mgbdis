@@ -675,6 +675,10 @@ class Bank:
 
             byte = rom.data[address]
             if byte >= 0x20 and byte < 0x7F:
+                # escape double-quote character (")
+                if byte == 0x22:
+                    text += '\\'
+
                 text += chr(byte)
             else:
                 if len(text):
