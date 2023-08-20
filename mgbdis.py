@@ -675,8 +675,8 @@ class Bank:
 
             byte = rom.data[address]
             if byte >= 0x20 and byte < 0x7F:
-                escapeChars = {'"', '\\', '{', '}'}
-                if chr(byte) in escapeChars:
+                
+                if chr(byte) in {'"', '\\', '{', '}'}:
                     text += '\\'
 
                 text += chr(byte)
