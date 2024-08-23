@@ -653,7 +653,14 @@ class Bank:
     def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
-
+        # process arguments
+        custom_map = False       
+        if arguments is not None:
+            for argument in arguments.split(','):
+                if argument == 'cm' and rom.character_map is not None:
+                        custom_map = True
+                        self.append_output("SETCHARMAP "+rom.character_map.name)
+                        
         values = []
         text = ''
 
@@ -674,24 +681,30 @@ class Bank:
                 self.append_labels_to_output(labels)
 
             byte = rom.data[address]
-            if byte >= 0x20 and byte < 0x7F:
-                
-                if chr(byte) in {'"', '\\', '{', '}'}:
-                    text += '\\'
-
-                text += chr(byte)
+            if custom_map:
+                if byte in rom.character_map.character_map.keys():
+                    text += rom.character_map.character_map[byte]
+                else:
+                    if len(text):
+                        values.append('"{}"'.format(text))
+                        text = ''
+                    values.append(hex_byte(byte))
             else:
-                if len(text):
-                    values.append('"{}"'.format(text))
-                    text = ''
-                values.append(hex_byte(byte))
+                if byte >= 0x20 and byte < 0x7F:
+                    text += chr(byte)
+                else:
+                    if len(text):
+                        values.append('"{}"'.format(text))
+                        text = ''
+                    values.append(hex_byte(byte))
 
         if len(text):
             values.append('"{}"'.format(text))
 
         if len(values):
             self.append_output(self.format_data(values))
-
+        if custom_map:
+            self.append_output("SETCHARMAP main")
     def process_image_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
@@ -818,13 +831,14 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, style, tiny):
+    def __init__(self, rom_path, style, tiny, character_map):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
+        self.character_map = character_map
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1149,12 +1163,28 @@ class ROM:
 
         f.close()
 
+class CharacterMap():
+    def __init__(self, file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        self.character_map = {}
+        for line in lines:
+            if "NEWCHARMAP" in line:
+                self.name = line.split("NEWCHARMAP")[1].strip()
+            elif "charmap" in line:            
+                mapping = line.split("charmap")[1].rsplit(",",1)
+                self.character_map[int("0x"+mapping[1].strip()[1:], 16)] = mapping[0].strip().replace('"', '')
+        if debug:
+            print(self.name)
+            print(self.character_map)
+        
 
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
+parser.add_argument('--character-map-path', help='ASM file containing a character map for use with data labeled .text', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
@@ -1184,6 +1214,8 @@ style = {
     'disable_halt_nops': args.disable_halt_nops,
 }
 instructions = apply_style_to_instructions(style, instructions)
-
-rom = ROM(args.rom_path, style, args.tiny)
+charMap = None
+if args.character_map_path is not None:
+    charMap = CharacterMap(args.character_map_path)
+rom = ROM(args.rom_path, style, args.tiny, charMap)
 rom.disassemble(args.output_dir)
