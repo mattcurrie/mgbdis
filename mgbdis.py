@@ -394,7 +394,7 @@ class Bank:
 
     def disassemble(self, rom, first_pass = False):
         self.first_pass = first_pass
-
+        self.current_map_index = None
         if first_pass:
             self.resolve_blocks()
 
@@ -414,7 +414,7 @@ class Bank:
             end_address = start_address + block['length']
             self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, block['arguments'])
             self.append_empty_line_if_none_already()
-
+        out = self.bank_number
         return '\n'.join(self.output)
 
 
@@ -655,12 +655,22 @@ class Bank:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
         # process arguments
         custom_map = False       
+        map_index = -1
         if arguments is not None:
-            for argument in arguments.split(','):
-                if argument == 'cm' and rom.character_map is not None:
-                        custom_map = True
-                        self.append_output("SETCHARMAP "+rom.character_map.name)
+            if "cm" in arguments:
+                map_index = 0
+                if "," in arguments:
+                    map_index = (int)(arguments.split(",")[1])
+                if map_index < len(rom.character_maps):
+                    custom_map = True
+                    if self.current_map_index != map_index:
+                        self.current_map_index = map_index                       
+                        self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)
                         
+                     
+        if map_index == -1 and self.current_map_index == None:  
+            self.current_map_index = -1                     
+            self.append_output("SETCHARMAP main")
         values = []
         text = ''
 
@@ -682,8 +692,8 @@ class Bank:
 
             byte = rom.data[address]
             if custom_map:
-                if byte in rom.character_map.character_map.keys():
-                    text += rom.character_map.character_map[byte]
+                if byte in rom.character_maps[self.current_map_index].character_map:
+                    text += rom.character_maps[self.current_map_index].character_map[byte]
                 else:
                     if len(text):
                         values.append('"{}"'.format(text))
@@ -703,8 +713,6 @@ class Bank:
 
         if len(values):
             self.append_output(self.format_data(values))
-        if custom_map:
-            self.append_output("SETCHARMAP main")
     def process_image_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
@@ -831,14 +839,14 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, style, tiny, character_map):
+    def __init__(self, rom_path, style, tiny, character_maps):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
-        self.character_map = character_map
+        self.character_maps = character_maps        
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1164,27 +1172,36 @@ class ROM:
         f.close()
 
 class CharacterMap():
-    def __init__(self, file_path):
+    def __init__(self, name):
+        self.name = name
+        self.character_map = {}
+    def create_character_maps(file_path :str):
+        lines = []
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
-        self.character_map = {}
-        for line in lines:
+        maps = []
+        newMap = None
+        for line in lines:            
             if "NEWCHARMAP" in line:
-                self.name = line.split("NEWCHARMAP")[1].strip()
-            elif "charmap" in line:            
+                if newMap != None: 
+                    maps.append(newMap)
+                    if debug:
+                        print("Loaded character map: "+newMap.name)
+                        print("Mappings:")
+                        print(newMap.character_map)
+                newMap = CharacterMap(line.split("NEWCHARMAP")[1].strip())                 
+            elif "charmap" in line:  
                 mapping = line.split("charmap")[1].rsplit(",",1)
-                self.character_map[int("0x"+mapping[1].strip()[1:], 16)] = mapping[0].strip().replace('"', '')
-        if debug:
-            print(self.name)
-            print(self.character_map)
-        
 
+                newMap.character_map[int("0x"+mapping[1].strip()[1:], 16)] = mapping[0].strip().replace('"', '')
+        maps.append(newMap)
+        return maps
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
-parser.add_argument('--character-map-path', help='ASM file containing a character map for use with data labeled .text', action='store')
+parser.add_argument('--character-map-path', help='ASM file containing character map(s) for use with data labeled .text:cm:[index]', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
@@ -1214,8 +1231,8 @@ style = {
     'disable_halt_nops': args.disable_halt_nops,
 }
 instructions = apply_style_to_instructions(style, instructions)
-charMap = None
+charMap = []
 if args.character_map_path is not None:
-    charMap = CharacterMap(args.character_map_path)
+    charMap = CharacterMap.create_character_maps(args.character_map_path)
 rom = ROM(args.rom_path, style, args.tiny, charMap)
 rom.disassemble(args.output_dir)
