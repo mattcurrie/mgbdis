@@ -960,6 +960,7 @@ class ROM:
             self.write_bank_asm(bank)
 
         self.copy_hardware_inc()
+        self.copy_charater_map()
         self.write_game_asm()
         self.write_makefile()
 
@@ -996,8 +997,13 @@ class ROM:
         src = os.path.join(self.script_dir, 'hardware.inc')
         dest = os.path.join(self.output_directory, 'hardware.inc')
         copyfile(src, dest)
-
-
+    def get_character_map_paths(self):
+        return list(set([p.path for p in self.character_maps]))
+    def copy_charater_map(self):
+        paths = self.get_character_map_paths()
+        for src in paths:
+            dest =  os.path.join(self.output_directory, os.path.basename(src))
+            copyfile(src, dest)
     def write_game_asm(self):
         path = os.path.join(self.output_directory, 'game.asm')
         f = open(path, 'w')
@@ -1005,6 +1011,11 @@ class ROM:
         self.write_header(f)
 
         f.write('INCLUDE "hardware.inc"')
+        character_maps = self.get_character_map_paths()
+        if(len(character_maps) > 0):
+            for map in character_maps:
+                f.write('\nINCLUDE "{}"'.format(os.path.basename(map)))
+            f.write('\nSETCHARMAP main')
         for bank in range(0, self.num_banks):
             f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
         f.close()
@@ -1172,8 +1183,9 @@ class ROM:
         f.close()
 
 class CharacterMap():
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name, path):
+        self.name = name        
+        self.path = path
         self.character_map = {}
     def create_character_maps(file_path :str):
         lines = []
@@ -1189,7 +1201,7 @@ class CharacterMap():
                         print("Loaded character map: "+newMap.name)
                         print("Mappings:")
                         print(newMap.character_map)
-                newMap = CharacterMap(line.split("NEWCHARMAP")[1].strip())                 
+                newMap = CharacterMap(line.split("NEWCHARMAP")[1].strip(), file_path)                 
             elif "charmap" in line:  
                 mapping = line.split("charmap")[1].rsplit(",",1)
 
