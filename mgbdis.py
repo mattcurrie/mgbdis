@@ -978,7 +978,7 @@ class ROM:
             print('.', end='', flush=True)
 
         path = os.path.join(self.output_directory, 'bank_{0:03x}.asm'.format(bank))
-        f = open(path, 'w')
+        f = open(path, 'w', encoding="utf-8")
 
         self.write_header(f)
         f.write(self.banks[bank].disassemble(rom))
@@ -1006,7 +1006,7 @@ class ROM:
             copyfile(src, dest)
     def write_game_asm(self):
         path = os.path.join(self.output_directory, 'game.asm')
-        f = open(path, 'w')
+        f = open(path, 'w', encoding="utf-8")
 
         self.write_header(f)
 
@@ -1187,6 +1187,7 @@ class CharacterMap():
         self.name = name        
         self.path = path
         self.character_map = {}
+        
     def create_character_maps(file_path :str):
         lines = []
         with open(file_path, "r", encoding="utf-8") as f:
