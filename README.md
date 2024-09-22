@@ -71,7 +71,19 @@ Adding a label for 16 bytes of text:
 00:3d00 Character_Name
 00:3d00 .text:10
 ```
+#### Custom Character Maps
 
+A path to an rgbasm file with [character map(s)](https://rgbds.gbdev.io/docs/master/rgbasm.5#Character_maps) can be included in the programs args. 
+```
+--character-map characterMap.asm
+```
+Then you can specify in the text label to use that character map instead of the default. Multiple character maps can be used by specifing the map's order index in the label. 
+
+Adding a label using the first character map for 16 bytes of text:
+```
+00:3d00 Character_Name
+00:3d00 .text:10:cm,0
+```
 ### Image
 
 The ```.image``` magic label allows you to define blocks of 1 or 2 bits per pixel tile data in the ROM.  Images are output as PNG files in the ```/gfx``` directory of the disassembly, and are converted back to 1bpp or 2bpp tile data by the makefile using rgbgfx.  If a label is specified at the address of the image block then it will be used for the name of the PNG file.
