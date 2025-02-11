@@ -1214,7 +1214,7 @@ app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(v
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
-parser.add_argument('--character-map-path', help='ASM file containing character map(s) for use with data labeled .text:cm:[index]', action='store')
+parser.add_argument('--character-map-path', help='ASM file containing character map(s) for use with data labeled .text:cm,[index]', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
