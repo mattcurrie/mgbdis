@@ -657,10 +657,23 @@ class Bank:
         custom_map = False       
         map_index = -1
         if arguments is not None:
-            if "cm" in arguments:
+            if "cm" or "charmap" in arguments:
                 map_index = 0
-                if "," in arguments:
-                    map_index = (int)(arguments.split(",")[1])
+                if "=" in arguments:
+                    map_index = arguments.split("=")[1]
+                    if(map_index.isnumeric() ):
+                        map_index = int(map_index)
+                        if(self.first_pass and map_index > len(rom.character_maps)-1):
+                            warn("Character map index {} out of range".format(map_index))
+                    else:
+                        for m in range(len(rom.character_maps)):
+                            if rom.character_maps[m].name == map_index:
+                                map_index = m
+                                break
+                        if not isinstance(map_index, int):
+                            if(self.first_pass):
+                                warn("Can't find character map "+map_index)
+                            map_index = -1
                 if map_index < len(rom.character_maps):
                     custom_map = True
                     if self.current_map_index != map_index:
@@ -1211,16 +1224,16 @@ class CharacterMap():
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         maps = []
-        newMap = None
+        new_map = None
         for line in lines:            
             if "NEWCHARMAP" in line:
-                if newMap != None: 
-                    maps.append(newMap)
+                if new_map != None: 
+                    maps.append(new_map)
                     if debug:
-                        print("Loaded character map: "+newMap.name)
+                        print("Loaded character map: "+new_map.name)
                         print("Mappings:")
-                        print(newMap.character_map)
-                newMap = CharacterMap(line.split("NEWCHARMAP")[1].strip(), file_path)                 
+                        print(new_map.character_map)
+                new_map = CharacterMap(line.split("NEWCHARMAP")[1].strip(), file_path)                 
             elif "charmap" in line:  
                 mapping = line.split("charmap")[1].rsplit('"',1)
                 ints = mapping[1].strip().split(",")[1:]
@@ -1228,10 +1241,10 @@ class CharacterMap():
                     key = CharacterMap.read_number(ints[0])
                 else:
                     key = tuple(CharacterMap.read_number(i) for i in ints)
-                    if len(key) > newMap.max_length:
-                        newMap.max_length = len(key)
-                newMap.character_map[key] = mapping[0].lstrip().replace('"', '')
-        maps.append(newMap)
+                    if len(key) > new_map.max_length:
+                        new_map.max_length = len(key)
+                new_map.character_map[key] = mapping[0].lstrip().replace('"', '')
+        maps.append(new_map)
         return maps
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)

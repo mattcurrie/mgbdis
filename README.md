@@ -77,13 +77,13 @@ Adding a label for 16 bytes of text:
 If the game doesn't use ASCII encoding, it may be practical to use one or more [character maps](https://rgbds.gbdev.io/docs/v0.9.1/rgbasm.5#Character_maps).
 
 1. mgbdis needs to be made aware of the charmaps; this is done by passing a path with `--character-map`.
-2. Then, you can mark any text label to use one of these character maps instead of the default one.
+2. Then, you can mark any text label to use one of these character maps instead of the default one, by using cm or charmap followed by the index or name of the character map you want to use.
 
 Adding a label using the first character map for 16 bytes of text:
 
 ```
 00:3d00 Character_Name
-00:3d00 .text:10:cm,0
+00:3d00 .text:10:charmap=0
 ```
 
 ### Image
