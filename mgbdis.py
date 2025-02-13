@@ -673,10 +673,11 @@ class Bank:
             self.append_output("SETCHARMAP main")
         values = []
         text = ''
-
-        for address in range(start_address, end_address):
+        address = start_address - 1        
+        while(address < end_address-1):
+            address += 1   
             mem_address = rom_address_to_mem_address(address)
-
+        
             labels = self.get_labels_for_non_code_address(mem_address)
             if len(labels):
                 # add any existing values to the output and reset the list
@@ -692,9 +693,25 @@ class Bank:
 
             byte = rom.data[address]
             if custom_map:
-                if byte in rom.character_maps[self.current_map_index].character_map:
-                    text += rom.character_maps[self.current_map_index].character_map[byte]
+                key = None
+                character_map = rom.character_maps[self.current_map_index]
+                #check for multi length character mapping
+                for length in range(character_map.max_length, 1,-1):                    
+                    if address + length-1 > end_address: 
+                        continue                  
+                    to_check = tuple(list(rom.data[address: address+length]))                                        
+                    if to_check in character_map.character_map:
+                        key = to_check
+                        break            
+                if key == None:
+                    if byte in character_map.character_map:
+                        key = byte
+                if key != None:
+                    text += character_map.character_map[key]
+                    if isinstance(key, tuple):
+                        address += len(key)-1
                 else:
+                   
                     if len(text):
                         values.append('"{}"'.format(text))
                         text = ''
@@ -1161,12 +1178,7 @@ class ROM:
         else:
             f.write('game.o: game.asm bank_*.asm\n')
 
-        parameters = ['--preserve-ld']
-        if self.style['disable_halt_nops']:
-            parameters.append('--halt-without-nop')
-        else:
-            parameters.append('--nop-after-halt')
-        f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
+        f.write('\trgbasm -o game.o game.asm\n\n')
 
         f.write('game.{}: game.o\n'.format(rom_extension))
         if self.tiny:
@@ -1187,7 +1199,13 @@ class CharacterMap():
         self.name = name        
         self.path = path
         self.character_map = {}
-        
+        self.max_length = 1
+    def read_number(number_string):
+        number_string = number_string.strip()
+        if number_string.startswith("$"):
+            return int("0x"+number_string[1:], 16)
+        else:
+            return int(number_string)
     def create_character_maps(file_path :str):
         lines = []
         with open(file_path, "r", encoding="utf-8") as f:
@@ -1204,9 +1222,15 @@ class CharacterMap():
                         print(newMap.character_map)
                 newMap = CharacterMap(line.split("NEWCHARMAP")[1].strip(), file_path)                 
             elif "charmap" in line:  
-                mapping = line.split("charmap")[1].rsplit(",",1)
-
-                newMap.character_map[int("0x"+mapping[1].strip()[1:], 16)] = mapping[0].strip().replace('"', '')
+                mapping = line.split("charmap")[1].rsplit('"',1)
+                ints = mapping[1].strip().split(",")[1:]
+                if(len(ints) == 1):
+                    key = CharacterMap.read_number(ints[0])
+                else:
+                    key = tuple(CharacterMap.read_number(i) for i in ints)
+                    if len(key) > newMap.max_length:
+                        newMap.max_length = len(key)
+                newMap.character_map[key] = mapping[0].lstrip().replace('"', '')
         maps.append(newMap)
         return maps
 
