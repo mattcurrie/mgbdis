@@ -649,38 +649,41 @@ class Bank:
                 self.append_output(self.format_data(values))
                 values = []
 
+    def get_character_map_index(self, arguments):
+        #no args
+        if arguments == None:
+            return -1
+        #not charmap arg
+        if not "cm" in arguments and not "charmap" in arguments:
+            return -1
+        name = arguments.split("=")[-1]
+        #no index specified
+        if name == "cm" or name == "charmap":
+            return 0
+        #index
+        if name.isnumeric():
+            map_index = int(name)
+            if map_index >= len(rom.character_maps):
+                abort("Character map index {} out of range".format(name))
+            return map_index
+        #map name
+        for m in range(len(rom.character_maps)):
+            if rom.character_maps[m].name == name:
+                return m     
+        #no charmap found                       
+        abort("Character map '{}' does not exist.".format(name)) 
 
     def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
         # process arguments
-        custom_map = False       
-        map_index = -1
-        if arguments is not None:
-            if "cm" or "charmap" in arguments:
-                map_index = 0
-                if "=" in arguments:
-                    map_index = arguments.split("=")[1]
-                    if(map_index.isnumeric() ):
-                        map_index = int(map_index)
-                        if self.first_pass and map_index >= len(rom.character_maps):
-                            warn("Character map index {} out of range".format(map_index))
-                    else:
-                        for m in range(len(rom.character_maps)):
-                            if rom.character_maps[m].name == map_index:
-                                map_index = m
-                                break
-                        if not isinstance(map_index, int):
-                            if(self.first_pass):
-                                warn("Can't find character map "+map_index)
-                            map_index = -1
-                if map_index < len(rom.character_maps):
-                    custom_map = True
-                    if self.current_map_index != map_index:
-                        self.current_map_index = map_index                       
-                        self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)
-                        
-                     
+        custom_map = False                          
+        map_index = self.get_character_map_index(arguments)
+        if map_index != -1 and map_index < len(rom.character_maps):
+            custom_map = True
+            if self.current_map_index != map_index:
+                self.current_map_index = map_index                       
+                self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)                                                   
         if map_index == -1 and self.current_map_index == None:  
             self.current_map_index = -1                     
             self.append_output("SETCHARMAP main")
