@@ -572,10 +572,6 @@ instruction_variants = {
         }
     },
     'ldh_a8': {      
-        'ldh_a8': {
-            0xe0: 'ldh [a8],a',
-            0xf0: 'ldh a,[a8]'
-        },
         'ldh_ffa8': {
             0xe0: 'ldh [$ffa8],a',
             0xf0: 'ldh a,[$ffa8]'
@@ -586,10 +582,6 @@ instruction_variants = {
         }
     },
     'ld_c': {      
-        'ld_c': {
-            0xe2: 'ld [c],a',
-            0xf2: 'ld a,[c]'
-        },
         'ldh_c': {
             0xe2: 'ldh [c],a',
             0xf2: 'ldh a,[c]'
