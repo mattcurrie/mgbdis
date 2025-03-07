@@ -663,7 +663,7 @@ class Bank:
                     map_index = arguments.split("=")[1]
                     if(map_index.isnumeric() ):
                         map_index = int(map_index)
-                        if(self.first_pass and map_index > len(rom.character_maps)-1):
+                        if self.first_pass and map_index >= len(rom.character_maps):
                             warn("Character map index {} out of range".format(map_index))
                     else:
                         for m in range(len(rom.character_maps)):
