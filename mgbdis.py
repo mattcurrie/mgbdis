@@ -1117,7 +1117,7 @@ class ROM:
         f.write('all: game.{}\n\n'.format(rom_extension))
 
         f.write('%.2bpp: %.png\n')
-        f.write('\trgbgfx -o $@ $<\n\n')
+        f.write('\trgbgfx --colors embedded -o $@ $<\n\n')
 
         f.write('%.1bpp: %.png\n')
         f.write('\trgbgfx -d 1 -o $@ $<\n\n')
