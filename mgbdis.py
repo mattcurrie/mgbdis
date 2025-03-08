@@ -138,7 +138,13 @@ ldh_a8_formatters = {
     'ld_ff00_a8': lambda value: '[{0}+{1}]'.format(hex_word(0xff00), hex_byte(value)),
     'ldh_ffa8': lambda value: '[{0}]'.format(hex_word(0xff00 + value)),
 }
-
+special_characters = {
+    0 : '\0', #null
+    92 : '\\\\',
+    34 : '\\"',
+    123 : '\{',
+    125 : '\}'
+}
 
 def warn(*args, **kwargs):
     print("WARNING: ", *args, **kwargs)
@@ -684,7 +690,7 @@ class Bank:
             if self.current_map_index != map_index:
                 self.current_map_index = map_index                       
                 self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)                                                   
-        if map_index == -1 and self.current_map_index == None:  
+        if map_index == -1 and self.current_map_index != None:  
             self.current_map_index = -1                     
             self.append_output("SETCHARMAP main")
         values = []
@@ -734,7 +740,11 @@ class Bank:
                     values.append(hex_byte(byte))
             else:
                 if byte >= 0x20 and byte < 0x7F:
-                    text += chr(byte)
+                    if byte in special_characters:
+                        character = special_characters[byte]
+                    else:
+                        character = chr(byte)
+                    text += character
                 else:
                     if len(text):
                         values.append('"{}"'.format(text))
