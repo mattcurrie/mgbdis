@@ -26,8 +26,7 @@ test-disasm:
 	@echo "$(BOLD_WHITE)Generating disassembly...$(RESET)"
 	rm -rf disassembly
 	../mgbdis.py test.gb
-	@bash -c 'diff --strip-trailing-cr -u <(xxd expected/hardware.inc) <(xxd disassembly/hardware.inc)'
-	@diff -r expected disassembly \
+	@diff -r --strip-trailing-cr expected disassembly \
 		&& echo "✅ No differences found in disassembly!$(RESET)" \
 		|| (echo "❌ Differences found between 'expected' and 'disassembly'."; exit 1)
 
