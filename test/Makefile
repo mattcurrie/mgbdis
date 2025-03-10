@@ -36,3 +36,7 @@ test-built:
 	@bash -c 'diff -u <(xxd test.gb) <(xxd disassembly/game.gb)' \
 		&& echo "✅ No differences found in assembled ROM!$(RESET)" \
 		|| (echo "❌ Differences found between assembled test source and assembled disassembly."; exit 1)
+
+update-expected:
+	@echo "$(BOLD_WHITE)Updating \"expected\" from \"disassembly\"...$(RESET)"
+	cp -r disassembly/* expected
