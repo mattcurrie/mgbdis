@@ -849,7 +849,8 @@ class ROM:
     def load(self, tiny):
         if os.path.isfile(self.rom_path):
             print('Loading "{}"...'.format(self.rom_path))
-            self.data = open(self.rom_path, 'rb').read()
+            with open(self.rom_path, 'rb') as f:
+                self.data = f.read()
             self.rom_size = len(self.data)
             if self.rom_size < 0x150:
                 abort("ROM is too small, doesn't even contain a header!")
