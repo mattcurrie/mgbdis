@@ -25,7 +25,7 @@ test.gb: build/test.o
 test-disasm:
 	@echo "$(BOLD_WHITE)Generating disassembly...$(RESET)"
 	rm -rf disassembly
-	../mgbdis.py test.gb
+	PYTHONWARNINGS=error ../mgbdis.py test.gb
 	@diff -r --strip-trailing-cr expected disassembly \
 		&& echo "✅ No differences found in disassembly!$(RESET)" \
 		|| (echo "❌ Differences found between 'expected' and 'disassembly'."; exit 1)
