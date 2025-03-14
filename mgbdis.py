@@ -13,6 +13,7 @@ import glob
 import hashlib
 import os
 import png
+import re
 from shutil import copyfile
 
 from instruction_set import instructions, cb_instructions, instruction_variants
@@ -142,8 +143,8 @@ special_characters = {
     0 : '\0', #null
     92 : '\\\\',
     34 : '\\"',
-    123 : '\{',
-    125 : '\}'
+    123 : '\\{',
+    125 : '\\}'
 }
 
 def warn(*args, **kwargs):
@@ -420,7 +421,6 @@ class Bank:
             end_address = start_address + block['length']
             self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, block['arguments'])
             self.append_empty_line_if_none_already()
-        out = self.bank_number
         return '\n'.join(self.output)
 
 
@@ -1238,17 +1238,17 @@ class CharacterMap():
             lines = f.readlines()
         maps = []
         new_map = None
-        for line in lines:            
-            if "NEWCHARMAP" in line:
+        for line in lines:
+            if re.search(r"newcharmap", line, re.IGNORECASE):
                 if new_map != None: 
                     maps.append(new_map)
                     if debug:
                         print("Loaded character map: "+new_map.name)
                         print("Mappings:")
                         print(new_map.character_map)
-                new_map = CharacterMap(line.split("NEWCHARMAP")[1].strip(), file_path)                 
-            elif "charmap" in line:  
-                mapping = line.split("charmap")[1].rsplit('"',1)
+                new_map = CharacterMap(re.split(r"newcharmap", line, re.IGNORECASE)[1].strip(), file_path)                 
+            elif re.search(r"charmap", line, re.IGNORECASE):  
+                mapping = re.split(r"charmap", line, flags=re.IGNORECASE, maxsplit=1)[1].rsplit('"', 1)
                 ints = mapping[1].strip().split(",")[1:]
                 if(len(ints) == 1):
                     key = CharacterMap.read_number(ints[0])
