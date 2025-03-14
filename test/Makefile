@@ -25,7 +25,7 @@ test.gb: build/test.o
 test-disasm:
 	@echo "$(BOLD_WHITE)Generating disassembly...$(RESET)"
 	rm -rf disassembly
-	../mgbdis.py test.gb
+	PYTHONWARNINGS=error ../mgbdis.py test.gb
 	@diff -r --strip-trailing-cr expected disassembly \
 		&& echo "✅ No differences found in disassembly!$(RESET)" \
 		|| (echo "❌ Differences found between 'expected' and 'disassembly'."; exit 1)
@@ -36,3 +36,7 @@ test-built:
 	@bash -c 'diff -u <(xxd test.gb) <(xxd disassembly/game.gb)' \
 		&& echo "✅ No differences found in assembled ROM!$(RESET)" \
 		|| (echo "❌ Differences found between assembled test source and assembled disassembly."; exit 1)
+
+update-expected:
+	@echo "$(BOLD_WHITE)Updating \"expected\" from \"disassembly\"...$(RESET)"
+	cp -r disassembly/* expected
