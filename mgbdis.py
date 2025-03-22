@@ -663,21 +663,24 @@ class Bank:
         for argument in arguments.split(":"):
             key_value = argument.split("=", 1)
             if len(key_value) == 2:
-                name,value = key_value
-                if key == "cm" or key == "charmap":
-                    break
+                key,name = key_value
+            else:
+                key = key_value[0]
+                name = "0"
+            if key == "cm" or key == "charmap":
+                break
         else:
-            abort(...)
+            return -1
+        #map name
+        for m in range(len(rom.character_maps)):
+            if rom.character_maps[m].name == name:
+                return m     
         #index
         if name.isnumeric():
             map_index = int(name)
             if map_index >= len(rom.character_maps):
                 abort("Character map index {} out of range".format(name))
             return map_index
-        #map name
-        for m in range(len(rom.character_maps)):
-            if rom.character_maps[m].name == name:
-                return m     
         #no charmap found                       
         abort("Character map '{}' does not exist.".format(name)) 
 
@@ -1241,24 +1244,28 @@ class CharacterMap():
         maps = []
         new_map = None
         for line in lines:
-            if re.search(r"newcharmap", line, re.IGNORECASE):
+            line = line.strip()
+            mapSearch = re.match(r"newcharmap", line, re.IGNORECASE)
+            if mapSearch is not None:
                 if new_map != None: 
                     maps.append(new_map)
                     if debug:
                         print("Loaded character map: "+new_map.name)
                         print("Mappings:")
                         print(new_map.character_map)
-                new_map = CharacterMap(re.split(r"newcharmap", line, re.IGNORECASE)[1].strip(), file_path)                 
-            elif re.search(r"charmap", line, re.IGNORECASE):  
-                mapping = re.split(r"charmap", line, flags=re.IGNORECASE, maxsplit=1)[1].rsplit('"', 1)
-                ints = mapping[1].strip().split(",")[1:]
+                new_map = CharacterMap(line[mapSearch.end():].strip(), file_path)                               
+            else:
+                mapSearch = re.search('[ \t]*charmap[ \t]*"((?:[^"]|\\")+)",[ \t]*(.+)', line, re.IGNORECASE)
+                if(mapSearch == None): continue               
+                mapping = mapSearch[1].rsplit('"', 1)[0]              
+                ints = mapSearch[2].strip().split(",")
                 if(len(ints) == 1):
                     key = CharacterMap.read_number(ints[0])
                 else:
                     key = tuple(CharacterMap.read_number(i) for i in ints)
                     if len(key) > new_map.max_length:
                         new_map.max_length = len(key)
-                new_map.character_map[key] = mapping[0].lstrip().replace('"', '')
+                new_map.character_map[key] = mapping
         maps.append(new_map)
         return maps
 
