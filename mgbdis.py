@@ -1229,7 +1229,7 @@ class CharacterMap():
     def read_number(number_string):
         number_string = number_string.strip()
         if number_string.startswith("$"):
-            return int("0x"+number_string[1:], 16)
+            return int(number_string[1:].replace("_", ""), 16)
         else:
             return int(number_string)
     def create_character_maps(file_path :str):
