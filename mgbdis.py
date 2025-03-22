@@ -659,13 +659,15 @@ class Bank:
         #no args
         if arguments == None:
             return -1
-        #not charmap arg
-        if not "cm" in arguments and not "charmap" in arguments:
-            return -1
-        name = arguments.split("=")[-1]
-        #no index specified
-        if name == "cm" or name == "charmap":
-            return 0
+        name = None
+        for argument in arguments.split(":"):
+            key_value = argument.split("=", 1)
+            if len(key_value) == 2:
+                name,value = key_value
+                if key == "cm" or key == "charmap":
+                    break
+        else:
+            abort(...)
         #index
         if name.isnumeric():
             map_index = int(name)
