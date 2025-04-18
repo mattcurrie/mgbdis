@@ -5,22 +5,24 @@
 00:0209 MemSet
 00:020a MemSet.loop
 
-00:0300 Header
+00:0300 Heading
 00:0300 .text:f
 00:030f Separator
 00:030f .text:f
 00:031e HelloWorld
 00:031e .text:c
 00:032a Konami
-00:032a .text:c
+00:032a .text:c:charmap=cmap
 00:0334 Smile
-00:0334 .text:2
+00:0334 .text:2:charmap=cmap
 00:0336 SaveStates
-00:0336 .text:a
-00:0340 Escaped
-00:0340 .text:7
-00:0347 TheEnd
-00:0347 .text:7
+00:0336 .text:a:charmap=cmap
+00:0340 Abba
+00:0340 .text:6:charmap=cmap
+00:0346 Escaped
+00:0346 .text:7
+00:034d TheEnd
+00:034d .text:7
 
 00:0400 OldSkoolOutlineThick
 00:0400 .image:800:w256,pe4

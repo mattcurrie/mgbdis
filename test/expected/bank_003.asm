@@ -24,7 +24,7 @@ Init::
     ld bc, OldSkoolOutlineThick
     xor a
     call MemSet
-    ld hl, Header
+    ld hl, Heading
     ld de, $9800
     ld bc, $000f
     call MemCopy
@@ -48,12 +48,16 @@ Init::
     ld de, $98c0
     ld bc, $000a
     call MemCopy
-    ld hl, Escaped
+    ld hl, Abba
     ld de, $98e0
+    ld bc, $0006
+    call MemCopy
+    ld hl, Escaped
+    ld de, $9900
     ld bc, $0007
     call MemCopy
     ld hl, TheEnd
-    ld de, $9900
+    ld de, $9920
     ld bc, $0007
     call MemCopy
     ld c, $47
@@ -65,18 +69,6 @@ Init::
     ret
 
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
     nop
     nop
     nop

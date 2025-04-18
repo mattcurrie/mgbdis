@@ -329,7 +329,7 @@ HeaderComplementCheck::
     db $8f
 
 HeaderGlobalChecksum::
-    db $14, $c9
+    db $18, $46
 
 Main::
     di
@@ -768,7 +768,7 @@ MemSet.loop::
     nop
     nop
 
-Header::
+Heading::
     db "mgbdis test rom"
 
 Separator::
@@ -777,27 +777,30 @@ Separator::
 HelloWorld::
     db "Hello World!"
 
+SETCHARMAP cmap
+
 Konami::
-    db $01, $01, $02, $02, $04, $03, $04, $03, "BA"
+    db "<up><up><down><down><left><right><left><right>ba"
 
 Smile::
-    db ":)"
+    db "<smiley>"
 
 SaveStates::
-    db $16, $17, $18, $19, $1a, $1b, $1c, $1d, $1e, $1f
+    db "<supports save states>"
+
+Abba::
+    db "abba abc"
+
+SETCHARMAP main
 
 Escaped::
     db "\\\{\}/\"_\""
 
+SETCHARMAP main
+
 TheEnd::
     db "The End"
 
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
     nop
     nop
     nop

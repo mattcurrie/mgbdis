@@ -79,7 +79,7 @@ MemSet::
 
 SECTION "text", ROM0[$300]
 
-Header::
+Heading::
     db "mgbdis test rom"
 .end::
 
@@ -103,6 +103,11 @@ Smile::
 SaveStates::
     db "<supports save states>"
 .end
+
+Abba::
+    db "abba abc"
+.end
+
 POPC
 
 Escaped::
@@ -146,14 +151,15 @@ Init::
     xor a
     call MemSet
 
-    copy_to_map Header, 0, 0
+    copy_to_map Heading, 0, 0
     copy_to_map Separator, 0, 1
     copy_to_map HelloWorld, 0, 3
     copy_to_map Konami, 0, 4
     copy_to_map Smile, 0, 5
     copy_to_map SaveStates, 0, 6
-    copy_to_map Escaped, 0, 7
-    copy_to_map TheEnd, 0, 8
+    copy_to_map Abba, 0, 7
+    copy_to_map Escaped, 0, 8
+    copy_to_map TheEnd, 0, 9
 
     ld c, low(rBGP)
     ldh a, [c]
