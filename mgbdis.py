@@ -696,7 +696,7 @@ class Bank:
                 self.current_map_index = map_index                       
                 self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)                                                   
         if map_index == -1 and self.current_map_index != None:  
-            self.current_map_index = -1                     
+            self.current_map_index = None
             self.append_output("SETCHARMAP main")
         values = []
         text = ''

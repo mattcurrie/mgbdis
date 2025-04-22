@@ -796,8 +796,6 @@ SETCHARMAP main
 Escaped::
     db "\\\{\}/\"_\""
 
-SETCHARMAP main
-
 TheEnd::
     db "The End"
 
