@@ -611,6 +611,19 @@ class Bank:
             self.disassembled_addresses.add(pc_mem_address)
         else:
             labels = self.get_labels_for_address(pc_mem_address)
+
+            if instruction_name == 'nop':
+                nopslide_length = 1
+                while rom.data[pc + nopslide_length] == 0x00 and ( not len(self.get_labels_for_address(pc_mem_address + nopslide_length))) and pc + nopslide_length < end_address:
+                    nopslide_length = nopslide_length + 1
+                else:
+                    if nopslide_length >= 5:
+                        length = nopslide_length
+                        self.pc += length - 1
+                        instruction_name = "ds {} - @, 0x00".format(hex_word(pc_mem_address + length))
+                        if rom.last_byte != 0x00 or pc_mem_address < self.memory_base_address + self.size_without_padding:
+                            comment = "; {} times 0x00".format(hex_byte(length))
+
             if len(labels):
                 self.append_labels_to_output(labels)
 
