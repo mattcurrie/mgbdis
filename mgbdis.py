@@ -618,7 +618,8 @@ class Bank:
                 self.append_output(comment)
 
             instruction_bytes = rom.data[pc:pc + length]
-            self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes))
+            if pc_mem_address < self.memory_base_address + self.size_without_padding:
+                self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes))
 
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
