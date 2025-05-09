@@ -206,7 +206,7 @@ def apply_style_to_instructions(style, instructions):
 
 class Bank:
 
-    def __init__(self, number, symbols, style, bank0, size):
+    def __init__(self, number, symbols, style, bank0, size, rom):
         self.style = style
         self.bank_number = number
         self.blocks = {}
@@ -221,6 +221,11 @@ class Bank:
         else:
             self.memory_base_address = 0x4000
             self.rom_base_address = (number - 1) * 0x4000
+
+        self.size_without_padding = self.size
+        if rom.last_byte in (0x00,0xff):
+            while rom.data[ self.memory_base_address + self.rom_base_address + self.size_without_padding - 1] == rom.last_byte and self.size_without_padding != 0:
+                self.size_without_padding = self.size_without_padding - 1
 
         self.target_addresses = dict({
             'call': set(),
@@ -909,12 +914,12 @@ class ROM:
 
         size = self.rom_size
         if tiny:
-            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x8000))]
+            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x8000), self)]
         else:
-            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x4000))]
+            self.banks = [Bank(0, self.symbols, style, None, min(size, 0x4000), self)]
             for bank in range(1, self.num_banks):
                 size -= 0x4000
-                self.banks.append(Bank(bank, self.symbols, style, self.banks[0], min(size, 0x4000)))
+                self.banks.append(Bank(bank, self.symbols, style, self.banks[0], min(size, 0x4000), self))
 
     def load(self, tiny):
         if os.path.isfile(self.rom_path):
@@ -922,6 +927,9 @@ class ROM:
             with open(self.rom_path, 'rb') as f:
                 self.data = f.read()
             self.rom_size = len(self.data)
+            self.last_byte= self.data[self.rom_size - 1]
+            if self.last_byte in (0x00,0xff):
+                print("padding: {}".format(hex_byte(self.last_byte)))
             if self.rom_size < 0x150:
                 abort("ROM is too small, doesn't even contain a header!")
             self.num_banks = self.rom_size // 0x4000
@@ -1006,7 +1014,8 @@ class ROM:
             print('')
 
         for bank in range(0, self.num_banks):
-            self.write_bank_asm(bank)
+            if self.banks[bank].size_without_padding != 0:
+                self.write_bank_asm(bank)
 
         self.copy_hardware_inc()
         self.copy_charater_map()
@@ -1066,7 +1075,8 @@ class ROM:
                 f.write('\nINCLUDE "{}"'.format(os.path.basename(map)))
             f.write('\nSETCHARMAP main')
         for bank in range(0, self.num_banks):
-            f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
+            if self.banks[bank].size_without_padding != 0:
+                f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
         f.close()
 
     def write_image(self, basename, arguments, data):
@@ -1213,10 +1223,19 @@ class ROM:
 
         f.write('game.{}: game.o\n'.format(rom_extension))
         if self.tiny:
-            f.write('\trgblink --tiny -n game.sym -m game.map -o $@ $<\n')
+            if self.last_byte in (0x00, 0xff):
+                f.write('\trgblink --tiny -p {} -n game.sym -m game.map -o $@ $<\n'.format(self.last_byte))
+            else:
+                f.write('\trgblink --tiny -n game.sym -m game.map -o $@ $<\n')
         else:
-            f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
-        f.write('\trgbfix -v -p 255 $@\n\n')
+            if self.last_byte in (0x00, 0xff):
+                f.write('\trgblink -p {} -n game.sym -m game.map -o $@ $<\n'.format(self.last_byte))
+            else:
+                f.write('\trgblink -n game.sym -m game.map -o $@ $<\n')
+        if self.last_byte == 0x00:
+            f.write('\trgbfix -v -p {} $@\n\n'.format(self.last_byte))
+        else:
+            f.write('\trgbfix -v -p 255 $@\n\n')
         f.write('\t@if which md5sum &>/dev/null; then md5sum $@; else md5 $@; fi\n\n')
 
         f.write('clean:\n')
