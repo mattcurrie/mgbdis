@@ -583,10 +583,10 @@ class Bank:
 
                 if self.first_pass:
                     # add the label
-                    if mem_address >= self.memory_base_address and mem_address < self.memory_base_address + self.size:
+                    if mem_address >= self.memory_base_address and mem_address < self.memory_base_address + self.size_without_padding:
                         # label in cur bank
                         self.add_target_address(instruction_name, mem_address)
-                    elif mem_address < 0x4000 and self.bank0:
+                    elif mem_address < 0x4000 and self.bank0 and mem_address < self.bank0.size_without_padding:
                         # label in fixed bank
                         self.bank0.add_target_address(instruction_name, mem_address)
                 else:
