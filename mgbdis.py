@@ -1255,7 +1255,7 @@ class CharacterMap():
                         print(new_map.character_map)
                 new_map = CharacterMap(line[mapSearch.end():].strip(), file_path)                               
             else:
-                mapSearch = re.search('[ \t]*charmap[ \t]*"((?:[^"]|\\")+)",[ \t]*(.+)', line, re.IGNORECASE)
+                mapSearch = re.search('[ \t]*charmap[ \t]*"((?:[^"]|\\")+)",[ \t]*([^;]+)', line, re.IGNORECASE)
                 if(mapSearch == None): continue               
                 mapping = mapSearch[1].rsplit('"', 1)[0]              
                 ints = mapSearch[2].strip().split(",")
