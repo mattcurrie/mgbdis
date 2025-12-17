@@ -20,7 +20,7 @@ jobs:
       - name: Install RGBDS
         run: |
           RGBDS_VERSION=$(curl -s https://api.github.com/repos/gbdev/rgbds/releases/latest | grep -oP '"tag_name": "\K(.*?)(?=")')
-          RGBDS_FILE="rgbds-${RGBDS_VERSION#v}-linux-x86_64.tar.xz"
+          RGBDS_FILE="rgbds-linux-x86_64.tar.xz"
           RGBDS_URL="https://github.com/gbdev/rgbds/releases/download/${RGBDS_VERSION}/${RGBDS_FILE}"
           
           # Create a temporary directory for extraction
