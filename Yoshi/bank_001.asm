@@ -2091,7 +2091,8 @@ jr_001_4a65:
     ret
 
 
-Jump_001_4a66:
+; フィールドアニメトグル: $C6F4反転 → AnimateSprite
+ToggleFieldAnim::
     ld a, [$c6f4]
     xor $01
     ld [$c6f4], a
@@ -3180,7 +3181,7 @@ jr_001_4fd0:
     push bc
     push de
     push hl
-    call Call_001_7c08
+    call CheckGameStateUpdate
     pop hl
     pop de
     pop bc
@@ -9125,7 +9126,7 @@ Jump_001_73c1:
     dec b
     or c
     rlca
-    call c, Call_000_05b0
+    call c, MultiplyAddStep
     jp nz, $09b0
 
     ret nz
@@ -9162,7 +9163,7 @@ Jump_001_73c1:
     rlca
     or c
     dec b
-    call c, Call_000_05b0
+    call c, MultiplyAddStep
     jp nz, $09b0
 
     ret nz
@@ -9184,7 +9185,7 @@ Jump_001_73c1:
     or c
     db $e4
     ld bc, $0000
-    call c, Call_000_01b3
+    call c, JoypadStuckCheck
     ld d, c
     call c, $97b0
     call c, $9fb7
@@ -10561,11 +10562,12 @@ jr_001_7be7:
     ret
 
 
-Call_001_7c08:
+; ゲーム状態チェック: $FFC7==3でToggleFieldAnim
+CheckGameStateUpdate::
     ld hl, $ffc7
     ld a, [hl]
     cp $03
-    jp z, Jump_001_4a66
+    jp z, ToggleFieldAnim
 
     ld a, [$c6b5]
     add $09

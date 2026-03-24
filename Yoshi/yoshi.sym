@@ -15,6 +15,7 @@
 ; --- Joypad ---
 00:0150 ReadJoypad
 00:015a ReadJoypadButtons
+00:01b3 JoypadStuckCheck
 
 ; --- OAM DMA ---
 00:01ba SetupOAMDMA
@@ -73,6 +74,7 @@
 
 ; --- Math ---
 00:056a Multiply
+00:05b0 MultiplyAddStep
 00:05cb MultiplyAndCount
 
 ; --- Sprite Object System ---
@@ -344,6 +346,7 @@
 00:3824 WaitFrames
 
 ; --- Menu Input ---
+00:3487 PlayConfirmSound
 00:3451 MenuInputHandler
 00:34f8 ClearSerialState
 00:354f InitAnimFrame
@@ -479,6 +482,7 @@
 01:4a15 FieldUpdate16
 01:4a21 FieldUpdate17
 01:4a31 FieldUpdate18
+01:4a66 ToggleFieldAnim
 01:4a7b ResetFieldState
 01:4a81 ProcessFieldLogic
 
@@ -542,6 +546,8 @@
 ; --- Sound Data ---
 01:55e2 .data:a01
 01:5fe3 .code:100
+
+01:7c08 CheckGameStateUpdate
 
 ; --- Music Sequence Data ---
 01:7191 .data:30

@@ -322,7 +322,8 @@ jr_000_01a0:
     ldh a, [rP1]
     ldh a, [rP1]
 
-Call_000_01b3:
+; 入力ゼロならリトライ、非ゼロならInit再起動
+JoypadStuckCheck::
     and $0f
     jr z, jr_000_01a0
 
@@ -1090,7 +1091,8 @@ jr_000_05a6:
     add [hl]
     ld [hl-], a
 
-Call_000_05b0:
+; 乗算の加算ステップ
+MultiplyAddStep::
     ld a, [de]
 
 Jump_000_05b1:
@@ -7948,7 +7950,7 @@ jr_000_2ad7:
     ldh [$ff8b], a
 
 jr_000_2aea:
-    call $4bc5
+    call $4bc5                ; WaitVBlank (Bank 1)
     call ReadJoypad
     pop hl
     pop bc
@@ -9337,7 +9339,7 @@ jr_000_31be:
 
 
 jr_000_31c4:
-    call $4bc5
+    call $4bc5                ; WaitVBlank (Bank 1)
     call ReadJoypad
     ldh a, [$ffa1]
     and $08
@@ -9562,7 +9564,7 @@ jr_000_3332:
 jr_000_3343:
     ldh a, [$ff8b]
     and a
-    jp z, Jump_000_3487
+    jp z, PlayConfirmSound
 
     ldh a, [$ff8a]
     and a
@@ -9750,7 +9752,8 @@ jr_000_347e:
 
     jr jr_000_344f
 
-Jump_000_3487:
+; 確認SE再生 → FillRect
+PlayConfirmSound::
     ld a, $54
     call PlaySound
     ld b, $55
