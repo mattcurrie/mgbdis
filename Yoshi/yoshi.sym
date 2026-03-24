@@ -1,0 +1,567 @@
+; YOSSY NO TAMAGO - Symbol File
+; Generated from disassembly analysis
+
+; ============================================================
+; Bank 0: System & Game Logic ($0000-$3FFF)
+; ============================================================
+
+; --- Data Tables ---
+00:0068 PositionTable
+00:0068 .data:98
+
+; --- Entry Point ---
+00:0100 EntryPoint
+
+; --- Joypad ---
+00:0150 ReadJoypad
+00:015a ReadJoypadButtons
+
+; --- OAM DMA ---
+00:01ba SetupOAMDMA
+00:01c3 OAMDMACopyLoop
+00:01c8 OAMDMARoutine
+00:01c8 .data:a
+
+; --- LCD Control ---
+00:01d2 LCDOff
+00:01e9 LCDOn
+
+; --- OAM ---
+00:01f0 ClearOAM
+00:01fb HideAllSprites
+
+; --- Memory ---
+00:020b Memcopy
+00:0214 MemcopyCall
+
+; --- VRAM Copy ---
+00:0223 VRAMCopySetup
+00:0230 VRAMCopyExec
+
+; --- Main Loop / State Machine ---
+00:026b StateInit
+00:0277 MainLoop
+00:0355 AdvanceState
+
+; --- Graphics Loading ---
+00:035d LoadGameTiles
+
+; --- Pause ---
+00:03a5 HandlePause
+00:03ca PauseGame
+00:03e4 DrawPauseOverlay
+00:03f1 UnpauseGame
+00:03fe CheckPause2P
+00:0421 PauseSpriteData
+00:0421 .data:20
+
+; --- Initialization ---
+00:0441 Init
+00:04c2 ClearVRAM
+00:04fc StartGame
+
+; --- OAM Buffer Fill ---
+00:050d FillOAMGameTile
+00:0511 FillOAMTitleTile
+
+; --- Grid/Tile Utilities ---
+00:0535 CalcOAMAddress
+00:054f FillTilemap
+
+; --- Sound ---
+00:0560 PlaySound
+
+; --- Math ---
+00:056a Multiply
+00:05cb MultiplyAndCount
+
+; --- Sprite Object System ---
+00:05da UpdateSpriteObject
+00:0627 GetSpriteDataOffset1
+00:0637 GetSpriteDataOffset2
+00:0645 CopySprite4Bytes
+00:0652 CopySprite4BytesCond
+00:066e DrawColumnSprite
+00:06d1 DrawGridPiece
+00:06ee ClearColumnLeft
+00:0706 ClearColumnRight
+00:0721 DrawAllColumns
+00:074a AnimateDropping
+
+; --- Collision Detection ---
+00:080b CheckCollisionDown
+00:081b CheckCollisionUp
+00:082a CheckCollisionCore
+00:0858 CheckSpriteOverlap
+
+; --- Animation ---
+00:0867 UpdateDropPositions
+00:087f CalcGridPosition
+00:0896 AnimateDropDown
+00:090c AnimateDropUp
+00:0999 ClearAnimState
+00:09a4 StartDropAnim
+
+; --- Blink Animation ---
+00:0a3e InitBlinkState
+
+; --- Sprite Data Tables ---
+00:0a4d SpritePatternTable1
+00:0a4d .data:48
+00:0a95 SpritePatternTable2
+00:0a95 .data:70
+
+; --- Game State Init ---
+00:0b05 InitGameState
+00:0b50 InitGameState2
+00:0b7a InitGameBoard
+
+; --- Game Logic ---
+00:0c40 ProcessGameTurn
+00:0e84 ProcessMatching
+
+; --- Score / Level ---
+00:10de UpdateScore
+00:1108 UpdateLevel
+
+; --- Drawing Functions ---
+00:1203 DrawNumber
+00:120e DrawDigit
+00:1220 DrawString
+00:1227 DrawCharacter
+00:122f FillRect
+00:1240 FillRectAlt
+00:124a DrawBox
+
+; --- Number Display ---
+00:1294 DisplayScore
+00:12b3 DisplayLevel
+00:12cd DisplayLines
+00:12e3 DisplaySpeed
+
+; --- Game Rules ---
+00:130c CheckMatch
+00:13a8 CheckVerticalMatch
+00:13b8 CheckHorizontalMatch
+00:13c5 ProcessMatch
+00:13d5 ClearMatchedPieces
+00:13e2 UpdateMatchState
+
+; --- Piece Movement ---
+00:1466 MovePieceDown
+00:1477 MovePieceUp
+00:1484 MovePieceLeft
+00:14a9 MovePieceRight
+00:14b4 GetArrayElement
+00:14bb SetArrayElement
+00:14bf ValidatePosition
+
+; --- Piece Generation ---
+00:1508 GenerateNextPiece
+00:1513 GetRandomPiece
+00:1520 ShuffleRandom
+
+; --- Input Processing ---
+00:152f ProcessInput
+00:153c ProcessInputGame
+00:1549 ProcessInputTitle
+00:1581 RotatePiece
+00:1595 DropPiece
+00:15ab HandleDrop
+00:15ee ProcessFalling
+
+; --- Board Management ---
+00:1655 UpdateBoard
+00:168f ScanBoard
+
+; --- Timer / Speed ---
+00:173a UpdateFallTimer
+00:1758 GetFallSpeed
+00:1771 UpdateTimer
+
+; --- 2-Player Logic ---
+00:17c5 Process2Player
+00:1875 Send2PData
+
+; --- Piece Landing ---
+00:18bb HandlePieceLanding
+
+; --- Results ---
+00:18b6 ShowResults
+00:18e4 CalcResults
+00:18e8 DisplayResults
+
+; --- Game Over ---
+00:1935 CheckGameOver
+00:1950 HandleGameOver
+00:1963 DrawGameOver
+00:196f AnimateGameOver
+00:1994 GameOverSequence
+
+; --- Menu / Selection ---
+00:19d4 ProcessMenuLoop
+00:19c3 ProcessMenuInput
+00:1a0f UpdateMenuCursor
+00:1a45 DrawMenuCursor
+00:1a81 ProcessMenuSelection
+
+; --- Title Screen ---
+00:1b0d InitTitleGfx
+00:1b31 DrawTitleText
+00:1b47 AnimateTitle
+00:1b69 TitleScreenLoop
+00:1b7e TitleInputHandler
+00:1b92 SelectMenuItem
+
+; --- Text / String ---
+00:1bd0 DrawTextBox
+00:1bec DrawTextString
+00:1bfd ClearTextArea
+00:1c03 InitTextSystem
+00:1c0d DrawLabel
+
+; --- Palette ---
+00:1c35 SetPalette
+00:1c4f UpdatePaletteFade
+
+; --- BG Map ---
+00:1cae UpdateBGMap
+
+; --- Config Save ---
+00:2008 SaveConfig1
+00:2012 SaveConfig2
+00:201c SaveConfig3
+
+; --- Tile Data Lookup ---
+00:1cfc TileDataLookup0
+00:1d02 TileDataLookup1
+00:1d0c TileDataLookup2
+00:1d16 TileDataLookup3
+00:1d20 TileDataLookup4
+00:1d2a TileDataLookup5
+00:1d34 TileDataLookup6
+00:1d3e TileDataLookup7
+00:1d48 TileDataLookup8
+00:1d52 TileDataLookup9
+00:1d5c TileDataLookupA
+00:1d66 TileDataLookupB
+00:1d70 TileDataLookupC
+00:1d7a TileDataLookupD
+
+; --- High Score ---
+00:1dbf UpdateHighScore
+
+; --- Settings ---
+00:1e26 LoadSettings
+00:1e2c SaveSettings
+00:1e50 ApplySettings
+00:1e8a ResetSettings
+
+; --- Options Screen (State 5) ---
+00:1e93 OptionsScreen
+
+; --- Game Start ---
+00:1f6e ApplyGameSettings
+00:1fe2 UpdateCursorDisplay
+
+; --- UI Drawing ---
+00:203c DrawOptionValues
+00:2071 DrawOptionLabel
+00:208b DrawOptionItem
+
+; --- Serial Communication ---
+00:2092 SerialHandler
+00:20c3 WaitDIVTimer
+00:20db InitTitleUI
+
+; --- Title Screen State ---
+00:2121 ResetTitleState
+00:2147 DrawStringToGrid
+00:215b InitGameVars
+
+; --- Multiplayer Setup ---
+00:218a StartGameplay
+00:21c5 SetupMultiplayer
+00:21d2 Setup2PField
+00:21eb SetupLinkCable
+
+; --- Field Drawing ---
+00:220f DrawField1
+00:222c DrawField2
+00:224f DrawField3
+00:2268 DrawField4
+00:228c DrawFieldBorder
+00:22a6 DrawFieldTile
+00:22a9 DrawFieldRow
+
+; --- Timer System ---
+00:2361 ResetTimers
+00:2371 UpdateTimerDisplay
+00:2379 TimerTick
+00:237a TimerTickCore
+
+; --- Bit Processing ---
+00:23e4 ProcessBit6
+00:23ef ProcessBit5
+00:2409 ProcessBit7
+
+; --- Difficulty / Speed Table ---
+00:2411 SpeedTable
+00:2424 CalcDifficulty
+00:245a UpdateDifficulty
+00:24a2 UpdateGameLoop
+
+; --- Scoring ---
+00:2562 DisplayP1Score
+00:2568 DisplayP2Score
+00:257e FormatNumber
+00:258b DrawDigitSprite
+00:25ad DrawScoreDigits
+00:25e1 CalcBonus
+
+; --- Level Display ---
+00:2664 DrawLevelDisplay
+00:268d DrawSpeedDisplay
+00:26a3 DrawLinesDisplay
+00:26aa DrawStatLabel
+00:26be DrawStatValue
+00:26c5 DrawStatRow
+00:26da DrawNextPiece
+00:26f9 DrawNextPieceSprite
+00:270e DrawPreview
+
+; --- Game Field Logic ---
+00:2854 UpdateGameField
+00:2889 RefreshField
+00:28a6 ClearField
+
+; --- Drawing Utilities ---
+00:3767 FillRect3x4
+00:3779 FillRect3x2
+00:378b FillRect2x2
+00:37e0 DrawSpriteAt
+00:381a SetupDrawCharacter
+00:3824 WaitFrames
+
+; --- Menu Input ---
+00:3451 MenuInputHandler
+00:34f8 ClearSerialState
+00:354f InitAnimFrame
+
+; --- Round / Game Flow Utilities ---
+00:3524 CheckLinkMode
+00:3539 FillScoreArea1
+00:3544 FillScoreArea2
+00:3653 ShowRoundComplete
+
+; --- Round Speed ---
+00:2aa6 ApplyRoundSpeed
+
+; --- Round / Stage ---
+00:2af9 NextRound
+00:2b05 InitRound
+00:2b12 SetupRound
+00:2b58 LoadRoundData
+00:2b81 ApplyRoundSettings
+00:2b8c SetRoundSpeed
+00:2ba1 InitP1Settings
+00:2ba7 InitP2Settings
+00:2bd4 ProcessRoundEnd
+00:2bed ProcessRoundEndLoop
+
+; --- Win/Lose ---
+00:2c7a CheckWinCondition
+00:2cb2 ProcessWinLose
+00:2cd7 ShowWinScreen
+00:2d01 DrawWinMessage1
+00:2d08 DrawWinMessage2
+00:2d1d DrawLoseMessage1
+00:2d24 DrawLoseMessage2
+00:2d37 DrawResultMessage1
+00:2d3e DrawResultMessage2
+00:2d53 AnimateResult
+00:2d6a ShowFinalResult
+00:2d7b WaitForRestart
+00:2db7 ProcessRestart
+
+; --- Continue Screen ---
+00:2e2e DrawContinue
+00:2e3c UpdateContinue
+00:2ec7 ContinueCountdown
+00:2ed8 DrawCountdownNum
+00:2ee9 UpdateCountdownTimer
+
+; --- Random Number ---
+00:2fba RandomNext
+
+; --- Round Complete ---
+00:304b ProcessRoundComplete
+00:3086 HandleRoundEnd
+
+; --- Score Ranking ---
+00:311a DrawScoreRanking
+00:3145 ProcessNewHighScore
+00:31b9 DrawRankEntry
+00:31d1 FormatRankEntry
+00:31dd CalcRankPosition
+00:31ff CheckHighScoreTable
+
+; --- Data: Tilemap Data ---
+00:33f7 .data:9
+
+; ============================================================
+; Bank 1: VBlank, Sprites, Sound ($4000-$7FFF)
+; ============================================================
+
+; --- Sprite Update ---
+01:4000 UpdateSprites
+01:4094 InitSpriteBuffer
+01:41c2 SetupSpriteAnim
+01:42c3 ProcessSpriteFrame
+01:42f5 UpdateAnimFrame
+01:4310 LoadAnimData
+
+; --- Game Screen Setup ---
+01:437d InitGameScreen
+01:4394 DrawBCDNumber
+01:43ac GameMainUpdate
+01:43e5 Check2PGameState
+01:43f2 SetupGameBG
+01:4408 LoadGameBGTiles
+
+; --- Piece/Column Logic ---
+01:44d0 ProcessColumn
+01:44ea UpdateColumn
+01:4501 DrawColumnData
+01:450b InitPlayfield
+
+; --- Sprite Animation Tables ---
+01:455f SpriteAnimTable
+01:4599 AnimFrameData
+01:45bd UpdateSpriteFrame
+01:45c2 GetFramePointer
+01:45f0 AnimateSprite
+
+; --- Egg/Piece Logic ---
+01:465d ProcessEgg
+01:46af UpdateEggState
+01:46bd InitEggSystem
+01:46d7 DrawTitleLabels
+01:46ff ProcessTitleInput
+01:4763 ProcessOptionInput
+
+; --- Next Piece ---
+01:473b GenerateNext
+01:47c3 DisplayNextPiece
+01:47e9 DrawNextTop
+01:47fe DrawNextBottom
+01:4813 UpdateNextDisplay
+
+; --- Column Drawing ---
+01:4873 DrawColumnBlock
+
+; --- Game Field Update ---
+01:4854 FieldUpdate1
+01:485f FieldUpdate2
+01:487a FieldUpdate3
+01:489a FieldUpdate4
+01:48b7 FieldUpdate5
+01:48df FieldUpdate6
+01:48fb FieldUpdate7
+01:491f FieldUpdate8
+01:4938 FieldUpdate9
+01:495d FieldUpdate10
+01:4976 FieldUpdate11
+01:498d FieldUpdate12
+01:49b6 FieldUpdate13
+01:49e8 FieldUpdate14
+01:4a09 FieldUpdate15
+01:4a15 FieldUpdate16
+01:4a21 FieldUpdate17
+01:4a31 FieldUpdate18
+01:4a7b ResetFieldState
+01:4a81 ProcessFieldLogic
+
+; --- VRAM Copy ---
+01:4af9 VRAMCopyDMA
+
+; --- VBlank Handler ---
+01:4b59 VBlankHandler
+
+; --- Joypad Check ---
+01:4baf CheckJoypadRaw
+
+; --- Wait for VBlank ---
+01:4bc5 WaitVBlank
+
+; --- Wave RAM ---
+01:4bf8 LoadWavePattern
+
+; --- Link Cable ---
+01:4c48 ProcessLinkData
+01:4c61 SendLinkByte
+01:4c91 UpdateLinkState
+01:4cc6 SyncLinkPlayers
+
+; --- Sound Sequence ---
+01:4d4e SoundSequenceStep
+
+; --- Countdown ---
+01:4d64 CountdownSequence
+
+; --- Stage Intro ---
+01:4fc4 StageIntroAnim
+
+; --- Object Flags ---
+01:52d9 ClearObjectFlags
+01:52e2 UpdateObjectData
+
+; --- 2P Display ---
+01:509c Display2PStatus
+01:50b3 Draw2PField
+
+; --- Music Data ---
+01:5187 MusicDataInit
+01:51b2 LoadMusicTrack
+01:51b8 GetMusicPointer
+01:51c2 ParseMusicCommand
+01:51da ProcessNote
+01:521f UpdateChannel
+
+; --- Sound Engine ---
+01:53c9 SoundEngine
+01:5360 SoundUpdate1
+01:5378 SoundUpdate2
+01:538b SoundUpdate3
+01:539a SoundUpdate4
+01:53ab SoundUpdate5
+01:54a1 SoundLookupIndex
+01:5587 StopAllSoundHW
+01:55dc StopAllSound
+
+; --- Sound Data ---
+01:55e2 .data:a01
+01:5fe3 .code:100
+
+; --- Music Sequence Data ---
+01:7191 .data:30
+01:71c1 .code:2f
+01:71e4 .data:1d2
+01:73b3 .code:50
+01:77b6 .code:50
+01:7c08 .code:100
+01:7f9d .code:63
+
+; ============================================================
+; Bank 2: Graphics Data ($4000-$7FFF)
+; ============================================================
+
+02:4000 TileGraphicsData
+02:4000 .data:4000
+
+; ============================================================
+; Bank 3: Graphics Data ($4000-$7FFF)
+; ============================================================
+
+03:4000 TileGraphicsData2
+03:4000 .data:4000
