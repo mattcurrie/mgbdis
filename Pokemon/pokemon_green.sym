@@ -1,0 +1,31 @@
+; Pokemon Green (Pocket Monsters Midori) - Serial Communication Labels
+; Reference symbol file for link cable communication routines
+
+; --- Serial Interrupt Vector ---
+00:0058 SerialTransferCompleteInterrupt
+00:0ba7 SerialISR
+
+; --- Core Serial Routines (Bank 0) ---
+00:0bc6 SerialISR_HandleRole
+00:0bf1 SerialExchangeBlock
+00:0c2e SerialExchangeSmall
+00:0c66 SerialSyncWait
+00:0ca3 SerialStoreResult
+00:0caa SerialSendAndWait
+00:0cb3 SerialStartMaster
+00:0d41 SerialBusyWait
+00:0d47 SerialCheckTimeout
+00:0d4f SerialSetTimeout
+00:0d50 SerialSetTimeoutValue
+00:0d57 SerialSendNibble
+00:0d6b SerialReceiveNibble
+00:0d81 SerialSendZero
+00:0d82 SerialSendByte
+00:0d8e SerialInitSlave
+00:0d95 SerialStartExtClock
+
+; --- Trade / Link (Bank 1) ---
+01:51b3 TradeExchangeData
+01:7388 LinkHandshake
+01:7444 LinkCleanup
+01:754d LinkDisconnect
