@@ -141,12 +141,72 @@ $C000-$C09E: サウンドワークRAM。
 
 ### Sound Data ($55E2-$7FFF)
 
-音楽シーケンスデータ。コードとデータが混在する領域あり。
+音楽シーケンスデータ。コードとデータが混在する領域あり (約10,750バイト)。
+
+#### Sound Engine Architecture
+
+```text
+SoundEngine ($53C9)
+  → MusicDataInit ($5187): トラック初期化
+  → LoadMusicTrack ($51B2): 楽曲ポインタテーブルからロード
+  → ParseMusicCommand ($51C2): コマンドバイト解析
+  → ProcessNote ($51DA): ノート処理 → レジスタ書き込み
+  → UpdateChannel ($521F): チャンネル状態更新
+```
+
+#### Sound Work RAM ($C000-$C09E)
+
+| Offset | Size | Description |
+|--------|------|-------------|
+| $C000 | 2 | サウンドステータス |
+| $C002 | 1 | ビジーフラグ (bit 7=優先中) |
+| $C026-$C02D | 8 | チャンネルアクティブフラグ (8ch) |
+| $C02E-$C035 | 8 | チャンネル制御ビット |
+| $C04E-$C055 | 8 | ノート長カウンタ |
+| $C056-$C05D | 8 | テンポカウンタ |
+| $C05E-$C065 | 8 | エンベロープ状態 (上位=周期, 下位=カウンタ) |
+| $C0B6-$C0BD | 8 | シーケンス位置カウンタ |
+
+#### Music Data Format
+
+楽曲データはポインタテーブル + シーケンスデータ構造:
+
+- **ポインタテーブル** ($7191付近): 各楽曲のシーケンスデータ先頭アドレス (2バイト×曲数)
+- **シーケンスデータ**: バイト列で音符/コマンドをエンコード
+  - $00-$71: ノートデータ (音高+長さ)
+  - $FF: 全サウンド停止コマンド
+  - その他: チャンネル制御コマンド
+
+#### Channel Mapping
+
+| Channel | Register Base | Type |
+|---------|--------------|------|
+| 0 | NR10-NR14 | Square 1 (sweep) |
+| 1 | NR21-NR24 | Square 2 |
+| 2 | NR30-NR34 | Wave |
+| 3 | NR41-NR44 | Noise |
+| 4-7 | — | 拡張 (通信/効果音) |
+
+Wave RAM ($FF30-$FF3F) は `LoadWavePattern` ($4BF8) で更新。
+WAVE_UPDATE フラグ ($FF9B) が立っている場合 VBlank 中に転送。
 
 ## Bank 2-3: Graphics
 
-- Bank 2 ($4000-$7FFF): ゲーム画面/タイトル/共通/2Pタイルセット
-- Bank 3 ($4000-$7FFF): 追加タイルグラフィックス
+### Bank 2 ($4000-$7FFF) - Tile Sets
+
+| Address | Label | Size | Description |
+|---------|-------|------|-------------|
+| $4000 | GameTileSet | $800 (2KB) | ゲーム画面タイル (128タイル) |
+| $4800 | CommonTileSet | $1000 (4KB) | 共通タイル (256タイル) |
+| $5800 | ExtraTiles | $800 (2KB) | 追加タイル (128タイル) |
+| $6000 | TitleTileSet | $1000 (4KB) | タイトル画面タイル |
+| $6F70 | TwoPlayerTiles1 | $260 | 2P用タイル1 |
+| $71D0 | TwoPlayerTiles2 | $200 | 2P用タイル2 |
+| $73D0 | UnusedTileData | $C30 | 未使用タイルデータ |
+
+### Bank 3 ($4000-$7FFF)
+
+追加タイルグラフィックス (16KB全域データ)。
 
 ## Memory Map
 
@@ -181,6 +241,69 @@ $C000-$C09E: サウンドワークRAM。
 | $FFC7 | ステートマシンインデックス |
 | $FFC8 | シリアル転送完了フラグ |
 
+## Board Data Structure
+
+### Layout ($C62A-$C66D)
+
+4列×7行 = 28バイトのパズル盤面。各バイトがピースIDを保持。
+
+```text
+        Col 0   Col 1   Col 2   Col 3
+Row 0:  $C62A   $C62B   $C62C   $C62D   ← 最上段
+Row 1:  $C62E   $C62F   $C630   $C631
+Row 2:  $C632   $C633   $C634   $C635
+Row 3:  $C636   $C637   $C638   $C639
+Row 4:  $C63A   $C63B   $C63C   $C63D
+Row 5:  $C63E   $C63F   $C640   $C641
+Row 6:  $C642   $C643   $C644   $C645   ← 最下段
+        ...
+$C66D:  拡張データ末尾
+```
+
+注: 実際のメモリレイアウトには行間にメタデータ/パディングが含まれる可能性あり。
+$C62A-$C66D の68バイト中、28バイトがピースデータ、残りはアニメーション状態等。
+
+### Piece IDs
+
+| Value | Meaning |
+|-------|---------|
+| $00 | 空 |
+| $01-$06 | ピース種類 (キャラクター: クリボー、テレサ、パックン、ゲッソー等) |
+| 上位bit | 殻の上半分/下半分フラグ |
+
+### Board Operations
+
+| Routine | Address | Description |
+|---------|---------|-------------|
+| InitGameBoard | $0B7A | 盤面初期化 (全セルをゼロクリア) |
+| UpdateBoard | $1655 | 盤面更新 (重力・消去適用) |
+| ScanBoard | $168F | 盤面走査 (マッチ検出) |
+| CheckMatch | $130C | ピース一致判定 (上下殻ペア) |
+| CheckVerticalMatch | $13A8 | 垂直マッチ検出 |
+| CheckHorizontalMatch | $13B8 | 水平マッチ検出 |
+| ProcessMatch | $13C5 | マッチ処理 (消去アニメ開始) |
+| ClearMatchedPieces | $13D5 | マッチしたピースをクリア |
+
+### GameTurnTable ($0C40)
+
+レベル別ゲームターン設定テーブル。660バイト ($294)、4バイト×165エントリ。
+各エントリの構造: `[flag, count, type, value]`
+
+- ProcessMatching ($0ED5) から参照され、レベルごとの
+  落下速度・ピース出現パターンを制御する。
+
+### Matching Logic
+
+```text
+ProcessGameTurn (GameTurnTable参照)
+  → CheckMatch: 上下のピースペアを比較
+    → CheckVerticalMatch: 列内の垂直マッチ
+    → CheckHorizontalMatch: 行内の水平マッチ (2P用)
+  → ProcessMatch: マッチしたピースをマーク
+  → ClearMatchedPieces: マークされたピースを消去
+  → UpdateBoard: 重力適用、空きスペースを詰める
+```
+
 ## Bank Switching
 
 Bank 0 は常駐。Bank 1-3 は $2100 レジスタで切り替え:
@@ -200,7 +323,9 @@ Requires RGBDS toolchain (rgbasm, rgblink, rgbfix).
 
 ## Statistics
 
-- Named labels: 368
-- Bank 0: ~290 labels (system, game logic, UI)
+- Named labels: 370+
+- Bank 0: ~290 labels (system, game logic, UI) + data tables
 - Bank 1: ~80 labels (sprites, sound, VBlank)
-- Bank 2-3: 2 labels (data blocks)
+- Bank 2: 7 labeled tile sets
+- Bank 3: 1 data block
+- Constants: 35+ named HRAM/WRAM/sound definitions

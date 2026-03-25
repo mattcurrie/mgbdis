@@ -1,18 +1,3 @@
-; ============================================================
-; YOSSY NO TAMAGO - Bank 1
-; VBlank処理、スプライト管理、サウンドエンジン
-;
-; 主要セクション:
-;   $4000-$4093  UpdateSprites - OAMスプライト描画
-;   $4094-$41C1  InitSpriteBuffer - スプライトバッファ初期化
-;   $437D-$43F1  InitGameScreen / GameMainUpdate
-;   $4B59-$4BC4  VBlankHandler - 毎フレーム割り込み処理
-;   $4BC5-$4BF7  WaitVBlank - VBlank同期待ち
-;   $4C48-$4D63  リンクケーブル通信処理
-;   $53C9-$55DB  SoundEngine - サウンド再生エンジン
-;   $55E2-$7FFF  サウンド/音楽データ
-; ============================================================
-;
 ; Disassembly of "yoshi.gb"
 ; This file was created with:
 ; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
@@ -20,16 +5,15 @@
 
 SECTION "ROM Bank $001", ROMX[$4000], BANK[$1]
 
-; スプライトオブジェクトテーブル($C200)をOAMバッファ($C400)に展開
 UpdateSprites::
-    ld a, [$c61c]
+    ld a, [LCD_REDRAW]
     dec a
     jr z, jr_001_400f
 
     cp $ff
     ret nz
 
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     jp HideAllSprites
 
 
@@ -149,7 +133,6 @@ jr_001_408d:
     add hl, de
     jr jr_001_408d
 
-; スプライトバッファ初期化: OAMバッファ($C400)とオブジェクトテーブル($C200)をクリア
 InitSpriteBuffer::
     ld hl, $c200
 
@@ -504,7 +487,7 @@ Jump_001_41e4:
     ld b, d
     xor $41
     ldh a, [rSTAT]
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     nop
     ld [$0000], sp
     db $10
@@ -724,12 +707,12 @@ jr_001_42ea:
     inc hl
 
 UpdateAnimFrame::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
 jr_001_42fa:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
 
 jr_001_42fe:
@@ -866,7 +849,6 @@ jr_001_43a4:
     ret
 
 
-; 1フレーム分のゲーム処理（マッチング判定、アニメーション、描画、タイマー更新）
 GameMainUpdate::
     call CheckMatch
     call DrawBox
@@ -881,7 +863,7 @@ GameMainUpdate::
     call LoadGameBGTiles
     call FieldUpdate18
     call CheckPause2P
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr z, jr_001_43dc
 
@@ -889,11 +871,10 @@ GameMainUpdate::
 
 jr_001_43dc:
     call TimerTick
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_43f1
 
-; 2P対戦状態チェック: $C6B6/$C705 確認
 Check2PGameState::
     ld a, [$c705]
     and a
@@ -1014,7 +995,7 @@ jr_001_4425:
     ld [$c6fc], a
     ld [$c6e6], a
     ld [$c6f4], a
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_448c
 
@@ -1030,7 +1011,7 @@ jr_001_448c:
     inc [hl]
 
 jr_001_4495:
-    ld a, [$c6e1]
+    ld a, [BGM_INDEX]
     call PlaySound
     call AnimFrameData
 
@@ -1151,27 +1132,27 @@ InitPlayfield::
 
 SpriteAnimTable::
     call CalcOAMAddress
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     add $40
     ld [hl], a
     dec hl
-    ld a, [$c6d0]
+    ld a, [SPRITE_ANIM_STATE]
     add $40
     ld [hl], a
     ret
 
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     ret nz
 
     ld hl, $c6e2
     inc [hl]
-    ld a, [$c6d0]
+    ld a, [SPRITE_ANIM_STATE]
     cp $09
     jr nz, jr_001_4588
 
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     cp $09
     jr nz, jr_001_4588
 
@@ -1179,28 +1160,28 @@ SpriteAnimTable::
 
 
 jr_001_4588:
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     inc a
     cp $0a
     jr c, jr_001_4595
 
-    ld hl, $c6d0
+    ld hl, SPRITE_ANIM_STATE
     inc [hl]
     xor a
 
 jr_001_4595:
-    ld [$c6cf], a
+    ld [SPRITE_ANIM_FRAME], a
     ret
 
 
 AnimFrameData::
     ld hl, $c6e2
     inc [hl]
-    ld a, [$c6d0]
+    ld a, [SPRITE_ANIM_STATE]
     cp $09
     jr nz, jr_001_45ac
 
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     cp $09
     jr nz, jr_001_45ac
 
@@ -1208,17 +1189,17 @@ AnimFrameData::
 
 
 jr_001_45ac:
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     inc a
     cp $0a
     jr c, jr_001_45b9
 
-    ld hl, $c6d0
+    ld hl, SPRITE_ANIM_STATE
     inc [hl]
     xor a
 
 jr_001_45b9:
-    ld [$c6cf], a
+    ld [SPRITE_ANIM_FRAME], a
     ret
 
 
@@ -1264,11 +1245,11 @@ GetFramePointer::
 
 AnimateSprite::
     push af
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_001_4629
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_4602
 
@@ -1353,11 +1334,11 @@ jr_001_4629:
     rst $38
 
 ProcessEgg::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr z, jr_001_466d
 
@@ -1426,8 +1407,8 @@ InitEggSystem::
     xor a
     ld [$c6fe], a
     ld [$c6fa], a
-    ld [$c6ba], a
-    ld [$c6b9], a
+    ld [LINK_SEND], a
+    ld [LINK_RECV], a
     ld [$c6fb], a
     ld [$c6fc], a
     ld [$c6fd], a
@@ -1465,7 +1446,7 @@ DrawTitleLabels::
 
 ProcessTitleInput::
     call DisplayNextPiece
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     ret z
 
@@ -1482,31 +1463,31 @@ ProcessTitleInput::
 
 
 jr_001_4713:
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     inc a
     cp $02
     ret nc
 
-    ld [$c6b6], a
+    ld [TWO_PLAYER_FLAG], a
     call GenerateNext
     ret
 
 
 jr_001_4721:
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     dec a
     cp $ff
     ret z
 
-    ld [$c6b6], a
+    ld [TWO_PLAYER_FLAG], a
     call GenerateNext
     ret
 
 
 jr_001_472f:
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     xor $01
-    ld [$c6b6], a
+    ld [TWO_PLAYER_FLAG], a
     call GenerateNext
     ret
 
@@ -1518,7 +1499,7 @@ GenerateNext::
     ld hl, $1005
     call CalcOAMAddress
     ld [hl], $e0
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_001_475a
 
@@ -1540,28 +1521,28 @@ ProcessOptionInput::
     ldh [rSB], a
     ld a, $80
     ldh [rSC], a
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     bit 3, a
     jr z, jr_001_477f
 
     xor a
-    ld [$c6b9], a
-    ldh [$ffc8], a
+    ld [LINK_RECV], a
+    ldh [SERIAL_DONE], a
     ld a, $01
     ldh [rSB], a
     ld a, $81
     ldh [rSC], a
 
 jr_001_477f:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     and a
     jr nz, jr_001_4791
 
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     bit 3, a
     ret z
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_47ba
 
@@ -1573,9 +1554,9 @@ jr_001_4791:
     jr nz, jr_001_47a1
 
     ld a, $02
-    ld [$c6bb], a
+    ld [LINK_ROLE], a
     ld a, $01
-    ld [$c6b6], a
+    ld [TWO_PLAYER_FLAG], a
     jr jr_001_47a9
 
 jr_001_47a1:
@@ -1583,22 +1564,22 @@ jr_001_47a1:
     ret nz
 
     ld a, $01
-    ld [$c6bb], a
+    ld [LINK_ROLE], a
 
 jr_001_47a9:
     xor a
-    ld [$c6b9], a
-    ld [$c6ba], a
+    ld [LINK_RECV], a
+    ld [LINK_SEND], a
     call WaitVBlank
     xor a
-    ld [$c6b9], a
-    ld [$c6ba], a
+    ld [LINK_RECV], a
+    ld [LINK_SEND], a
 
 jr_001_47ba:
     xor a
     ldh [rSB], a
     ld a, $06
-    ld [$ffc7], a
+    ld [GAME_STATE], a
     ret
 
 
@@ -1667,11 +1648,11 @@ UpdateNextDisplay::
     call FieldUpdate7
     call FieldUpdate11
     call FieldUpdate13
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_001_4850
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_484c
 
@@ -1703,11 +1684,11 @@ jr_001_485a:
 
 
 FieldUpdate2::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_4870
 
@@ -1718,7 +1699,6 @@ FieldUpdate2::
 jr_001_4870:
     ld hl, $0110
 
-; 列ブロック描画: HL=$0110, BC=$0430 → DrawColumnData
 DrawColumnBlock::
     ld bc, $0430
     call DrawColumnData
@@ -1726,7 +1706,7 @@ DrawColumnBlock::
 
 
 FieldUpdate3::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_4885
 
@@ -1734,7 +1714,7 @@ FieldUpdate3::
     jr jr_001_4893
 
 jr_001_4885:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_4890
 
@@ -1751,7 +1731,7 @@ jr_001_4893:
 
 
 FieldUpdate4::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_48a5
 
@@ -1759,7 +1739,7 @@ FieldUpdate4::
     jr jr_001_48b3
 
 jr_001_48a5:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_48b0
 
@@ -1775,7 +1755,7 @@ jr_001_48b3:
 
 
 FieldUpdate5::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_48c2
 
@@ -1783,7 +1763,7 @@ FieldUpdate5::
     jr jr_001_48d0
 
 jr_001_48c2:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_48cd
 
@@ -1805,7 +1785,7 @@ jr_001_48d0:
 
 
 FieldUpdate6::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_48e6
 
@@ -1813,7 +1793,7 @@ FieldUpdate6::
 
 
 jr_001_48e6:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_48f1
 
@@ -1918,11 +1898,11 @@ FieldUpdate10::
 
 
 FieldUpdate11::
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     ret z
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
@@ -1939,13 +1919,13 @@ FieldUpdate12::
     ret
 
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
     ld hl, $0110
     call CalcOAMAddress
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_001_49a9
 
@@ -1964,11 +1944,11 @@ jr_001_49ab:
 
 
 FieldUpdate13::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret z
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $02
     jr z, jr_001_49d5
 
@@ -1992,7 +1972,7 @@ jr_001_49d5:
 
 
 FieldUpdate14::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
@@ -2091,7 +2071,6 @@ jr_001_4a65:
     ret
 
 
-; フィールドアニメトグル: $C6F4反転 → AnimateSprite
 ToggleFieldAnim::
     ld a, [$c6f4]
     xor $01
@@ -2113,7 +2092,7 @@ ResetFieldState::
 
 
 ProcessFieldLogic::
-    ldh a, [$ffa5]
+    ldh a, [GAME_ACTIVE]
     and a
     ret z
 
@@ -2221,9 +2200,8 @@ jr_001_4aee:
     ret
 
 
-; スタック退避 → VRAM転送
 VRAMCopyDMA::
-    ldh a, [$ffae]
+    ldh a, [VRAM_SRC_LO]
     and a
     ret z
 
@@ -2232,19 +2210,19 @@ VRAMCopyDMA::
     ldh [$ffa7], a
     ld a, l
     ldh [$ffa8], a
-    ldh a, [$ffaf]
+    ldh a, [VRAM_SRC_HI]
     ld l, a
-    ldh a, [$ffb0]
+    ldh a, [VRAM_DST_LO]
     ld h, a
     ld sp, hl
-    ldh a, [$ffb1]
+    ldh a, [VRAM_DST_HI]
     ld l, a
-    ldh a, [$ffb2]
+    ldh a, [VRAM_LEN_LO]
     ld h, a
-    ldh a, [$ffae]
+    ldh a, [VRAM_SRC_LO]
     ld b, a
     xor a
-    ldh [$ffae], a
+    ldh [VRAM_SRC_LO], a
 
 jr_001_4b18:
     pop de
@@ -2291,14 +2269,14 @@ jr_001_4b18:
     jr nz, jr_001_4b18
 
     ld a, l
-    ldh [$ffb1], a
+    ldh [VRAM_DST_HI], a
     ld a, h
-    ldh [$ffb2], a
+    ldh [VRAM_LEN_LO], a
     ld hl, sp+$00
     ld a, l
-    ldh [$ffaf], a
+    ldh [VRAM_SRC_HI], a
     ld a, h
-    ldh [$ffb0], a
+    ldh [VRAM_DST_LO], a
     ldh a, [$ffa7]
     ld h, a
     ldh a, [$ffa8]
@@ -2307,7 +2285,6 @@ jr_001_4b18:
     ret
 
 
-; VBlank割り込みハンドラ: OAM DMA転送、スクロール更新、通信処理、入力処理
 VBlankHandler::
     push af
     push bc
@@ -2316,37 +2293,37 @@ VBlankHandler::
     call ProcessFieldLogic
     call RandomNext
     call VRAMCopyDMA
-    call $ff80                ; OAM DMA transfer
+    call $ff80
     call TimerTickCore
     ld a, $01
-    ld [$2100], a             ; ROM bank switch → Bank 1
+    ld [$2100], a
     call UpdateSprites
-    ldh a, [$ff9c]
+    ldh a, [SCX_SHADOW]
     ldh [rSCX], a
     ldh a, [$ff9d]
     ldh [rSCY], a
     ldh a, [$ff9e]
     ldh [rWY], a
-    ldh a, [$ffc5]
+    ldh a, [VBLANK_SYNC]
     and a
     jr z, jr_001_4b88
 
     xor a
-    ldh [$ffc5], a
+    ldh [VBLANK_SYNC], a
 
 jr_001_4b88:
-    ldh a, [$ffc4]
+    ldh a, [VBLANK_BUSY]
     and a
     jr z, jr_001_4b90
 
     dec a
-    ldh [$ffc4], a
+    ldh [VBLANK_BUSY], a
 
 jr_001_4b90:
     call UpdateLinkState
     call UpdateCountdownTimer
     call ProcessLinkData
-    ld a, [$ff9b]
+    ld a, [WAVE_UPDATE]
     and a
     jr z, jr_001_4ba2
 
@@ -2382,47 +2359,46 @@ CheckJoypadRaw::
     ret
 
 
-; VBlank同期待ち: $FFC5フラグをセットしhaltループで待機
 WaitVBlank::
     ld a, $01
-    ldh [$ffc5], a
+    ldh [VBLANK_SYNC], a
 
 jr_001_4bc9:
-    db $76                    ; halt (VBlank割り込み待ち)
-    ldh a, [$ffc5]
+    db $76
+    ldh a, [VBLANK_SYNC]
     and a
     jr nz, jr_001_4bc9
 
     ret
 
 
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $04
     ret z
 
-    ldh a, [$ffa2]
+    ldh a, [JOYPAD_HELD]
     push af
-    ldh a, [$ffa0]
+    ldh a, [JOYPAD_RAW]
     push af
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     push af
 
 jr_001_4bde:
     db $76
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $0c
     jr z, jr_001_4bde
 
     pop af
     and $fb
-    ldh [$ffa1], a
+    ldh [JOYPAD_PRESSED], a
     pop af
     and $fb
-    ldh [$ffa0], a
+    ldh [JOYPAD_RAW], a
     pop af
     and $fb
-    ldh [$ffa2], a
+    ldh [JOYPAD_HELD], a
     ret
 
 
@@ -2487,7 +2463,7 @@ jr_001_4c2d:
 
 jr_001_4c3d:
     xor a
-    ld [$ff9b], a
+    ld [WAVE_UPDATE], a
     ldh a, [rNR51]
     and $bb
     ldh [rNR51], a
@@ -2723,7 +2699,6 @@ jr_001_4d46:
     ret
 
 
-; シーケンスステップ: $C06E→$C04E コピー → カウントダウン
 SoundSequenceStep::
     ld hl, $c06e
     add hl, bc
@@ -3504,7 +3479,6 @@ jr_001_517e:
     ret
 
 
-; $5672テーブルからチャンネルミキシング設定を初期化
 MusicDataInit::
     ld b, $00
     ld hl, $567a
@@ -3576,7 +3550,6 @@ jr_001_51d3:
     ret
 
 
-; Waveチャンネル: $7DBD → Wave RAM ($FF30)
 ProcessNote::
     ld a, c
     cp $02
@@ -3634,7 +3607,6 @@ jr_001_5210:
     ret
 
 
-; デュレーション管理: $C006 16ビットタイマー
 UpdateChannel::
     ld a, [$c02a]
     cp $0f
@@ -3780,7 +3752,6 @@ jr_001_52c6:
     ret
 
 
-; $C02E+bc のビット4-5をクリア
 ClearObjectFlags::
     ld hl, $c02e
     add hl, bc
@@ -3789,7 +3760,6 @@ ClearObjectFlags::
     ret
 
 
-; D→$C096+bc, E→$C09E+bc
 UpdateObjectData::
     ld hl, $c096
     add hl, bc
@@ -3994,8 +3964,6 @@ jr_001_53c4:
     ret
 
 
-; サウンドエンジン: A=コマンドID ($FF=全停止, $00-$71=BGM/SE再生)
-; チャンネルディスパッチ → MusicDataInit → ProcessNote → UpdateChannel
 SoundEngine::
     ld [$c001], a
     cp $ff
@@ -4085,7 +4053,6 @@ jr_001_53e0:
     jp $55e2
 
 
-; テーブル参照: A→L/E, HL*2+DE でアドレス計算
 SoundLookupIndex::
     ld l, a
     ld e, a
@@ -4253,7 +4220,6 @@ jr_001_557e:
     jp Jump_001_54ba
 
 
-; NR52/NR30/NR51 ハードウェアリセット
 StopAllSoundHW::
     ld a, $80
     ldh [rNR52], a
@@ -4294,7 +4260,6 @@ StopAllSoundHW::
     ret
 
 
-; メモリクリア → 全サウンド停止
 StopAllSound::
     ld b, d
 
@@ -5551,7 +5516,7 @@ jr_001_64b3:
     ld h, e
     call c, $cfc3
     rst $08
-    call c, $c6f1
+    call c, GAME_MODE_FLAG
     pop af
     rst $00
     pop af
@@ -10562,9 +10527,8 @@ jr_001_7be7:
     ret
 
 
-; ゲーム状態チェック: $FFC7==3でToggleFieldAnim
 CheckGameStateUpdate::
-    ld hl, $ffc7
+    ld hl, GAME_STATE
     ld a, [hl]
     cp $03
     jp z, ToggleFieldAnim
@@ -10580,7 +10544,7 @@ CheckGameStateUpdate::
     ld a, [hl]
     xor $10
     ld [hl], a
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     ret nz
 

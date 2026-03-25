@@ -2,3 +2,13 @@ __pycache__/
 disassembly/
 test/
 tmp/
+
+# Build artifacts
+Yoshi/game.o
+Yoshi/game.gb
+Yoshi/game.sym
+Yoshi/game.map
+Pokemon/game.o
+Pokemon/game.gb
+Pokemon/game.sym
+Pokemon/game.map

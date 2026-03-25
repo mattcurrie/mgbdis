@@ -118,9 +118,16 @@
 00:0b50 InitGameState2
 00:0b7a InitGameBoard
 
+; --- Game Data Tables ---
+00:0b83 LevelCountTable
+00:0b83 .data:5
+00:0b88 LevelThresholds
+00:0b88 .data:5
+
 ; --- Game Logic ---
-00:0c40 ProcessGameTurn
-00:0e84 ProcessMatching
+00:0c40 GameTurnTable
+00:0c40 .data:295
+00:0ed5 ProcessMatching
 
 ; --- Score / Level ---
 00:10de UpdateScore
@@ -562,8 +569,20 @@
 ; Bank 2: Graphics Data ($4000-$7FFF)
 ; ============================================================
 
-02:4000 TileGraphicsData
-02:4000 .data:4000
+02:4000 GameTileSet
+02:4000 .data:800
+02:4800 CommonTileSet
+02:4800 .data:1000
+02:5800 ExtraTiles
+02:5800 .data:800
+02:6000 TitleTileSet
+02:6000 .data:1000
+02:6F70 TwoPlayerTiles1
+02:6F70 .data:260
+02:71D0 TwoPlayerTiles2
+02:71D0 .data:200
+02:73D0 UnusedTileData
+02:73D0 .data:c30
 
 ; ============================================================
 ; Bank 3: Graphics Data ($4000-$7FFF)

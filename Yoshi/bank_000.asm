@@ -1,67 +1,3 @@
-; ============================================================
-; YOSSY NO TAMAGO (Yoshi's Egg) - Bank 0
-; Game Boy puzzle game
-;
-; Memory Map:
-;   $C000-$C1FF  Game variables
-;   $C200-$C3FF  Sprite object table (4 objects × $10 bytes each)
-;   $C400-$C4FF  OAM shadow buffer (40 sprites × 4 bytes)
-;   $C500-$C5FF  Extended OAM / game state
-;   $C61C        LCD redraw flag
-;   $C620        Level counter
-;   $C62A-$C66D  Game board data (4 columns × 7 rows)
-;   $C66E        Sound timer
-;   $C671        Player mode (0=1P, 1=2P)
-;   $C68F        Piece fall position
-;   $C691        Piece rotation state
-;   $C696        Match result state
-;   $C698        Result display index
-;   $C6A3        Player stats buffer[4]
-;   $C6A7        Difficulty/speed mode
-;   $C6B1        Menu cursor position
-;   $C6B2-$C6B5  Game settings (speed, level, etc.)
-;   $C6B6        2-player mode flag
-;   $C6BB        Link cable role (0=none, 1=master, 2=slave)
-;   $C6BF        Animation timer
-;   $C6CF        Sprite anim frame
-;   $C6D0        Sprite anim state (paired with $C6CF)
-;   $C6E1        BGM index
-;   $C6F0        Menu selection index
-;   $C6F1        Game mode flag
-;   $C6F2        UI refresh flag
-;   $C6FA        X-axis position accumulator
-;   $C6FC        Communication buffer
-;   $C707        Pause flag
-;   $C757-$C75A  Save signature ($C7,$8A,$29,$36)
-;   $C75B-$C75C  Round timer (16-bit)
-;   $C75D-$C7A3  Drop animation state
-;   $C7A4-$C7AD  Blink animation state
-;   $C7CE        Game state countdown timer
-;
-; HRAM Map:
-;   $FF80-$FF89  OAM DMA routine (copied from ROM $01C8)
-;   $FF8A        Animation frame counter
-;   $FF8B        State transition flag
-;   $FF8D        Text fade timer
-;   $FF8E-$FF92  Sprite rendering temporaries
-;   $FF93        Screen state flag
-;   $FF94-$FF96  Various flags
-;   $FF9B        Wave pattern update flag
-;   $FF9C        SCX shadow
-;   $FF9D        SCY shadow
-;   $FF9E        WY shadow
-;   $FFA0        Joypad: newly released buttons
-;   $FFA1        Joypad: newly pressed buttons
-;   $FFA2        Joypad: current button state
-;   $FFA5        Game active flag
-;   $FFAE-$FFB7  VRAM copy parameters
-;   $FFC4        Frame countdown timer
-;   $FFC5        VBlank sync flag
-;   $FFC7        Game state (state machine index)
-;   $FFC8        Serial transfer complete flag
-;   $FFE0        Serial temp register
-; ============================================================
-;
 ; Disassembly of "yoshi.gb"
 ; This file was created with:
 ; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
@@ -199,7 +135,6 @@ JoypadTransitionInterrupt::
     nop
     nop
 
-; 152バイト、(X,Y)座標ペア、盤面位置定義テーブル
 PositionTable::
     db $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39
     db $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39
@@ -255,8 +190,6 @@ HeaderComplementCheck::
 HeaderGlobalChecksum::
     db $97, $a1
 
-; P1レジスタからボタン状態を読み取り、$FFA0-$FFA2に格納
-; $FFA0 = 離されたボタン, $FFA1 = 新たに押されたボタン, $FFA2 = 現在の状態
 ReadJoypad::
     ld a, $20
     ld c, $00
@@ -289,26 +222,26 @@ ReadJoypadButtons::
     and $0f
     or b
     ld b, a
-    ldh a, [$ffa2]
+    ldh a, [JOYPAD_HELD]
     ld e, a
     xor b
     ld d, a
     and e
-    ldh [$ffa0], a
+    ldh [JOYPAD_RAW], a
     ld a, d
     and b
-    ldh [$ffa1], a
+    ldh [JOYPAD_PRESSED], a
     ld a, $30
     ldh [rP1], a
     ld a, b
-    ldh [$ffa2], a
+    ldh [JOYPAD_HELD], a
     and $0f
     cp $0f
     ret nz
 
 Jump_000_019d:
     xor a
-    ldh [$ffa2], a
+    ldh [JOYPAD_HELD], a
 
 jr_000_01a0:
     ld a, $30
@@ -322,7 +255,6 @@ jr_000_01a0:
     ldh a, [rP1]
     ldh a, [rP1]
 
-; 入力ゼロならリトライ、非ゼロならInit再起動
 JoypadStuckCheck::
     and $0f
     jr z, jr_000_01a0
@@ -330,8 +262,6 @@ JoypadStuckCheck::
     jp Init
 
 
-; OAM DMAルーチン(10バイト)をHRAM $FF80にコピー
-; VBlank中に call $FF80 でOAM転送を実行する
 SetupOAMDMA::
     ld c, $80
     ld b, $0a
@@ -353,8 +283,6 @@ OAMDMACopyLoop::
 OAMDMARoutine::
     db $3e, $c4, $e0, $46, $3e, $28, $3d, $20, $fd, $c9
 
-; LCD無効化（VBlank待ち後にLCDをオフにする）
-; VRAMへの安全なアクセスが必要な時に使用
 LCDOff::
     ldh a, [rIE]
     ld b, a
@@ -411,7 +339,6 @@ jr_000_0205:
     ret
 
 
-; メモリコピー: HL → DE, BCバイト
 Memcopy::
     ld a, [hl+]
     ld [de], a
@@ -443,8 +370,6 @@ jr_000_0218:
     ret
 
 
-; VBlankを使った分割VRAMコピーのパラメータ設定
-; DE=転送先, HL=転送元, C=バイト数 → $FFAE-$FFB7に保存
 VRAMCopySetup::
     ld a, e
     ldh [$ffaf], a
@@ -504,44 +429,34 @@ jr_000_025e:
     ld c, a
     jr jr_000_0253
 
-; --- ステートマシン ---
-; $FFC7 の値で状態遷移:
-;   0: タイトル画面初期化（グラフィックスロード、UI構築）
-;   1: タイトル画面（入力待ち、メニュー操作）
-;   2: ゲーム画面初期化（タイル読み込み、フィールド構築）
-;   3: ゲームプレイ（メインゲームループ、ポーズ対応）
-;   4: ラウンド終了（結果表示、次ラウンド遷移）
-;   5: オプション画面（設定変更、メニュー入力）
-;   6: ゲーム開始遷移（追加グラフィックス、マルチプレイ設定）
 StateInit::
     xor a
-    ldh [$ffc7], a
+    ldh [GAME_STATE], a
     ld a, $af
     ldh [rLCDC], a
     ld a, $01
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
 
 MainLoop::
-    call $4bc5                ; WaitVBlank (Bank 1)
+    call $4bc5
     call ReadJoypad
-    ldh a, [$ffc7]
+    ldh a, [GAME_STATE]
     and a
     jr nz, jr_000_02cb
 
-    ; --- State 0: タイトル画面初期化 ---
     call LCDOff
     ld a, $02
-    ld [$2100], a             ; ROM bank switch → Bank 2
-    ld hl, $4000              ; Bank 2: ゲーム画面タイル
+    ld [$2100], a
+    ld hl, $4000
     ld de, $8000
     ld bc, $0800
     call MemcopyCall
-    ld hl, $6000              ; Bank 2: タイトル画面タイル
+    ld hl, $6000
     ld de, $8800
     ld bc, $1000
     call MemcopyCall
     ld a, $01
-    ld [$2100], a             ; ROM bank switch → Bank 1
+    ld [$2100], a
     call LCDOn
     ld hl, $c7a9
     xor a
@@ -550,17 +465,16 @@ MainLoop::
     ld [hl+], a
     ld [hl], a
     ld a, $30
-    call PlaySound            ; タイトルBGM再生
-    call $4094                ; InitSpriteBuffer (Bank 1)
+    call PlaySound
+    call $4094
     call FillOAMTitleTile
-    call $437d                ; InitGameScreen (Bank 1)
+    call $437d
     call InitTitleUI
     ld a, $01
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     jp AdvanceState
 
 
-    ; --- State 1: タイトル画面（入力待ち） ---
 jr_000_02cb:
     dec a
     jr nz, jr_000_02d3
@@ -568,18 +482,17 @@ jr_000_02cb:
     call InitGameVars
     jr MainLoop
 
-    ; --- State 2: ゲーム画面初期化 ---
 jr_000_02d3:
     dec a
     jr nz, jr_000_0302
 
     call LCDOff
     ld a, $01
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     call LoadGameTiles
     call LCDOn
     call FillOAMGameTile
-    ld a, [$c6b6]             ; 2Pモードフラグ
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_02f2
 
@@ -587,26 +500,24 @@ jr_000_02d3:
     jr jr_000_02f8
 
 jr_000_02f2:
-    ld a, [$c6e1]             ; BGMインデックス
+    ld a, [BGM_INDEX]
     call PlaySound
 
 jr_000_02f8:
     call $450b
     ld a, $01
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     jr AdvanceState
 
-    ; --- State 3: ゲームプレイ ---
 jr_000_0302:
     dec a
     jr nz, jr_000_030e
 
     call HandlePause
-    call $43ac                ; GameMainUpdate (Bank 1)
+    call $43ac
     jp MainLoop
 
 
-    ; --- State 4: ラウンド終了 ---
 jr_000_030e:
     dec a
     jr nz, jr_000_0317
@@ -615,7 +526,6 @@ jr_000_030e:
     jp MainLoop
 
 
-    ; --- State 5: オプション画面 ---
 jr_000_0317:
     dec a
     jr nz, jr_000_0320
@@ -624,24 +534,23 @@ jr_000_0317:
     jp MainLoop
 
 
-    ; --- State 6: ゲーム開始遷移 ---
 jr_000_0320:
     dec a
     jr nz, jr_000_0352
 
     call LCDOff
     ld a, $02
-    ld [$2100], a             ; ROM bank switch → Bank 2
-    ld hl, $4800              ; 共通タイルセット
+    ld [$2100], a
+    ld hl, $4800
     ld de, $8800
     ld bc, $1000
     call MemcopyCall
-    ld hl, $5800              ; 追加タイル
+    ld hl, $5800
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
     ld a, $01
-    ld [$2100], a             ; ROM bank switch → Bank 1
+    ld [$2100], a
     call StartGameplay
     call LCDOn
     ld a, $05
@@ -652,11 +561,11 @@ jr_000_0352:
 
 
 AdvanceState::
-    ldh a, [$ffc7]
+    ldh a, [GAME_STATE]
     inc a
 
 jr_000_0358:
-    ldh [$ffc7], a
+    ldh [GAME_STATE], a
     jp MainLoop
 
 
@@ -671,7 +580,7 @@ LoadGameTiles::
     ld de, $8000
     ld bc, $0800
     call MemcopyCall
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_039f
 
@@ -679,7 +588,7 @@ LoadGameTiles::
     ld de, $9500
     ld bc, $0200
     call MemcopyCall
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_039f
 
@@ -695,12 +604,12 @@ jr_000_039f:
 
 
 HandlePause::
-    ld hl, $c6b6
+    ld hl, TWO_PLAYER_FLAG
     xor a
     cp [hl]
     jr z, jr_000_03b5
 
-    ld hl, $c6bb
+    ld hl, LINK_ROLE
     ld a, $01
 
 Jump_000_03b1:
@@ -711,7 +620,7 @@ Jump_000_03b1:
 
 
 jr_000_03b5:
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     ret z
 
@@ -719,7 +628,7 @@ jr_000_03b5:
 
 jr_000_03bd:
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     jr z, jr_000_03bd
 
@@ -729,8 +638,8 @@ jr_000_03bd:
 
 PauseGame::
     ld a, $01
-    ld [$c707], a
-    ld a, [$c6b6]
+    ld [PAUSE_FLAG], a
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_000_03da
 
@@ -741,7 +650,7 @@ jr_000_03da:
     ld a, $2e
     call PlaySound
     xor a
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     db $76
 
 DrawPauseOverlay::
@@ -754,23 +663,23 @@ DrawPauseOverlay::
 
 UnpauseGame::
     ld a, $01
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     xor a
     ld [$c002], a
-    ld [$c707], a
+    ld [PAUSE_FLAG], a
     ret
 
 
 CheckPause2P::
-    ld a, [$c707]
+    ld a, [PAUSE_FLAG]
     and a
     ret z
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret z
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     ret z
 
@@ -779,20 +688,17 @@ CheckPause2P::
 jr_000_0411:
     call $4bc5
     call DrawPauseOverlay
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $f0
     jr z, jr_000_0411
 
     jp UnpauseGame
 
 
-; 32バイト = 8 OAMエントリ [Y,X,Tile,Attr]、「PAUSE」文字スプライト
 PauseSpriteData::
     db $50, $28, $44, $10, $50, $30, $46, $10, $50, $38, $48, $10, $50, $40, $4a, $10
     db $50, $48, $78, $10, $50, $50, $7a, $10, $50, $58, $7c, $10, $50, $60, $7e, $10
 
-; ハードウェア初期化
-; レジスタ初期化、RAM消去、保存データ検証、OAM DMA設定
 Init::
     di
     ld a, $01
@@ -819,7 +725,6 @@ Init::
     ld a, $d0
     ldh [rOBP1], a
     ld sp, $dfff
-    ; 保存データの整合性チェック (magic: $C7,$8A,$29,$36)
     ld hl, $c757
     ld a, [hl+]
     cp $c7
@@ -873,7 +778,6 @@ jr_000_04a7:
     dec b
     jr nz, jr_000_0497
 
-    ; 保存データ署名を書き込み (magic: $C7,$8A,$29,$36)
     ld hl, $c757
     ld a, $c7
     ld [hl+], a
@@ -910,7 +814,7 @@ jr_000_04d1:
     xor a
     ldh [rSTAT], a
     ldh [rIF], a
-    ldh [$ff9c], a
+    ldh [SCX_SHADOW], a
     ldh [$ff9d], a
     ld a, $0d
     ldh [rIE], a
@@ -930,7 +834,7 @@ StartGame::
     ld a, $ff
     call PlaySound
     xor a
-    ld [$ff9b], a
+    ld [WAVE_UPDATE], a
     ei
     jp StateInit
 
@@ -973,7 +877,6 @@ jr_000_051a:
     ret
 
 
-; OAMバッファアドレス計算: H=行, L=列 → HLにOAMバッファ内のアドレスを返す
 CalcOAMAddress::
     ld a, h
     sla a
@@ -1024,7 +927,6 @@ jr_000_0558:
     ret
 
 
-; サウンド再生: A=サウンドID → Bank 1のSoundEngine($53C9)を呼び出し
 PlaySound::
     push hl
     push de
@@ -1036,7 +938,6 @@ PlaySound::
     ret
 
 
-; 乗算ルーチン
 Multiply::
     push bc
     push de
@@ -1091,7 +992,6 @@ jr_000_05a6:
     add [hl]
     ld [hl-], a
 
-; 乗算の加算ステップ
 MultiplyAddStep::
     ld a, [de]
 
@@ -1350,7 +1250,6 @@ jr_000_06cd:
     ret
 
 
-; 盤面の1マスにスプライトを描画
 DrawGridPiece::
     push af
     ld a, h
@@ -2061,7 +1960,7 @@ jr_000_09c6:
 
 
     ld d, $00
-    ld hl, $c62a
+    ld hl, BOARD_DATA
     ld e, $00
     ld b, $04
 
@@ -2189,7 +2088,6 @@ InitBlinkState::
     ret
 
 
-; 72バイト、アニメフレームタイルID ($4A=透明)
 SpritePatternTable1::
     db $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $00, $04, $05, $01, $10, $14, $15, $11
     db $00, $06, $07, $01, $10, $16, $17, $11, $00, $08, $09, $01, $10, $18, $19, $11
@@ -2197,7 +2095,6 @@ SpritePatternTable1::
     db $00, $0e, $0f, $01, $10, $1e, $1f, $11, $4a, $0e, $0f, $4a, $4a, $1e, $1f, $4a
     db $4a, $20, $21, $4a, $4a, $22, $23, $4a
 
-; 112バイト、副アニメフレーム ($49=透明)
 SpritePatternTable2::
     db $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49, $49
     db $49, $87, $88, $49, $49, $89, $8a, $49, $49, $8f, $90, $49, $49, $91, $92, $49
@@ -2208,26 +2105,26 @@ SpritePatternTable2::
     db $4a, $20, $21, $4a, $4a, $22, $23, $4a, $4a, $24, $25, $4a, $4a, $26, $27, $4a
 
 InitGameState::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_000_0b33
 
     ld a, [$c6b2]
-    ld [$c671], a
-    ld a, [$c6b6]
+    ld [PLAYER_MODE], a
+    ld a, [TWO_PLAYER_FLAG]
     jr z, jr_000_0b1b
 
     ld a, $01
-    ld [$c671], a
+    ld [PLAYER_MODE], a
 
 jr_000_0b1b:
     ld a, [$c6b3]
     ld [$c6b7], a
     ld [$c6e2], a
     inc a
-    ld [$c6cf], a
+    ld [SPRITE_ANIM_FRAME], a
     xor a
-    ld [$c6d0], a
+    ld [SPRITE_ANIM_STATE], a
     ld a, [$c6b4]
     ld [$c6b8], a
     ret
@@ -2235,14 +2132,14 @@ jr_000_0b1b:
 
 jr_000_0b33:
     ld a, $01
-    ld [$c671], a
+    ld [PLAYER_MODE], a
     ld a, [$c6eb]
     ld [$c6b7], a
     ld [$c6e2], a
     inc a
-    ld [$c6cf], a
+    ld [SPRITE_ANIM_FRAME], a
     xor a
-    ld [$c6d0], a
+    ld [SPRITE_ANIM_STATE], a
     ld a, [$c6ec]
     ld [$c6b8], a
     ret
@@ -2297,15 +2194,12 @@ InitGameBoard::
     ret
 
 
-    dec c
-    dec bc
-    add hl, bc
-    rlca
-    dec b
-    nop
-    ld a, [bc]
-    inc d
-    ld e, $28
+LevelCountTable::
+    db $0d, $0b, $09, $07, $05
+
+LevelThresholds::
+    db $00, $0a, $14, $1e, $28
+
     inc b
     ld [bc], a
     jr z, jr_000_0b92
@@ -2420,378 +2314,60 @@ jr_000_0bc6:
     ld bc, $0204
     dec bc
 
-; ゲームターン処理
-; 注意: コードとデータが混在する領域
-ProcessGameTurn::
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0304
-    ld b, $01
-    inc b
-    ld [bc], a
-    rrca
-    ld bc, $0204
-    ld c, $01
-    inc b
-    ld [bc], a
-    dec c
-    ld bc, $0204
-    inc c
-    ld bc, $0204
-    dec bc
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0301], sp
-    ld [bc], a
-    rlca
-    ld bc, $0305
-    ld b, $01
-    inc b
-    ld [bc], a
-    rrca
-    ld bc, $0204
-    ld c, $01
-    inc b
-    ld [bc], a
-    dec c
-    ld bc, $0204
-    inc c
-    ld bc, $0204
-    dec bc
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0201], sp
-    ld [bc], a
-    rlca
-    ld bc, $0306
-    ld b, $01
-    inc b
-    ld [bc], a
-    inc d
-    ld bc, $0204
-    dec c
-    ld bc, $0204
-    inc c
-    ld bc, $0204
-    dec bc
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0201
-    ld b, $01
-    rlca
-    inc bc
-    ld b, $01
-    inc b
-    ld [bc], a
-    inc d
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0304
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0204
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0203
-    inc bc
-    ld bc, $0305
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0202
-    inc bc
-    ld bc, $0306
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    ld [$0401], sp
-    ld [bc], a
-    rlca
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0204
-    inc bc
-    ld bc, $0201
-    ld [bc], a
-    ld bc, $0307
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    rlca
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0204
-    inc bc
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0304
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0204
-    inc bc
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0203
-    ld [bc], a
-    ld bc, $0305
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    dec b
-    ld bc, $0204
-    inc b
-    ld bc, $0204
-    inc bc
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0202
-    ld [bc], a
-    ld bc, $0306
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    inc b
-    ld bc, $0204
-    inc bc
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0201
-    ld [bc], a
-    ld bc, $0307
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    inc bc
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0304
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc bc
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0203
-    ld [bc], a
-    ld bc, $0305
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc bc
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0202
-    ld [bc], a
-    ld bc, $0306
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc bc
+GameTurnTable::
+    db $01, $04, $02, $0a, $01, $04, $02, $09, $01, $04, $02, $08, $01, $04, $02, $07
+    db $01, $04, $03, $06, $01, $04, $02, $0f, $01, $04, $02, $0e, $01, $04, $02, $0d
+    db $01, $04, $02, $0c, $01, $04, $02, $0b, $01, $04, $02, $0a, $01, $04, $02, $09
+    db $01, $04, $02, $08, $01, $03, $02, $07, $01, $05, $03, $06, $01, $04, $02, $0f
+    db $01, $04, $02, $0e, $01, $04, $02, $0d, $01, $04, $02, $0c, $01, $04, $02, $0b
+    db $01, $04, $02, $0a, $01, $04, $02, $09, $01, $04, $02, $08, $01, $02, $02, $07
+    db $01, $06, $03, $06, $01, $04, $02, $14, $01, $04, $02, $0d, $01, $04, $02, $0c
+    db $01, $04, $02, $0b, $01, $04, $02, $0a, $01, $04, $02, $09, $01, $04, $02, $08
+    db $01, $04, $02, $07, $01, $01, $02, $06, $01, $07, $03, $06, $01, $04, $02, $14
+    db $01, $04, $02, $0a, $01, $04, $02, $09, $01, $04, $02, $08, $01, $04, $02, $07
+    db $01, $04, $02, $06, $01, $04, $02, $05, $01, $04, $02, $04, $01, $04, $03, $06
+    db $01, $04, $03, $05, $01, $04, $02, $14, $01, $04, $02, $0a, $01, $04, $02, $09
+    db $01, $04, $02, $08, $01, $04, $02, $07, $01, $04, $02, $05, $01, $04, $02, $04
+    db $01, $03, $02, $03, $01, $05, $03, $06, $01, $04, $03, $05, $01, $04, $02, $14
+    db $01, $04, $02, $09, $01, $04, $02, $08, $01, $04, $02, $07, $01, $04, $02, $06
+    db $01, $04, $02, $05, $01, $04, $02, $04, $01, $02, $02, $03, $01, $06, $03, $06
+    db $01, $04, $03, $05, $01, $04, $02, $14, $01, $04, $02, $08, $01, $04, $02, $07
+    db $01, $04, $02, $06, $01, $04, $02, $05, $01, $04, $02, $04, $01, $04, $02, $03
+    db $01, $01, $02, $02, $01, $07, $03, $06, $01, $04, $03, $05, $01, $04, $02, $14
+    db $01, $04, $02, $07, $01, $04, $02, $06, $01, $04, $02, $05, $01, $04, $02, $04
+    db $01, $04, $02, $03, $01, $04, $02, $02, $01, $04, $03, $06, $01, $04, $03, $05
+    db $01, $04, $03, $04, $01, $04, $02, $14, $01, $04, $02, $06, $01, $04, $02, $05
+    db $01, $04, $02, $04, $01, $04, $02, $03, $01, $04, $02, $02, $01, $03, $02, $02
+    db $01, $05, $03, $06, $01, $04, $03, $05, $01, $04, $03, $04, $01, $04, $02, $14
+    db $01, $04, $02, $05, $01, $04, $02, $04, $01, $04, $02, $03, $01, $04, $02, $02
+    db $01, $04, $02, $02, $01, $02, $02, $02, $01, $06, $03, $06, $01, $04, $03, $05
+    db $01, $04, $03, $04, $01, $04, $02, $0f, $01, $04, $02, $04, $01, $04, $02, $03
+    db $01, $04, $02, $02, $01, $04, $02, $02, $01, $04, $02, $02, $01, $01, $02, $02
+    db $01, $07, $03, $06, $01, $04, $03, $05, $01, $04, $03, $04, $01, $04, $02, $0f
+    db $01, $04, $02, $03, $01, $04, $02, $02, $01, $04, $02, $02, $01, $04, $02, $02
+    db $01, $04, $02, $02, $01, $04, $03, $06, $01, $04, $03, $05, $01, $04, $03, $04
+    db $01, $04, $03, $03, $01, $04, $02, $0f, $01, $04, $02, $02, $01, $04, $02, $02
+    db $01, $04, $02, $02, $01, $04, $02, $02, $01, $03, $02, $02, $01, $05, $03, $06
+    db $01, $04, $03, $05, $01, $04, $03, $04, $01, $04, $03, $03, $01, $04, $02, $0f
+    db $01, $04, $02, $02, $01, $04, $02, $02, $01, $04, $02, $02, $01, $04, $02, $02
+    db $01, $02, $02, $02, $01, $06, $03, $06, $01, $04, $03, $05, $01, $04, $03, $04
+    db $01, $04, $03, $03, $01, $04, $02, $0f, $01, $04, $02, $02, $01, $04, $02, $02
+    db $01, $04, $02, $02, $01, $04, $02, $02, $01, $01, $02, $02, $01, $07, $03, $06
+    db $01, $04, $03, $05, $01, $04, $03, $04, $01, $04, $03, $03, $01, $04, $02, $06
+    db $01, $04, $02, $06, $01, $04, $02, $05, $01, $04, $02, $05, $01, $04, $03, $04
+    db $01, $04, $03, $04, $01, $04, $03, $03, $01, $04, $03, $03, $01, $04, $03, $02
+    db $01, $04, $03, $02, $01
 
-; マッチング処理 (5段階アニメーション)
-; LCD OFF → グラフィクスロード → アニメ1(136f) → アニメ2(10f) → 結果表示
 ProcessMatching::
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0204
-    ld [bc], a
-    ld bc, $0201
-    ld [bc], a
-    ld bc, $0307
-    ld b, $01
-    inc b
-    inc bc
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc bc
-    ld bc, $0204
-    ld b, $01
-    inc b
-    ld [bc], a
-    ld b, $01
-    inc b
-    ld [bc], a
-    dec b
-    ld bc, $0204
-    dec b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc b
-    ld bc, $0304
-    inc bc
-    ld bc, $0304
-    inc bc
-    ld bc, $0304
-    ld [bc], a
-    ld bc, $0304
-    ld [bc], a
-    ld bc, $1cfe
+    cp $1c
     jr c, jr_000_0edb
 
     ld a, $1b
 
 jr_000_0edb:
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     xor a
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     call LCDOff
     call ClearOAM
     ld hl, $9c00
@@ -2821,7 +2397,7 @@ jr_000_0edb:
     ld de, $c408
     ld bc, $0010
     call Memcopy
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     ld hl, $11d4
     ld b, $00
     ld c, a
@@ -2846,16 +2422,16 @@ jr_000_0f4b:
     ld d, $05
     call DrawCharacter
     ld a, $01
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld a, $18
-    ldh [$ff9c], a
+    ldh [SCX_SHADOW], a
     ld a, $88
 
 jr_000_0f6a:
     push af
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     inc a
     cp $06
     jr c, jr_000_0f78
@@ -2872,12 +2448,12 @@ jr_000_0f78:
     ld b, $96
 
 jr_000_0f80:
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld a, b
     ld hl, $c4ed
     ld bc, $0303
     call FillRect
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     bit 0, a
     jr z, jr_000_0f95
 
@@ -2885,9 +2461,9 @@ jr_000_0f80:
 
 jr_000_0f95:
     call $4bc5
-    ldh a, [$ff9c]
+    ldh a, [SCX_SHADOW]
     inc a
-    ldh [$ff9c], a
+    ldh [SCX_SHADOW], a
     pop af
     dec a
     jr nz, jr_000_0f6a
@@ -2899,13 +2475,13 @@ jr_000_0f95:
     ld c, $3c
     call DrawString
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld a, $60
-    ldh [$ff9c], a
+    ldh [SCX_SHADOW], a
 
 jr_000_0fb8:
     push af
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     inc a
     cp $0a
     jr c, jr_000_0fc6
@@ -2922,15 +2498,15 @@ jr_000_0fc6:
     ld b, $24
 
 jr_000_0fce:
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld a, b
     ld hl, $c546
     ld bc, $0606
     call FillRect
     call $4bc5
-    ldh a, [$ff9c]
+    ldh a, [SCX_SHADOW]
     dec a
-    ldh [$ff9c], a
+    ldh [SCX_SHADOW], a
     pop af
     dec a
     jr nz, jr_000_0fb8
@@ -3036,7 +2612,7 @@ jr_000_106e:
     call Memcopy
     ld de, $0004
     ld hl, $11d4
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add l
     ld l, a
     jr nc, jr_000_10bb
@@ -3074,7 +2650,7 @@ UpdateScore::
     call DrawString
     call ClearOAM
     ld hl, $119c
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     sla a
     ld b, $00
     ld c, a
@@ -3119,10 +2695,10 @@ jr_000_111b:
     ld bc, HeaderLogo
     call FillRect
     ld hl, $c510
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     add $d4
     ld [hl-], a
-    ld a, [$c6d0]
+    ld a, [SPRITE_ANIM_STATE]
     add $d4
     ld [hl], a
     ld hl, $c511
@@ -3295,7 +2871,7 @@ DrawDigit::
     call LoadGameTiles
     call LCDOn
     ld a, $01
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     ret
 
 
@@ -3342,7 +2918,7 @@ jr_000_1234:
 
 FillRectAlt::
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $0f
     jr z, FillRectAlt
 
@@ -3369,7 +2945,7 @@ jr_000_124d:
 
     call CalcDifficulty
     call DisplayLevel
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     ret z
 
@@ -3389,7 +2965,7 @@ jr_000_126e:
     ld [$c6e5], a
     ld [$c703], a
     push af
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_128b
 
@@ -3434,7 +3010,7 @@ jr_000_12ac:
 
 
 DisplayLevel::
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_12bd
 
@@ -3514,9 +3090,8 @@ jr_000_1301:
     ret
 
 
-; ピースの一致判定（上下入れ替え操作の処理）
 CheckMatch::
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $30
     jr z, jr_000_1317
 
@@ -3524,7 +3099,7 @@ CheckMatch::
     call PlaySound
 
 jr_000_1317:
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $03
     jr z, jr_000_1341
 
@@ -3550,11 +3125,11 @@ jr_000_1317:
 
 jr_000_1341:
     ld hl, $c206
-    ldh a, [$ffa2]
+    ldh a, [JOYPAD_HELD]
     bit 7, a
     jr nz, jr_000_136d
 
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     bit 4, a
     jr nz, jr_000_1355
 
@@ -3693,7 +3268,7 @@ UpdateMatchState::
     ld a, $01
     ret nz
 
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     cp $02
     jr nz, jr_000_13f6
 
@@ -3703,9 +3278,9 @@ UpdateMatchState::
 jr_000_13f6:
     call MovePieceUp
     ld b, a
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     inc a
-    ld [$c68f], a
+    ld [PIECE_FALL_POS], a
     cp b
     jr nc, jr_000_140f
 
@@ -3724,7 +3299,7 @@ jr_000_140f:
     cp b
     jr nz, jr_000_1429
 
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     cp $0f
     jr z, jr_000_1429
 
@@ -3737,7 +3312,7 @@ jr_000_1429:
     call MovePieceUp
     dec a
     ld h, a
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     ld l, a
@@ -3753,7 +3328,7 @@ jr_000_1429:
     ld a, $01
     ld [$c704], a
     xor a
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_145d
 
@@ -3793,7 +3368,7 @@ jr_000_1472:
 
 
 MovePieceUp::
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     ld hl, $c66a
     add l
     jr nc, jr_000_1481
@@ -3810,9 +3385,9 @@ MovePieceLeft::
     ld hl, $c697
     dec [hl]
     call MovePieceUp
-    ld hl, $c62a
+    ld hl, BOARD_DATA
     call GetArrayElement
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     sla a
@@ -3881,7 +3456,7 @@ jr_000_14d8:
     ld a, $02
     ld [$c698], a
     ld a, [$c6b7]
-    ld hl, $0b83
+    ld hl, LevelCountTable
     call GetArrayElement
     ld [$c699], a
     ld a, $30
@@ -3911,7 +3486,7 @@ jr_000_1506:
 
 GenerateNextPiece::
     ld b, $40
-    ld hl, $c62a
+    ld hl, BOARD_DATA
 
 jr_000_150d:
     xor a
@@ -3963,11 +3538,11 @@ jr_000_1536:
 
 ProcessInputGame::
     ld a, $0a
-    ldh [$ffc4], a
+    ldh [VBLANK_BUSY], a
     call ProcessInputTitle
 
 jr_000_1543:
-    ldh a, [$ffc4]
+    ldh a, [VBLANK_BUSY]
     and a
     jr nz, jr_000_1543
 
@@ -4061,7 +3636,7 @@ HandleDrop::
     call ShuffleRandom
     call ProcessInput
     call DropPiece
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_15d0
 
@@ -4139,9 +3714,9 @@ jr_000_162a:
     inc a
     inc a
     ld [hl], a
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     ld h, a
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     ld l, a
@@ -4154,7 +3729,7 @@ jr_000_162a:
 
 
 UpdateBoard::
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     add $0a
     swap a
     ld e, a
@@ -4167,7 +3742,7 @@ UpdateBoard::
     ld [de], a
     inc de
     inc de
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     dec a
     sla a
     sla a
@@ -4175,14 +3750,14 @@ UpdateBoard::
     ld [de], a
     inc de
     inc de
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     sla a
     sla a
     sla a
     ld [de], a
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     ld hl, $c6cb
     call GetArrayElement
     ld [hl], $0a
@@ -4202,13 +3777,13 @@ ScanBoard::
     call MovePieceDown
     pop af
     ld b, a
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     sub b
     cpl
     inc a
     ld b, a
     srl a
-    ldh [$ff93], a
+    ldh [SCREEN_STATE], a
     push bc
     push hl
     ld hl, $c6fc
@@ -4232,9 +3807,9 @@ jr_000_16c7:
     ld [hl], b
 
 jr_000_16cb:
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     ld h, a
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     ld l, a
@@ -4316,12 +3891,12 @@ jr_000_1708:
 
 
 UpdateFallTimer::
-    ld a, [$c68f]
+    ld a, [PIECE_FALL_POS]
     cp $0f
     jr z, jr_000_1754
 
     ld h, a
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     ld l, a
 
 jr_000_1746:
@@ -4346,7 +3921,7 @@ jr_000_1756:
 
 
 GetFallSpeed::
-    ld de, $c62a
+    ld de, BOARD_DATA
     ld a, l
     sla a
     sla a
@@ -4381,20 +3956,20 @@ UpdateTimer::
     pop de
     pop bc
     pop af
-    ldh a, [$ff93]
+    ldh a, [SCREEN_STATE]
     ld [$c6a2], a
     inc h
     inc h
     ld b, h
-    ldh a, [$ff93]
+    ldh a, [SCREEN_STATE]
     ld hl, $18cb
     call GetArrayElement
-    ldh [$ff93], a
+    ldh [SCREEN_STATE], a
     ld hl, $c290
     ld [hl], $03
     inc hl
     inc hl
-    ldh a, [$ff93]
+    ldh a, [SCREEN_STATE]
     ld [hl+], a
     inc hl
     ld a, b
@@ -4403,7 +3978,7 @@ UpdateTimer::
     sla a
     ld [hl+], a
     inc hl
-    ld a, [$c691]
+    ld a, [PIECE_ROTATION]
     sla a
     sla a
     sla a
@@ -4479,7 +4054,7 @@ jr_000_181a:
     call Send2PData
     inc a
     push hl
-    ld hl, $ff93
+    ld hl, SCREEN_STATE
     ld b, [hl]
     pop hl
     inc b
@@ -4536,7 +4111,7 @@ Send2PData::
 
     call CheckPause2P
     call $4bc5
-    ld a, [$ffc7]
+    ld a, [GAME_STATE]
     cp $03
     jr nz, jr_000_18af
 
@@ -4576,7 +4151,6 @@ ShowResults::
     ret
 
 
-; ピース着地 → 盤面更新 → 下降 → SE再生
 HandlePieceLanding::
     ld b, $01
     call UpdateBoard
@@ -4614,7 +4188,7 @@ CalcResults::
 
 
 DisplayResults::
-    ldh [$ff93], a
+    ldh [SCREEN_STATE], a
     call SelectMenuItem
     cp $03
     jr c, jr_000_18f6
@@ -4815,7 +4389,6 @@ jr_000_19cc:
     ret
 
 
-; メニュー入力 → 結果計算 → 遷移
 ProcessMenuLoop::
     call ProcessMenuInput
     call CalcResults
@@ -4899,7 +4472,7 @@ DrawMenuCursor::
     xor a
     ld [$c6aa], a
     ld a, [$c6b7]
-    ld hl, $0b88
+    ld hl, LevelThresholds
     call GetArrayElement
     ld [$c6a9], a
     ld hl, $0b8d
@@ -4940,7 +4513,7 @@ ProcessMenuSelection::
     jr jr_000_1ae2
 
 jr_000_1a8d:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr z, jr_000_1ae2
 
@@ -4954,12 +4527,12 @@ jr_000_1a8d:
 
 jr_000_1aa0:
     call InitTitleGfx
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     cp $08
     jr nc, jr_000_1ae2
 
     call DrawTitleText
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     srl a
     jr c, jr_000_1acc
 
@@ -5047,7 +4620,7 @@ jr_000_1b0a:
 InitTitleGfx::
     push bc
     xor a
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     ld hl, $c4c8
     ld de, $0018
     ld c, $07
@@ -5063,9 +4636,9 @@ jr_000_1b1b:
     cp $4a
     jr z, jr_000_1b28
 
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     inc a
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
 
 jr_000_1b28:
     dec b
@@ -5126,9 +4699,9 @@ jr_000_1b58:
     dec hl
     dec hl
     dec hl
-    ld a, [$ff8d]
+    ld a, [TEXT_FADE]
     add c
-    ld [$ff8d], a
+    ld [TEXT_FADE], a
     ret
 
 
@@ -5171,11 +4744,11 @@ TitleInputHandler::
 
 
 SelectMenuItem::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_000_1b9c
 
-    ld a, [$ff93]
+    ld a, [SCREEN_STATE]
     ret
 
 
@@ -5184,14 +4757,14 @@ jr_000_1b9c:
     and a
     jr nz, jr_000_1ba6
 
-    ld a, [$ff93]
+    ld a, [SCREEN_STATE]
     ret
 
 
 jr_000_1ba6:
     ld c, a
     ld a, $04
-    ld hl, $ff93
+    ld hl, SCREEN_STATE
     ld b, [hl]
     sub b
     ret z
@@ -5207,7 +4780,7 @@ jr_000_1ba6:
     jr jr_000_1bc8
 
 jr_000_1bbe:
-    ld hl, $ff93
+    ld hl, SCREEN_STATE
     ld b, [hl]
     add b
     ld hl, $c6fa
@@ -5359,18 +4932,18 @@ jr_000_1c9e:
 UpdateBGMap::
     call CalcOAMAddress
     ld a, d
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     push hl
     ld d, $24
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl+], a
     ld d, $25
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     call TileDataLookup0
     ld d, $26
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl], a
     pop hl
@@ -5380,14 +4953,14 @@ UpdateBGMap::
 jr_000_1cce:
     push hl
     ld d, $27
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl+], a
     ld e, c
     ld d, $00
     add hl, de
     ld d, $27
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl], a
     pop hl
@@ -5397,15 +4970,15 @@ jr_000_1cce:
     jr nz, jr_000_1cce
 
     ld d, $28
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl+], a
     ld d, $25
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     call TileDataLookup0
     ld d, $29
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     add d
     ld [hl], a
     ret
@@ -5727,7 +5300,7 @@ ResetSettings::
 
 
 OptionsScreen::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jp nz, UpdateGameLoop
 
@@ -5739,32 +5312,32 @@ OptionsScreen::
 
     call Multiply
     call $7c02
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_1ec7
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_1ebe
 
 jr_000_1eb1:
-    ldh a, [$ffc8]
+    ldh a, [SERIAL_DONE]
     and a
     jr z, jr_000_1eb1
 
     xor a
-    ldh [$ffc8], a
-    ld a, [$c6b9]
+    ldh [SERIAL_DONE], a
+    ld a, [LINK_RECV]
     jr jr_000_1ec9
 
 jr_000_1ebe:
-    ldh a, [$ffa1]
-    ld [$c6ba], a
+    ldh a, [JOYPAD_PRESSED]
+    ld [LINK_SEND], a
     ld a, $81
     ldh [rSC], a
 
 jr_000_1ec7:
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
 
 jr_000_1ec9:
     and a
@@ -5773,24 +5346,24 @@ jr_000_1ec9:
     bit 3, a
     jr z, jr_000_1eef
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_1ee7
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_1ee7
 
     call $4bc5
     xor a
-    ld [$c6ba], a
+    ld [LINK_SEND], a
     ld a, $81
     ldh [rSC], a
 
 jr_000_1ee7:
     call InitGameState
     ld a, $02
-    ldh [$ffc7], a
+    ldh [GAME_STATE], a
     ret
 
 
@@ -5811,7 +5384,7 @@ jr_000_1eef:
 
 
 jr_000_1f00:
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     inc a
     cp $04
     jr nz, jr_000_1f09
@@ -5819,13 +5392,13 @@ jr_000_1f00:
     xor a
 
 jr_000_1f09:
-    ld [$c6b1], a
+    ld [MENU_CURSOR], a
     call UpdateCursorDisplay
     ret
 
 
 jr_000_1f10:
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     dec a
     cp $ff
     jr nz, jr_000_1f1a
@@ -5833,20 +5406,20 @@ jr_000_1f10:
     ld a, $03
 
 jr_000_1f1a:
-    ld [$c6b1], a
+    ld [MENU_CURSOR], a
     call UpdateCursorDisplay
     ret
 
 
 jr_000_1f21:
     ld hl, $c6b2
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     call GetArrayElement
     inc a
     ld b, a
     push hl
     ld hl, $1f4c
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     call GetArrayElement
     cp b
     pop hl
@@ -5873,7 +5446,7 @@ jr_000_1f42:
 
 jr_000_1f50:
     ld hl, $c6b2
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     call GetArrayElement
     and a
     ret z
@@ -5893,11 +5466,11 @@ jr_000_1f64:
 
 
 ApplyGameSettings::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_1f87
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_1f81
 
@@ -5919,7 +5492,7 @@ jr_000_1f87:
     jr nz, jr_000_1fa5
 
     ld a, $34
-    ld [$c6e1], a
+    ld [BGM_INDEX], a
     ld a, $38
     call PlaySound
     ld a, $1b
@@ -5934,7 +5507,7 @@ jr_000_1fa5:
     jr nz, jr_000_1fbe
 
     ld a, $3c
-    ld [$c6e1], a
+    ld [BGM_INDEX], a
     ld a, $40
     call PlaySound
     ld a, $2a
@@ -5949,7 +5522,7 @@ jr_000_1fbe:
     jr nz, jr_000_1fd7
 
     ld a, $44
-    ld [$c6e1], a
+    ld [BGM_INDEX], a
     ld a, $48
     call PlaySound
     ld a, $0c
@@ -5961,7 +5534,7 @@ jr_000_1fbe:
 
 jr_000_1fd7:
     ld a, $ff
-    ld [$c6e1], a
+    ld [BGM_INDEX], a
     ld a, $ff
     call PlaySound
     ret
@@ -5988,7 +5561,6 @@ UpdateCursorDisplay::
     cp $03
     jp z, SaveConfig3
 
-; 設定保存ディスパッチ: TileDataLookup4 → SaveSettings
 SaveConfig1::
     call TileDataLookup4
     ld de, $2026
@@ -5996,7 +5568,6 @@ SaveConfig1::
     ret
 
 
-; 設定保存ディスパッチ: TileDataLookupB → SaveSettings
 SaveConfig2::
     call TileDataLookupB
     ld de, $202d
@@ -6004,7 +5575,6 @@ SaveConfig2::
     ret
 
 
-; 設定保存ディスパッチ: TileDataLookupD → SaveSettings
 SaveConfig3::
     call TileDataLookupD
     ld de, $2034
@@ -6078,7 +5648,7 @@ jr_000_206b:
 
 
 DrawOptionLabel::
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     and a
     ret nz
 
@@ -6103,22 +5673,20 @@ jr_000_208c:
     ret
 
 
-; シリアル割り込みハンドラ: 2P通信データ送受信
-; $C6BB で通信役割を判定 (0=なし, 1=マスター, 2=スレーブ)
 SerialHandler::
     push af
     push bc
     push de
     push hl
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     and a
     jr z, jr_000_20b3
 
     ldh a, [rSB]
-    ld [$c6b9], a
-    ld a, [$c6ba]
+    ld [LINK_RECV], a
+    ld a, [LINK_SEND]
     ldh [rSB], a
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_20d2
 
@@ -6128,7 +5696,7 @@ SerialHandler::
 
 jr_000_20b3:
     ldh a, [rSB]
-    ld [$c6b9], a
+    ld [LINK_RECV], a
     cp $02
     jr z, jr_000_20cf
 
@@ -6152,7 +5720,7 @@ jr_000_20cf:
 
 jr_000_20d2:
     ld a, $01
-    ldh [$ffc8], a
+    ldh [SERIAL_DONE], a
     pop hl
     pop de
     pop bc
@@ -6193,11 +5761,11 @@ ResetTitleState::
     ld a, $05
     ld [$c6bd], a
     xor a
-    ld [$c6bb], a
-    ld [$c671], a
-    ld [$c6b1], a
-    ld [$c6b9], a
-    ld [$c6ba], a
+    ld [LINK_ROLE], a
+    ld [PLAYER_MODE], a
+    ld [MENU_CURSOR], a
+    ld [LINK_RECV], a
+    ld [LINK_SEND], a
     inc a
     ld [$c620], a
     ld [$ff94], a
@@ -6248,7 +5816,7 @@ InitGameVars::
 
 
 StartGameplay::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_000_21ae
 
@@ -6269,7 +5837,7 @@ StartGameplay::
 
 
 jr_000_21ae:
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $02
     jr z, jr_000_21b9
 
@@ -6601,24 +6169,24 @@ TimerTick::
 
 
 TimerTickCore::
-    ld a, [$ffc7]
+    ld a, [GAME_STATE]
     cp $03
     ret nz
 
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret z
 
-    ld a, [$c707]
+    ld a, [PAUSE_FLAG]
     and a
     jr z, jr_000_239b
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     ret nz
 
     ld a, $f0
-    ld [$c6ba], a
+    ld [LINK_SEND], a
     ld a, $81
     ldh [rSC], a
     ret
@@ -6644,10 +6212,10 @@ jr_000_23a6:
 jr_000_23af:
     ld [$c6fe], a
     ld a, [hl]
-    ld [$c6ba], a
+    ld [LINK_SEND], a
     xor a
     ld [hl], a
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_23c3
 
@@ -6655,7 +6223,7 @@ jr_000_23af:
     ldh [rSC], a
 
 jr_000_23c3:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $f0
     jr z, jr_000_23de
 
@@ -6681,11 +6249,10 @@ jr_000_23d8:
 
 jr_000_23de:
     ld a, $01
-    ld [$c707], a
+    ld [PAUSE_FLAG], a
     ret
 
 
-; ビット6処理: 標準パス
 ProcessBit6::
     res 6, a
     ld b, a
@@ -6695,7 +6262,6 @@ ProcessBit6::
     ret
 
 
-; ビット5処理: SpeedTable参照
 ProcessBit5::
     ld b, $01
     bit 0, a
@@ -6717,7 +6283,6 @@ jr_000_2404:
     ret
 
 
-; ビット7処理: res 6,a 更新
 ProcessBit7::
     res 5, a
     ld hl, $c5de
@@ -6745,12 +6310,12 @@ jr_000_241c:
 
 
 CalcDifficulty::
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     ret z
 
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld hl, $c4c8
     ld de, $0018
     ld c, $07
@@ -6766,9 +6331,9 @@ jr_000_2436:
     cp $4a
     jr z, jr_000_2443
 
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     inc a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
 
 jr_000_2443:
     dec b
@@ -6778,10 +6343,10 @@ jr_000_2443:
     dec c
     jr nz, jr_000_2434
 
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     ld hl, $c566
     call SpeedTable
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     or $20
     ld [$c6fd], a
     ret
@@ -6793,32 +6358,32 @@ UpdateDifficulty::
     push de
     push hl
     ld b, a
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_249d
 
     ld a, b
     or $80
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
 
 jr_000_246a:
-    ldh a, [$ff8a]
-    ld [$c6ba], a
+    ldh a, [ANIM_FRAME]
+    ld [LINK_SEND], a
     ld [$c6fc], a
     ld [$c6fd], a
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     bit 7, a
     jr z, jr_000_246a
 
     res 7, a
     ld [$c708], a
-    ldh a, [$ff8a]
-    ld [$c6ba], a
+    ldh a, [ANIM_FRAME]
+    ld [LINK_SEND], a
     ld [$c6fc], a
     ld [$c6fd], a
     call $4bc5
-    ldh a, [$ff8a]
-    ld [$c6ba], a
+    ldh a, [ANIM_FRAME]
+    ld [LINK_SEND], a
     ld [$c6fc], a
     ld [$c6fd], a
     call $4bc5
@@ -6831,23 +6396,22 @@ jr_000_249d:
     ret
 
 
-; フィールド更新 → 数値表示 → カウントダウン
 UpdateGameLoop::
     call UpdateGameField
     call FormatNumber
     call ContinueCountdown
     call Multiply
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_24d9
 
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     ret z
 
     push af
     xor a
-    ld [$c6f1], a
+    ld [GAME_MODE_FLAG], a
     ld a, $0f
     ld [$c6f2], a
     pop af
@@ -6856,7 +6420,7 @@ UpdateGameLoop::
 
     call $4bc5
     xor a
-    ld [$c6ba], a
+    ld [LINK_SEND], a
     ld a, $55
     ldh [rSB], a
     ld a, $81
@@ -6864,7 +6428,7 @@ UpdateGameLoop::
     jr jr_000_24ed
 
 jr_000_24d9:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $55
     jr nz, jr_000_24e5
 
@@ -6873,7 +6437,7 @@ jr_000_24d9:
     jr jr_000_24ed
 
 jr_000_24e5:
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     res 3, a
     and a
     ret z
@@ -6882,12 +6446,12 @@ jr_000_24e5:
 
 jr_000_24ed:
     xor a
-    ld [$c6ba], a
-    ld [$c6b9], a
+    ld [LINK_SEND], a
+    ld [LINK_RECV], a
     call $4bc5
     call InitGameState
     ld a, $02
-    ldh [$ffc7], a
+    ldh [GAME_STATE], a
     ret
 
 
@@ -6910,11 +6474,11 @@ jr_000_24ff:
 jr_000_2510:
     ld a, $28
     call PlaySound
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     and a
     ret z
 
-    ld hl, $c6f0
+    ld hl, MENU_SELECT
     dec [hl]
     ret
 
@@ -6922,11 +6486,11 @@ jr_000_2510:
 jr_000_251f:
     ld a, $28
     call PlaySound
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     cp $01
     ret z
 
-    ld hl, $c6f0
+    ld hl, MENU_SELECT
     inc [hl]
     ret
 
@@ -6935,13 +6499,13 @@ jr_000_252f:
     ld a, $28
     call PlaySound
     ld hl, $c6eb
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     call GetArrayElement
     inc a
     ld b, a
     push hl
     ld hl, $254e
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     call GetArrayElement
     cp b
     pop hl
@@ -6957,7 +6521,7 @@ jr_000_252f:
 jr_000_2550:
     ld a, $28
     call PlaySound
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     ld hl, $c6eb
     call GetArrayElement
     and a
@@ -7009,7 +6573,7 @@ DrawDigitSprite::
 
 
 DrawScoreDigits::
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_25b9
 
@@ -7056,11 +6620,11 @@ jr_000_25bc:
 
 CalcBonus::
     ld hl, $0708
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     cp $01
     jr nz, jr_000_25f6
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_25f6
 
@@ -7152,7 +6716,7 @@ jr_000_261b:
     ld [$ffeb], a
 
 DrawLevelDisplay::
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $02
     jr z, jr_000_267c
 
@@ -7204,7 +6768,7 @@ DrawLinesDisplay::
 
 DrawStatLabel::
     ld b, $04
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     and a
     jr z, jr_000_26b7
 
@@ -7227,7 +6791,7 @@ DrawStatValue::
 
 DrawStatRow::
     ld b, $04
-    ld a, [$c6f0]
+    ld a, [MENU_SELECT]
     cp $01
     jr z, jr_000_26d3
 
@@ -7244,26 +6808,26 @@ jr_000_26d6:
 
 DrawNextPiece::
     ld a, $04
-    ld [$ff8a], a
-    ld [$ff8b], a
+    ld [ANIM_FRAME], a
+    ld [STATE_TRANSITION], a
     ld a, [$c6eb]
     call DrawNextPieceSprite
     ld a, $0c
-    ld [$ff8a], a
+    ld [ANIM_FRAME], a
     ld a, $04
-    ld [$ff8b], a
+    ld [STATE_TRANSITION], a
     ld a, [$c6ff]
     call DrawPreview
     ret
 
 
 DrawNextPieceSprite::
-    ldh [$ff8d], a
-    ld a, [$c6f0]
+    ldh [TEXT_FADE], a
+    ld a, [MENU_SELECT]
     and a
     jr nz, jr_000_270c
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_270c
 
@@ -7271,7 +6835,7 @@ DrawNextPieceSprite::
     jr jr_000_2722
 
 jr_000_270c:
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
 
 DrawPreview::
     ld hl, $2734
@@ -7287,9 +6851,9 @@ DrawPreview::
     ld e, l
 
 jr_000_2722:
-    ld a, [$ff8a]
+    ld a, [ANIM_FRAME]
     ld h, a
-    ld a, [$ff8b]
+    ld a, [STATE_TRANSITION]
     ld l, a
     call DrawStringToGrid
     call DrawStringToGrid
@@ -7578,8 +7142,8 @@ UpdateGameField::
     ld b, a
     ld a, [$c6ec]
     or b
-    ld [$c6ba], a
-    ld a, [$c6bb]
+    ld [LINK_SEND], a
+    ld a, [LINK_ROLE]
     cp $01
 
 jr_000_2866:
@@ -7589,13 +7153,13 @@ jr_000_2866:
     ldh [rSC], a
 
 jr_000_286c:
-    ldh a, [$ffc8]
+    ldh a, [SERIAL_DONE]
     and a
     jr z, jr_000_286c
 
     xor a
-    ldh [$ffc8], a
-    ld a, [$c6b9]
+    ldh [SERIAL_DONE], a
+    ld a, [LINK_RECV]
     ld b, a
     cp $55
     ret z
@@ -7638,11 +7202,11 @@ ClearField::
     ld de, $c74b
     ld bc, $0005
     call Memcopy
-    ld a, [$c6cf]
+    ld a, [SPRITE_ANIM_FRAME]
     ld [$c751], a
-    ld a, [$c6d0]
+    ld a, [SPRITE_ANIM_STATE]
     ld [$c750], a
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_28d4
 
@@ -7678,9 +7242,9 @@ jr_000_28e5:
     jr nz, jr_000_28e5
 
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld hl, $c709
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr z, jr_000_28fb
 
@@ -7716,7 +7280,7 @@ jr_000_28ff:
     inc hl
     inc hl
     ld de, $c752
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_2937
 
@@ -7747,11 +7311,11 @@ jr_000_293e:
 jr_000_294a:
     pop bc
     ld a, b
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     cp $03
     jr z, jr_000_2996
 
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_2978
 
@@ -7759,7 +7323,7 @@ jr_000_294a:
     ld de, $c71f
     ld bc, $000b
     call Memcopy
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     cp $01
     jr nz, jr_000_2996
 
@@ -7774,7 +7338,7 @@ jr_000_2978:
     ld de, $c740
     ld bc, $000b
     call Memcopy
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     cp $01
     jr nz, jr_000_2996
 
@@ -7857,7 +7421,7 @@ jr_000_29fc:
     ld hl, $c51d
     ld bc, $010d
     call FillRect
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_2a6b
 
@@ -7888,7 +7452,7 @@ jr_000_2a6b:
     call FillRect
 
 jr_000_2a91:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_2aa0
 
@@ -7901,12 +7465,11 @@ jr_000_2aa0:
     ld de, $c72a
     call SetupRound
 
-; SetRoundSpeed → $FF8Bクリア
 ApplyRoundSpeed::
     call SetRoundSpeed
     xor a
-    ldh [$ff8b], a
-    ldh a, [$ff8a]
+    ldh [STATE_TRANSITION], a
+    ldh a, [ANIM_FRAME]
     and a
     jp z, FillRectAlt
 
@@ -7930,7 +7493,7 @@ jr_000_2acd:
     push bc
     push hl
     ld d, b
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     cp $1e
     jr c, jr_000_2ad7
 
@@ -7940,21 +7503,21 @@ jr_000_2ad7:
     ld a, d
     ld bc, $0103
     call FillRect
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     inc a
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     cp $3c
     jr c, jr_000_2aea
 
     xor a
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
 
 jr_000_2aea:
-    call $4bc5                ; WaitVBlank (Bank 1)
+    call $4bc5
     call ReadJoypad
     pop hl
     pop bc
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $0f
     jr z, jr_000_2acd
 
@@ -8011,7 +7574,7 @@ jr_000_2b17:
     ld a, $01
     call LoadRoundData
     inc hl
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
     jr nz, jr_000_2b3d
 
@@ -8046,7 +7609,7 @@ jr_000_2b4e:
 
 LoadRoundData::
     push bc
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
 
 jr_000_2b5b:
     ld a, [de]
@@ -8054,7 +7617,7 @@ jr_000_2b5b:
     and a
     jr nz, jr_000_2b71
 
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     and a
     jr z, jr_000_2b71
 
@@ -8072,7 +7635,7 @@ jr_000_2b6e:
 jr_000_2b71:
     ld b, a
     xor a
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     ld a, b
     and $0f
     add $41
@@ -8143,7 +7706,7 @@ InitP2Settings::
     call ApplySettings
     call ResetSettings
     ld a, $34
-    ld [$c6e1], a
+    ld [BGM_INDEX], a
     ret
 
 
@@ -8159,19 +7722,18 @@ ProcessRoundEnd::
     ret
 
 
-; ラウンド終了 → 乗算 → カウントダウン
 ProcessRoundEndLoop::
     call $7c02
     call ProcessRoundEnd
     call Multiply
     call ContinueCountdown
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     ret z
 
     push af
     xor a
-    ld [$c6f1], a
+    ld [GAME_MODE_FLAG], a
     ld a, $0f
     ld [$c6f2], a
     call DrawCountdownNum
@@ -8181,7 +7743,7 @@ ProcessRoundEndLoop::
 
     call InitGameState
     ld a, $02
-    ldh [$ffc7], a
+    ldh [GAME_STATE], a
     ret
 
 
@@ -8202,41 +7764,41 @@ jr_000_2c17:
 
 
 jr_000_2c28:
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     and a
     ret z
 
-    ld hl, $c6b1
+    ld hl, MENU_CURSOR
     dec [hl]
     ret
 
 
 jr_000_2c32:
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     ret z
 
-    ld hl, $c6b1
+    ld hl, MENU_CURSOR
     inc [hl]
     ret
 
 
 jr_000_2c3d:
     ld hl, $c6b2
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     call GetArrayElement
     inc a
     ld b, a
     push hl
     ld hl, $2c60
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     call GetArrayElement
     cp b
     pop hl
     ret z
 
     inc [hl]
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     ret nz
 
@@ -8250,14 +7812,14 @@ jr_000_2c3d:
     inc b
 
 jr_000_2c64:
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     ld hl, $c6b2
     call GetArrayElement
     and a
     ret z
 
     dec [hl]
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     ret nz
 
@@ -8326,11 +7888,11 @@ ProcessWinLose::
 
 ShowWinScreen::
     ld hl, $0b07
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $02
     jr nz, jr_000_2cec
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_2cec
 
@@ -8362,7 +7924,7 @@ DrawWinMessage1::
 
 DrawWinMessage2::
     ld b, $04
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $01
     jr z, jr_000_2d16
 
@@ -8384,7 +7946,7 @@ DrawLoseMessage1::
 
 
 DrawLoseMessage2::
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     jr z, jr_000_2d30
 
@@ -8407,7 +7969,7 @@ DrawResultMessage1::
 
 DrawResultMessage2::
     ld b, $04
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $02
     jr z, jr_000_2d4c
 
@@ -8425,7 +7987,7 @@ jr_000_2d4f:
 AnimateResult::
     ld hl, $0302
     ld b, $04
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     and a
     jr z, jr_000_2d63
 
@@ -8442,21 +8004,21 @@ jr_000_2d66:
 
 ShowFinalResult::
     ld a, $07
-    ld [$ff8a], a
+    ld [ANIM_FRAME], a
     ld a, $04
-    ld [$ff8b], a
+    ld [STATE_TRANSITION], a
     ld a, [$c6b3]
     call WaitForRestart
     ret
 
 
 WaitForRestart::
-    ldh [$ff8d], a
-    ld a, [$c6b1]
+    ldh [TEXT_FADE], a
+    ld a, [MENU_CURSOR]
     cp $01
     jr nz, jr_000_2d8f
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_2d8f
 
@@ -8464,7 +8026,7 @@ WaitForRestart::
     jr jr_000_2da5
 
 jr_000_2d8f:
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     ld hl, $2734
     sla a
     sla a
@@ -8478,9 +8040,9 @@ jr_000_2d8f:
     ld e, l
 
 jr_000_2da5:
-    ld a, [$ff8a]
+    ld a, [ANIM_FRAME]
     ld h, a
-    ld a, [$ff8b]
+    ld a, [STATE_TRANSITION]
     ld l, a
     call DrawStringToGrid
     call DrawStringToGrid
@@ -8490,11 +8052,11 @@ jr_000_2da5:
 
 ProcessRestart::
     ld hl, $0307
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     and a
     jr nz, jr_000_2dcb
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_2dcb
 
@@ -8600,7 +8162,7 @@ DrawContinue::
 
 UpdateContinue::
     ld hl, $0f06
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     cp $03
     jr nz, jr_000_2e58
 
@@ -8608,7 +8170,7 @@ UpdateContinue::
     cp $03
     jr nz, jr_000_2e58
 
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     and a
     jr z, jr_000_2e58
 
@@ -8701,7 +8263,7 @@ jr_000_2e78:
     ld c, d
     rst $38
     ld b, $04
-    ld a, [$c6b1]
+    ld a, [MENU_CURSOR]
     and a
     jr z, jr_000_2ec0
 
@@ -8723,9 +8285,9 @@ ContinueCountdown::
 
     ld a, $0f
     ld [hl], a
-    ld a, [$c6f1]
+    ld a, [GAME_MODE_FLAG]
     xor $01
-    ld [$c6f1], a
+    ld [GAME_MODE_FLAG], a
     ret
 
 
@@ -9107,7 +8669,7 @@ jr_000_3081:
 
 HandleRoundEnd::
     call $42f5
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
 
 jr_000_308d:
@@ -9134,18 +8696,18 @@ jr_000_30a1:
     jr nz, jr_000_30a1
 
 jr_000_30a7:
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_30be
 
     xor a
-    ldh [$ffc8], a
-    ld [$c6ba], a
+    ldh [SERIAL_DONE], a
+    ld [LINK_SEND], a
     ld a, $78
-    ldh [$ffc4], a
+    ldh [VBLANK_BUSY], a
 
 jr_000_30b7:
-    ldh a, [$ffc4]
+    ldh a, [VBLANK_BUSY]
     and a
     jr nz, jr_000_30b7
 
@@ -9153,31 +8715,31 @@ jr_000_30b7:
 
 jr_000_30be:
     ld a, $78
-    ldh [$ffc4], a
+    ldh [VBLANK_BUSY], a
 
 jr_000_30c2:
-    ldh a, [$ffc4]
+    ldh a, [VBLANK_BUSY]
     and a
     jr nz, jr_000_30c2
 
 jr_000_30c7:
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_30e0
 
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     call CheckHighScoreTable
     jr c, jr_000_310f
 
     ld hl, $c6b7
     call $445c
     ld a, $03
-    ld [$ffc7], a
+    ld [GAME_STATE], a
     ret
 
 
 jr_000_30e0:
-    ld a, [$c671]
+    ld a, [PLAYER_MODE]
     and a
 
 Jump_000_30e4:
@@ -9192,10 +8754,10 @@ jr_000_30eb:
     jr z, jr_000_3100
 
     ld a, [$c6e2]
-    call $0ed5
+    call ProcessMatching
     call $445c
     ld a, $03
-    ld [$ffc7], a
+    ld [GAME_STATE], a
     ret
 
 
@@ -9215,7 +8777,7 @@ jr_000_3107:
 
 jr_000_310f:
     ld a, $00
-    ld [$ffc7], a
+    ld [GAME_STATE], a
     ld hl, $c6ab
     ld [hl], $00
     ret
@@ -9250,11 +8812,11 @@ jr_000_313d:
 
 
 ProcessNewHighScore::
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     call UpdateDifficulty
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     call CalcRankPosition
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     push af
     push bc
     push hl
@@ -9275,11 +8837,11 @@ jr_000_315a:
     pop af
     ld hl, $c6ab
     ld [hl], $01
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_318a
 
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     ld [$c7ad], a
     and a
     jr z, jr_000_3183
@@ -9296,7 +8858,7 @@ jr_000_3188:
     jr jr_000_31ab
 
 jr_000_318a:
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
     ld [$c7ad], a
     and a
     jr z, jr_000_31a1
@@ -9320,7 +8882,7 @@ jr_000_31ab:
     ld [hl+], a
     ld [hl], $00
     ld a, $04
-    ld [$ffc7], a
+    ld [GAME_STATE], a
     ret
 
 
@@ -9339,9 +8901,9 @@ jr_000_31be:
 
 
 jr_000_31c4:
-    call $4bc5                ; WaitVBlank (Bank 1)
+    call $4bc5
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     jr z, jr_000_31c4
 
@@ -9358,7 +8920,7 @@ FormatRankEntry::
 
 CalcRankPosition::
     push af
-    ld a, [$c6b6]
+    ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_000_31e6
 
@@ -9372,7 +8934,7 @@ jr_000_31e6:
     cp [hl]
     ret nz
 
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $02
     jr z, jr_000_31fd
 
@@ -9389,10 +8951,10 @@ jr_000_31fd:
 
 
 CheckHighScoreTable::
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     and a
     ld a, $00
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     jr z, jr_000_3211
 
     ld a, [$c701]
@@ -9410,11 +8972,11 @@ jr_000_3218:
     jr nz, jr_000_3220
 
     ld a, $01
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
 
 jr_000_3220:
     xor a
-    ld [$c61c], a
+    ld [LCD_REDRAW], a
     call LCDOff
     call ClearOAM
     ld a, $03
@@ -9427,7 +8989,7 @@ jr_000_3220:
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     and a
     jr z, jr_000_3264
 
@@ -9449,7 +9011,7 @@ jr_000_3264:
     ld [$2100], a
     call LCDOn
     ld b, $00
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_3282
 
@@ -9461,7 +9023,7 @@ jr_000_3282:
     ld bc, HeaderLogo
     call FillRect
     ld b, $04
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_3297
 
@@ -9473,7 +9035,7 @@ jr_000_3297:
     ld bc, HeaderLogo
     call FillRect
     ld b, $08
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_32ac
 
@@ -9485,7 +9047,7 @@ jr_000_32ac:
     ld bc, $0202
     call FillRect
     ld b, $0c
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_32c1
 
@@ -9562,11 +9124,11 @@ jr_000_3332:
     jr nz, jr_000_3332
 
 jr_000_3343:
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     and a
     jp z, PlayConfirmSound
 
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr z, jr_000_3352
 
@@ -9579,8 +9141,8 @@ jr_000_3352:
 jr_000_3354:
     call PlaySound
     xor a
-    ldh [$ffc8], a
-    ld [$c6ba], a
+    ldh [SERIAL_DONE], a
+    ld [LINK_SEND], a
     ld a, $39
     ld hl, $c5d0
     ld bc, $0206
@@ -9589,11 +9151,11 @@ jr_000_3354:
     ld hl, $c5d6
     ld bc, $0201
     call FillRect
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_33b8
 
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr z, jr_000_339f
 
@@ -9606,9 +9168,9 @@ jr_000_3354:
     ld bc, $0205
     call FillRect
     ld a, $47
-    ldh [$ff8c], a
+    ldh [ANIM_SUBFRAME], a
     ld a, $6b
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     jr @+$5a
 
 jr_000_339f:
@@ -9624,7 +9186,7 @@ jr_000_339f:
 
 
 jr_000_33b8:
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr z, jr_000_33de
 
@@ -9637,9 +9199,9 @@ jr_000_33b8:
     ld bc, $0205
     call FillRect
     ld a, $8f
-    ldh [$ff8c], a
+    ldh [ANIM_SUBFRAME], a
     ld a, $b3
-    ldh [$ff8d], a
+    ldh [TEXT_FADE], a
     jp $33f7
 
 
@@ -9667,36 +9229,36 @@ jr_000_33de:
     call PlaySound
 
 jr_000_340d:
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     cp $1e
     jr c, jr_000_3417
 
-    ldh a, [$ff8c]
+    ldh a, [ANIM_SUBFRAME]
     jr jr_000_3419
 
 jr_000_3417:
-    ldh a, [$ff8d]
+    ldh a, [TEXT_FADE]
 
 jr_000_3419:
     ld hl, $c543
     ld bc, $0606
     call FillRect
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     inc a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     cp $3c
     jr c, jr_000_342e
 
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
 
 jr_000_342e:
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_3448
 
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     jr z, @-$42
 
@@ -9707,7 +9269,7 @@ jr_000_342e:
     jr jr_000_344f
 
 jr_000_3448:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $55
     jr nz, @-$53
 
@@ -9716,7 +9278,6 @@ jr_000_344f:
     ret
 
 
-; VBlank待ち → $C026状態確認 (3箇所から参照)
 MenuInputHandler::
     call $4bc5
     ld a, [$c026]
@@ -9730,12 +9291,12 @@ MenuInputHandler::
     call PlaySound
 
 jr_000_3464:
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_347e
 
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     jr z, MenuInputHandler
 
@@ -9746,18 +9307,17 @@ jr_000_3464:
     jr jr_000_344f
 
 jr_000_347e:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $55
     jr nz, MenuInputHandler
 
     jr jr_000_344f
 
-; 確認SE再生 → FillRect
 PlayConfirmSound::
     ld a, $54
     call PlaySound
     ld b, $55
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr nz, jr_000_3495
 
@@ -9768,12 +9328,12 @@ jr_000_3495:
     ld hl, $c546
     ld bc, $0608
     call FillRect
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_34b9
 
     ld b, $b5
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr nz, jr_000_34af
 
@@ -9806,7 +9366,7 @@ jr_000_34c8:
 
 jr_000_34d6:
     ld b, $23
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_34e1
 
@@ -9817,7 +9377,7 @@ jr_000_34e1:
     ld hl, $c5d0
     ld bc, $0205
     call FillRect
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     and a
     jr z, jr_000_34f5
 
@@ -9827,18 +9387,17 @@ jr_000_34e1:
 jr_000_34f5:
     call FillScoreArea1
 
-; $FFC8/$C6BAクリア → 通信分岐
 ClearSerialState::
     xor a
-    ldh [$ffc8], a
-    ld [$c6ba], a
-    ld a, [$c6bb]
+    ldh [SERIAL_DONE], a
+    ld [LINK_SEND], a
+    ld a, [LINK_ROLE]
     cp $01
     jr nz, jr_000_3518
 
 jr_000_3505:
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and $08
     jr z, jr_000_3505
 
@@ -9849,7 +9408,7 @@ jr_000_3505:
     jr jr_000_351f
 
 jr_000_3518:
-    ld a, [$c6b9]
+    ld a, [LINK_RECV]
     cp $55
     jr nz, jr_000_3518
 
@@ -9861,7 +9420,7 @@ jr_000_351f:
 
 CheckLinkMode::
     ld b, $19
-    ld a, [$c6bb]
+    ld a, [LINK_ROLE]
     cp $01
     jr z, jr_000_352f
 
@@ -9888,10 +9447,9 @@ FillScoreArea2::
     jp FillRect
 
 
-; $FF8Aクリア → $C6D3ロード
 InitAnimFrame::
     xor a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     ld hl, $c6d3
     ld a, [hl]
     and $0f
@@ -9913,12 +9471,12 @@ InitAnimFrame::
     jr nc, jr_000_3572
 
     dec a
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
     jr jr_000_3576
 
 jr_000_3572:
     ld a, $06
-    ldh [$ff8a], a
+    ldh [ANIM_FRAME], a
 
 jr_000_3576:
     ld hl, $c210
@@ -9926,7 +9484,7 @@ jr_000_3576:
     ld d, $00
     call DrawCharacter
     xor a
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
     ld hl, $c4a0
     ld de, $0004
     ld a, $4a
@@ -9958,11 +9516,11 @@ jr_000_35ab:
     jr nz, jr_000_35ab
 
     ld a, $01
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
     ld c, $03
     call DrawString
     xor a
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
     ld [$c7ce], a
     ld de, $3839
     ld hl, $8820
@@ -9973,7 +9531,7 @@ jr_000_35ab:
     ld c, $11
     call VRAMCopySetup
     ld a, $01
-    ld [$ffa5], a
+    ld [GAME_ACTIVE], a
     ld a, [$c6d5]
     and a
     jr z, jr_000_35e6
@@ -10027,7 +9585,7 @@ jr_000_35f5:
 
 jr_000_364a:
     call ReadJoypad
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     jr z, jr_000_364a
 
@@ -10036,9 +9594,9 @@ jr_000_364a:
 
 ShowRoundComplete::
     push hl
-    ldh [$ff8c], a
+    ldh [ANIM_SUBFRAME], a
     xor a
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     ld c, $14
     call WaitFrames
     ld a, $86
@@ -10046,7 +9604,7 @@ ShowRoundComplete::
     call FillRect
     ld c, $0a
     call WaitFrames
-    ldh a, [$ff8c]
+    ldh a, [ANIM_SUBFRAME]
     ld [$c6f5], a
     ld a, $80
     ld [$c6f6], a
@@ -10073,7 +9631,7 @@ jr_000_368c:
     call ReadJoypad
     pop de
     pop bc
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     jr z, jr_000_36a1
 
@@ -10085,7 +9643,7 @@ jr_000_36a1:
     dec c
     jr nz, jr_000_368c
 
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     and a
     jr nz, jr_000_36b6
 
@@ -10093,22 +9651,22 @@ jr_000_36a1:
     jr z, jr_000_36b3
 
     ld a, $ff
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
     jr jr_000_36b6
 
 jr_000_36b3:
     ld a, e
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
 
 jr_000_36b6:
     ld hl, $37c4
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     sla a
     sla a
     ld b, $00
     ld c, a
     add hl, bc
-    ldh a, [$ff8b]
+    ldh a, [STATE_TRANSITION]
     cp [hl]
     jr nc, jr_000_36ef
 
@@ -10180,7 +9738,7 @@ jr_000_372a:
 jr_000_3743:
     ld hl, $37bd
     ld b, $00
-    ldh a, [$ff8a]
+    ldh a, [ANIM_FRAME]
     ld c, a
     add hl, bc
     ld a, [hl]
@@ -10303,7 +9861,7 @@ DrawSpriteAt::
     ld hl, $c498
     ld a, c
     ld [hl+], a
-    ldh a, [$ff8c]
+    ldh a, [ANIM_SUBFRAME]
     ld e, a
     ld [hl+], a
     ld [hl], b
@@ -10336,7 +9894,6 @@ jr_000_3802:
     ld c, $1e
     call DrawString
 
-; HL=$C498, BC=$0008 → DrawCharacter
 SetupDrawCharacter::
     ld hl, $c498
     xor a
@@ -10349,12 +9906,12 @@ WaitFrames::
     push bc
     call ReadJoypad
     pop bc
-    ldh a, [$ffa1]
+    ldh a, [JOYPAD_PRESSED]
     and a
     jr z, jr_000_3835
 
     ld a, $ff
-    ldh [$ff8b], a
+    ldh [STATE_TRANSITION], a
 
 jr_000_3835:
     dec c
@@ -10418,7 +9975,7 @@ jr_000_386f:
     call z, $cc34
     inc [hl]
     ld hl, sp+$18
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     nop
     nop
     inc bc
@@ -10474,7 +10031,7 @@ jr_000_38af:
     call z, $cc34
     inc [hl]
     ld hl, sp+$18
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     nop
     nop
     rlca
@@ -10494,7 +10051,7 @@ jr_000_38c5:
     rst $20
     nop
     nop
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     sbc b
     ld a, b
     call z, $fe34
@@ -10579,7 +10136,7 @@ jr_000_3905:
     ld [bc], a
     inc e
     inc e
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     call c, $fe5c
     ld h, d
     cp $42
@@ -10629,7 +10186,7 @@ jr_000_3955:
     ld a, [hl]
     ld b, [hl]
     ld hl, sp-$68
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     db $f4
     ld b, h
     add sp, $08
@@ -10734,7 +10291,7 @@ jr_000_39c5:
     nop
     add b
     add b
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     ldh a, [$fff0]
     ldh a, [$fff0]
     ld hl, sp-$08
@@ -10848,7 +10405,7 @@ jr_000_39eb:
     add b
     nop
     nop
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     ld [hl], b
     db $10
     sub b
@@ -11310,7 +10867,7 @@ jr_000_3c25:
 jr_000_3c3b:
     sub b
     ldh a, [$ff90]
-    ldh a, [$ffa0]
+    ldh a, [JOYPAD_RAW]
     ldh [$ffd8], a
     ld e, b
     and $2e
@@ -11625,7 +11182,7 @@ jr_000_3c73:
     ld a, [hl]
 
 jr_000_3d81:
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     adc $ce
     and $e6
     ld a, [hl]
@@ -11744,7 +11301,7 @@ jr_000_3dfd:
     nop
     ld a, [hl]
     ld a, [hl]
-    ldh [$ffe0], a
+    ldh [SERIAL_TEMP], a
     ld a, h
     ld a, h
     ld c, $0e

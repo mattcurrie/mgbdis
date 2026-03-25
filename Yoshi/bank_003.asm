@@ -1,8 +1,3 @@
-; ============================================================
-; YOSSY NO TAMAGO - Bank 3
-; 追加タイルグラフィックスデータ
-; ============================================================
-;
 ; Disassembly of "yoshi.gb"
 ; This file was created with:
 ; mgbdis v2.0 - Game Boy ROM disassembler by Matt Currie and contributors.
