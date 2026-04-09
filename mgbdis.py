@@ -407,10 +407,15 @@ class Bank:
 
         self.output = []
 
+        bank_number_text = {
+          'hex': '${0:03x}',
+          'dec': '{0:03}',
+          }[bank_number_base].format(self.bank_number)
+
         if self.bank_number == 0:
-            self.append_output('SECTION "ROM Bank ${0:03x}", ROM0[$0]'.format(self.bank_number))
+            self.append_output(f'SECTION "ROM Bank {bank_number_text}", ROM0[$0]')
         else:
-            self.append_output('SECTION "ROM Bank ${0:03x}", ROMX[$4000], BANK[${0:x}]'.format(self.bank_number))
+            self.append_output(f'SECTION "ROM Bank {bank_number_text}", ROMX[$4000], BANK[${self.bank_number:x}]')
         self.append_output('')
 
         block_start_addresses = sorted(self.blocks.keys())
@@ -1026,7 +1031,12 @@ class ROM:
             # progress indicator
             print('.', end='', flush=True)
 
-        path = os.path.join(self.output_directory, 'bank_{0:03x}.asm'.format(bank))
+        bank_number_text = {
+          'hex': '{0:03x}',
+          'dec': '{0:03}',
+          }[bank_number_base].format(bank)
+
+        path = os.path.join(self.output_directory, f'bank_{bank_number_text}.asm')
         f = open(path, 'w', encoding="utf-8")
 
         self.write_header(f)
@@ -1036,7 +1046,8 @@ class ROM:
 
 
     def write_header(self, f):
-        f.write('; Disassembly of "{}"\n'.format(os.path.basename(self.rom_path)))
+        if write_rom_name:
+            f.write('; Disassembly of "{}"\n'.format(os.path.basename(self.rom_path)))
         f.write('; This file was created with:\n')
         f.write('; {}\n'.format(app_name))
         f.write('; https://github.com/mattcurrie/mgbdis\n\n')
@@ -1286,9 +1297,15 @@ parser.add_argument('--ld_c', help='Mnemonic to use for \'ldh [c], a\' type inst
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
+parser.add_argument('--bank-number-base', help='Set the numeric base for numbering banks', default='hex', choices=['hex', 'dec'])
+parser.add_argument('--skip-rom-name', help='Skip adding a line that mentions what rom each file was produced from - good for diffs', action='store_true')
 args = parser.parse_args()
 
 debug = args.debug
+
+bank_number_base = args.bank_number_base
+
+write_rom_name = not args.skip_rom_name
 
 style = {
     'uppercase_hex': args.uppercase_hex,
