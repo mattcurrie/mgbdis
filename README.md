@@ -44,7 +44,7 @@ To use a symbol file with mgbdis, it should exist in the same directory as the R
 
 All values (except for image widths) should be in hexadecimal.  Entries start with a bank number followed by the address in memory.  
 
-Block types can be defined by using the ```.code```, ```.data```, ```.text```, and ```.image``` magic labels, followed by the length of the block in bytes.
+Block types can be defined by using the ```.code```, ```.data```, ```.text```, ```.padding```, and ```.image``` magic labels, followed by the length of the block in bytes.
 
 ### Code
 
@@ -70,6 +70,14 @@ Adding a label for 16 bytes of text:
 ```
 00:3d00 Character_Name
 00:3d00 .text:10
+```
+
+### Padding
+
+Adding a label for 256 bytes of 0xff padding:
+
+```
+0d:3f00 .padding:100:ff
 ```
 
 #### Custom Character Maps

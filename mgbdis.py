@@ -168,6 +168,12 @@ def hex_byte(value):
     else:
         return f'${value:02x}'   
 
+def hex(value):
+    if style['uppercase_hex']:
+        return f'${value:X}'
+    else:
+        return f'${value:x}'   
+
 def format_hex(hex_string):
     if style['uppercase_hex']:
         return hex_string.upper()
@@ -237,6 +243,7 @@ class Bank:
         self.disassemble_block_range = dict({
             'code': self.process_code_in_range,
             'data': self.process_data_in_range,
+            'padding': self.process_padding_in_range,
             'text': self.process_text_in_range,
             'image': self.process_image_in_range
         })
@@ -384,6 +391,8 @@ class Bank:
     def format_data(self, data):
         return self.format_instruction(self.style['db'], data)
 
+    def format_padding(self, len, data):
+        return f"{self.style['indentation']}{self.style['ds']} {hex(len)}, {hex_byte(data)}"
 
     def append_output(self, text):
         self.output.append(text)
@@ -655,6 +664,19 @@ class Bank:
                 self.append_output(self.format_data(values))
                 values = []
 
+    def process_padding_in_range(self, rom, start_address, end_address, arguments = None):
+        if not self.first_pass and debug:
+            print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
+
+        self.append_output(f"{self.style['indentation']}; padding")
+        
+        if arguments == None:
+            arguments = 0
+        else:
+            arguments = int(arguments, 16)
+
+        self.append_output(self.format_padding(end_address - start_address, arguments))
+
     def get_character_map_index(self, arguments):
         #no args
         if arguments == None:
@@ -821,6 +843,9 @@ class Symbols:
 
                 elif block_type in ['.asc', '.text']:
                     block_type = 'text'
+
+                elif block_type in ['.padding']:
+                    block_type = 'padding'
 
                 elif block_type in ['.code']:
                     block_type = 'code'
@@ -1280,6 +1305,7 @@ parser.add_argument('--align-operands', help='Format the instruction operands to
 parser.add_argument('--indent-spaces', help='Number of spaces to use to indent instructions', type=int, default=4)
 parser.add_argument('--indent-tabs', help='Use tabs for indenting instructions', action='store_true')
 parser.add_argument('--uppercase-db', help='Use uppercase for DB data declarations', action='store_true')
+parser.add_argument('--uppercase-ds', help='Use uppercase for DS declarations', action='store_true')
 parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type instructions.', type=str, default='hl+', choices=['hl+', 'hli', 'ldi'])
 parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [ffa8], a\' type instructions.', type=str, default='ldh_ffa8', choices=['ldh_ffa8', 'ld_ff00_a8'])
 parser.add_argument('--ld_c', help='Mnemonic to use for \'ldh [c], a\' type instructions.', type=str, default='ldh_c', choices=['ldh_c', 'ld_ff00_c'])
@@ -1296,6 +1322,7 @@ style = {
     'indentation': '\t' if args.indent_tabs else ' ' * args.indent_spaces,
     'operand_padding': 4 if args.align_operands else 0,
     'db': 'DB' if args.uppercase_db else 'db',
+    'ds': 'DS' if args.uppercase_ds else 'ds',
     'hli': args.hli,
     'ldh_a8': args.ldh_a8,
     'ld_c': args.ld_c,
