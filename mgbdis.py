@@ -668,13 +668,17 @@ class Bank:
         if not self.first_pass and debug:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
-        self.append_output(f"{self.style['indentation']}; padding")
-        
         if arguments == None:
             arguments = 0
         else:
             arguments = int(arguments, 16)
 
+        for address in range(start_address, end_address):
+            if rom.data[address] != arguments:
+                abort("Declared .padding block contradicts ROM content at address {} ({} != {})".format(hex(address), hex_byte(arguments), hex_byte(rom.data[address])))
+
+        self.append_output(f"{self.style['indentation']}; padding")
+        
         self.append_output(self.format_padding(end_address - start_address, arguments))
 
     def get_character_map_index(self, arguments):
