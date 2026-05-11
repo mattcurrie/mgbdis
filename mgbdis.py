@@ -3,7 +3,7 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie and contributors'
-__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510']
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510', 'brianum']
 __version__ = '3.0'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
@@ -296,10 +296,10 @@ class Bank:
             return self.bank0.symbols.get_label(0, address)
         return self.symbols.get_label(self.bank_number, address)
 
-    def get_label_for_instruction_operand(self, value):
+    def get_label_for_instruction_operand(self, value, rst = False):
         # an operand value lower than $100 is more probably an actual value than an address:
         # don't lookup symbols for it
-        if value <= 0x100:
+        if value <= 0x100 and rst == False:
             return None
 
         return self.get_label(value)
@@ -474,6 +474,14 @@ class Bank:
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
                 operand_values.append(hex_word(value))
+
+            elif operand == 'p':
+                value = rom.data[pc] & 0x38
+                label = self.get_label_for_instruction_operand(value, True)
+                if label:
+                    operand_values.append(label)
+                else:
+                    operand_values.append(hex_byte(value))
 
             elif operand == '[a16]':
                 length += 2
