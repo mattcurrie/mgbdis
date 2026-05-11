@@ -669,7 +669,7 @@ class Bank:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
         if arguments == None:
-            arguments = 0
+            arguments = rom.data[start_address]
         else:
             arguments = int(arguments, 16)
 
