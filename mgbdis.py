@@ -302,6 +302,10 @@ class Bank:
         if value <= 0x100 and rst == False:
             return None
 
+        if rst == True && value & 0x38 != value:
+            # check if this is really a rst vector
+            return None
+
         return self.get_label(value)
 
     def get_label_for_jump_target(self, instruction_name, address):
