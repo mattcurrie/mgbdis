@@ -74,6 +74,12 @@ Adding a label for 16 bytes of text:
 
 ### Padding
 
+Adding a label for 256 bytes padding:
+
+```
+0d:3e00 .padding:100
+```
+
 Adding a label for 256 bytes of 0xff padding:
 
 ```

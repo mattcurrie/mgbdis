@@ -3,7 +3,7 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie and contributors'
-__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510']
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510', 'brianum']
 __version__ = '3.0'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
