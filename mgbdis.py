@@ -302,7 +302,7 @@ class Bank:
         if value <= 0x100 and rst == False:
             return None
 
-        if rst == True && value & 0x38 != value:
+        if rst == True and value & 0x38 != value:
             # check if this is really a rst vector
             return None
 
