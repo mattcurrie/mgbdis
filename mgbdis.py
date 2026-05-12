@@ -637,7 +637,7 @@ class Bank:
         values = []
         width = 16
 
-        if arguments != None:
+        if arguments is not None:
             width = int(arguments, 16)
 
         for address in range(start_address, end_address):
