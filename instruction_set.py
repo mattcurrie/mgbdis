@@ -211,7 +211,7 @@ instructions = {
     0xc4: 'call nz,a16',
     0xc5: 'push bc',
     0xc6: 'add d8',
-    0xc7: 'rst p', # rst $00
+    0xc7: 'rst vec', # rst $00
     0xc8: 'ret z',
     0xc9: 'ret',
     0xca: 'jp z,a16',
@@ -219,7 +219,7 @@ instructions = {
     0xcc: 'call z,a16',
     0xcd: 'call a16',
     0xce: 'adc d8',
-    0xcf: 'rst p', # rst $08
+    0xcf: 'rst vec', # rst $08
 
     0xd0: 'ret nc',
     0xd1: 'pop de',
@@ -228,7 +228,7 @@ instructions = {
     0xd4: 'call nc,a16',
     0xd5: 'push de',
     0xd6: 'sub d8',
-    0xd7: 'rst p', # rst $10
+    0xd7: 'rst vec', # rst $10
     0xd8: 'ret c',
     0xd9: 'reti',
     0xda: 'jp c,a16',
@@ -236,7 +236,7 @@ instructions = {
     0xdc: 'call c,a16',
     0xdd: 'db $dd',
     0xde: 'sbc d8',
-    0xdf: 'rst p', # rst $18
+    0xdf: 'rst vec', # rst $18
 
     0xe0: 'ldh [a8],a',
     0xe1: 'pop hl',
@@ -245,7 +245,7 @@ instructions = {
     0xe4: 'db $e4',
     0xe5: 'push hl',
     0xe6: 'and d8',
-    0xe7: 'rst p', # rst $20
+    0xe7: 'rst vec', # rst $20
     0xe8: 'add sp,r8',
     0xe9: 'jp hl',
     0xea: 'ld [a16],a',
@@ -253,7 +253,7 @@ instructions = {
     0xec: 'db $ec',
     0xed: 'db $ed',
     0xee: 'xor d8',
-    0xef: 'rst p', # rst $28
+    0xef: 'rst vec', # rst $28
 
     0xf0: 'ldh a,[a8]',
     0xf1: 'pop af',
@@ -262,7 +262,7 @@ instructions = {
     0xf4: 'db $f4',
     0xf5: 'push af',
     0xf6: 'or d8',
-    0xf7: 'rst p', # rst $30
+    0xf7: 'rst vec', # rst $30
     0xf8: 'ld hl,sp+r8',
     0xf9: 'ld sp,hl',
     0xfa: 'ld a,[a16]',
@@ -270,7 +270,7 @@ instructions = {
     0xfc: 'db $fc',
     0xfd: 'db $fd',
     0xfe: 'cp d8',
-    0xff: 'rst p', # rst $38
+    0xff: 'rst vec', # rst $38
 
 }
 
