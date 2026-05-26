@@ -63,6 +63,13 @@ Adding a label for 512 bytes of data:
 0d:4800 .data:200
 ```
 
+Adding a label for 48 bytes of data, 3 bytes per line:
+
+```
+0d:4900 Level_Pointers
+0d:4900 .data:30:3
+```
+
 ### Text
 
 Adding a label for 16 bytes of text:

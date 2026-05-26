@@ -3,7 +3,7 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie and contributors'
-__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510']
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510', 'brianum']
 __version__ = '3.0'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
@@ -635,6 +635,10 @@ class Bank:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
         values = []
+        width = 16
+
+        if arguments is not None:
+            width = int(arguments, 16)
 
         for address in range(start_address, end_address):
             mem_address = rom_address_to_mem_address(address)
@@ -650,8 +654,8 @@ class Bank:
 
             values.append(hex_byte(rom.data[address]))
 
-            # output max of 16 bytes per line, and ensure any remaining values are output
-            if len(values) == 16 or (address == end_address - 1 and len(values)):
+            # output max of {width} bytes per line, and ensure any remaining values are output
+            if len(values) == width or (address == end_address - 1 and len(values)):
                 self.append_output(self.format_data(values))
                 values = []
 
