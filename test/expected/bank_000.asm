@@ -329,7 +329,7 @@ HeaderComplementCheck::
     db $8f
 
 HeaderGlobalChecksum::
-    db $18, $46
+    db $21, $42
 
 Main::
     di

@@ -125,6 +125,22 @@ SECTION "font", ROM0[$400]
 INCLUDE "src/font.asm"
    
 
+SECTION "some pointers", ROMX[$4000], BANK[2]
+SomePointers::
+    db bank(Escaped)
+    dw Escaped
+    db bank(Init)
+    dw Init
+
+
+SECTION "some data", ROMX[$4010], BANK[2]
+SomeData::
+    db $aa, $55, $aa, $55, $aa, $55, $aa, $55
+    db $aa, $55, $aa, $55, $aa, $55, $aa, $55
+    db $0f, $0e, $0d, $0c, $0b, $0a, $09, $08
+    db $07, $06, $05, $04, $03, $02, $01, $00
+
+
 SECTION "init", ROMX, BANK[3]
 Init::
 

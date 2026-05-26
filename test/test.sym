@@ -27,4 +27,9 @@
 00:0400 OldSkoolOutlineThick
 00:0400 .image:800:w256,pe4
 
+02:4000 SomePointers
+02:4000 .data:6:3
+02:4010 SomeData
+02:4010 .data:20
+
 03:4000 Init
