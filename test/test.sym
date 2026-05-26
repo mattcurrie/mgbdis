@@ -1,5 +1,7 @@
+00:0018 SetRomBank
+
 00:0150 Main
-00:015c Main.forever
+00:015b Main.forever
 
 00:0200 MemCopy
 00:0209 MemSet

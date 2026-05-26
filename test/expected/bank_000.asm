@@ -27,7 +27,9 @@ RST_08::
 
 RST_10::
     nop
-    nop
+    ret
+
+
     nop
     nop
     nop
@@ -35,11 +37,11 @@ RST_10::
     nop
     nop
 
-RST_18::
-    nop
-    nop
-    nop
-    nop
+SetRomBank::
+    ld [$2000], a
+    ret
+
+
     nop
     nop
     nop
@@ -329,13 +331,14 @@ HeaderComplementCheck::
     db $8f
 
 HeaderGlobalChecksum::
-    db $21, $42
+    db $24, $8a
 
 Main::
     di
     ld sp, $d000
+    rst RST_10
     ld a, $03
-    ld [$2000], a
+    rst SetRomBank
     call $4000
 
 Main.forever::
@@ -346,6 +349,7 @@ Main.forever::
     stop
     db $10
     ld l, c
+    nop
     nop
     nop
     nop

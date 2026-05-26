@@ -10,6 +10,17 @@ MACRO copy_to_map
 ENDM
 
 
+SECTION "nop", ROM0[$10]
+    nop
+    ret
+
+
+SECTION "set rom bank", ROM0[$18]
+SetRomBank::
+    ld [rROMB0], a
+    ret
+
+
 SECTION "boot", ROM0[$100]
     nop
     jp Main
@@ -36,8 +47,10 @@ Main::
     di
     ld sp, $d000
 
+    rst $10
+    
     ld a, bank(Init)
-    ld [rROMB0], a
+    rst SetRomBank
     call Init
 
 .forever
