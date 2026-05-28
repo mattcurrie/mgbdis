@@ -65,6 +65,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6B9` | `LINK_RECV` | High | Link receive byte used by serial/link logic. |
 | `$C6BA` | `LINK_SEND` | High | Link send byte used by serial/link logic. |
 | `$C6BB` | `LINK_ROLE` | High | Read throughout 2P/link paths; values appear to distinguish no link/master/slave. |
+| `$C6BC` | `TITLE_PLAYER_MARKER_TIMER` | High | `DisplayNextPiece` decrements this timer before toggling the title 1P/2P selection marker. |
+| `$C6BE` | `TITLE_PLAYER_MARKER_PHASE` | High | Selects whether `DisplayNextPiece` draws the top or bottom title selection marker tiles. |
 | `$C6C1` | `BGM_PREVIEW_TIMER` | Medium | Set during BGM option changes and decremented by `TickBgmPreviewTimer`. |
 | `$C6C2` | `BGM_PREVIEW_PERIOD` | Low | Stores BGM-specific values during preview setup; direct consumer still needs confirmation. |
 | `$C6C3-$C6C6` | field delta cursors | Medium | `DrawField2`, `DrawField4`, and `DrawFieldRow` use these as indexes into `FieldSideDeltaTable` / `FieldRowDeltaTable`; exact variable names are still pending. |

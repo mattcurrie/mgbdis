@@ -5679,10 +5679,10 @@ InitTitleUI::
     ld a, $70
     call FillRect
     xor a
-    ld [$c6be], a
+    ld [TITLE_PLAYER_MARKER_PHASE], a
 
 ResetTitleState::
-    ld [$c6bc], a
+    ld [TITLE_PLAYER_MARKER_TIMER], a
     ld a, $05
     ld [$c6bd], a
     xor a

@@ -162,6 +162,8 @@ DEF ACTIVE_SPEED      EQU $c6b8 ; ゲーム中落下速度
 DEF LINK_RECV         EQU $c6b9 ; リンク受信バイト
 DEF LINK_SEND         EQU $c6ba ; リンク送信バイト
 DEF LINK_ROLE         EQU $c6bb ; リンクケーブルロール (0=なし, 1=マスター, 2=スレーブ)
+DEF TITLE_PLAYER_MARKER_TIMER EQU $c6bc ; タイトル1P/2P選択マーカー点滅タイマー
+DEF TITLE_PLAYER_MARKER_PHASE EQU $c6be ; タイトル1P/2P選択マーカー点滅フェーズ
 DEF BGM_PREVIEW_TIMER EQU $c6c1 ; BGMプレビュー用カウントダウン
 DEF BGM_PREVIEW_PERIOD EQU $c6c2 ; BGMプレビュー用初期値候補
 DEF SPRITE_ANIM_FRAME EQU $c6cf ; スプライトアニメフレーム

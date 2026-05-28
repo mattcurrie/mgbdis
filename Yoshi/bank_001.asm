@@ -1251,27 +1251,27 @@ jr_001_47ba:
 
 
 DisplayNextPiece::
-    ld hl, $c6bc
+    ld hl, TITLE_PLAYER_MARKER_TIMER
     dec [hl]
     ret nz
 
-    ld a, [$c6be]
+    ld a, [TITLE_PLAYER_MARKER_PHASE]
     and a
     jr z, jr_001_47db
 
     ld a, $0a
-    ld [$c6bc], a
+    ld [TITLE_PLAYER_MARKER_TIMER], a
     xor a
-    ld [$c6be], a
+    ld [TITLE_PLAYER_MARKER_PHASE], a
     call DrawNextBottom
     ret
 
 
 jr_001_47db:
     ld a, $d0
-    ld [$c6bc], a
+    ld [TITLE_PLAYER_MARKER_TIMER], a
     ld a, $01
-    ld [$c6be], a
+    ld [TITLE_PLAYER_MARKER_PHASE], a
     call DrawNextTop
     ret
 
