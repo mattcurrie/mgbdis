@@ -613,11 +613,11 @@ jr_001_43dc:
     jr z, jr_001_43f1
 
 Check2PGameState::
-    ld a, [$c705]
+    ld a, [ROUND_RESULT_PENDING]
     and a
     jr z, jr_001_43f1
 
-    ld a, [$c706]
+    ld a, [ROUND_RESULT_CODE]
     jp ProcessNewHighScore
 
 
@@ -681,8 +681,8 @@ FieldColumnTilePatternTable::
 
 StartNextRound::
     xor a
-    ld [$c705], a
-    ld [$c706], a
+    ld [ROUND_RESULT_PENDING], a
+    ld [ROUND_RESULT_CODE], a
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a

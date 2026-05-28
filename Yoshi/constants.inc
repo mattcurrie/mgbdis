@@ -236,6 +236,8 @@ DEF LINK_SEND_QUEUE_1 EQU $c6fd
 DEF LINK_SEND_QUEUE_INDEX EQU $c6fe
 DEF LINK_RECV_LEVEL EQU $c6ff
 DEF LINK_RECV_SPEED EQU $c700
+DEF ROUND_RESULT_PENDING EQU $c705 ; queued result/high-score processing flag
+DEF ROUND_RESULT_CODE EQU $c706 ; queued argument for ProcessNewHighScore
 DEF PAUSE_FLAG        EQU $c707 ; ポーズフラグ
 DEF DROP_ANIM_ACTIVE EQU $c75d ; active while the column swap/drop cascade is running
 DEF DROP_ANIM_FRAME_TIMER EQU $c75e

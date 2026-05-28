@@ -2828,7 +2828,7 @@ jr_000_126e:
     jr z, jr_000_128b
 
     pop af
-    call FormatRankEntry
+    call QueueRoundResult
 
 jr_000_128b:
     pop af
@@ -3191,7 +3191,7 @@ jr_000_1429:
     jr z, jr_000_145d
 
     xor a
-    call FormatRankEntry
+    call QueueRoundResult
     xor a
     ret
 
@@ -3955,7 +3955,7 @@ Send2PData::
     push bc
     push de
     push hl
-    ld a, [$c705]
+    ld a, [ROUND_RESULT_PENDING]
     and a
     jr nz, jr_000_18af
 
@@ -5583,8 +5583,8 @@ RunTitleMenu::
     ld [LINK_PENDING_FIELD_RISE], a
     ld [$c6f4], a
     ld [$c6f3], a
-    ld [$c705], a
-    ld [$c706], a
+    ld [ROUND_RESULT_PENDING], a
+    ld [ROUND_RESULT_CODE], a
     call Multiply
     call ProcessTitleInput
     call ProcessOptionInput
@@ -6019,7 +6019,7 @@ ProcessBit5::
 
 jr_000_2404:
     ld a, b
-    call FormatRankEntry
+    call QueueRoundResult
     ret
 
 
@@ -8137,10 +8137,10 @@ jr_000_31c4:
     ret
 
 
-FormatRankEntry::
-    ld [$c706], a
+QueueRoundResult::
+    ld [ROUND_RESULT_CODE], a
     ld a, $01
-    ld [$c705], a
+    ld [ROUND_RESULT_PENDING], a
     ld [RESULT_FLOW_ACTIVE], a
     ret
 
@@ -8166,7 +8166,7 @@ jr_000_31e6:
     jr z, jr_000_31fd
 
     xor a
-    ld [$c706], a
+    ld [ROUND_RESULT_CODE], a
     ld [$c704], a
     ld a, $01
     ret

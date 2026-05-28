@@ -66,7 +66,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6A7` | `PIECE_FALL_DELAY` | High | Reload value for `PIECE_FALL_TIMER`, initialized from `ProcessFalling` or `GAME_TURN_DELAY` and periodically lowered by `DisplaySpeed` down to `PIECE_FALL_DELAY_MIN`. |
 | `$C6A9` | `GAME_TURN_TABLE_INDEX` | High | `DrawMenuCursor` seeds this from `LevelThresholds`; `ProcessMenuLoop` increments it and indexes `GameTurnParamTable + index * 4`. |
 | `$C6AA` | `GAME_TURN_STEP_TIMER` | High | Reloaded from the first byte of the current `GameTurnParamTable` record, decremented by `UpdateMenuCursor`, and advances the table when it reaches zero. |
-| `$C6AB` | `RESULT_FLOW_ACTIVE` | High | Set by `ProcessNewHighScore` and `FormatRankEntry`, cleared by `DropPiece` and the return-to-title path, and read by Bank 1 `SetupGameBG` to suppress normal field background setup during result/high-score flow. |
+| `$C6AB` | `RESULT_FLOW_ACTIVE` | High | Set by `ProcessNewHighScore` and `QueueRoundResult`, cleared by `DropPiece` and the return-to-title path, and read by Bank 1 `SetupGameBG` to suppress normal field background setup during result/high-score flow. |
 | `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
@@ -103,6 +103,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |
 | `$C6FE` | `LINK_SEND_QUEUE_INDEX` | High | Alternates between 0 and 1 to select the next link send queue slot. |
 | `$C6FF-$C700` | `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` | High | `UpdateGameField` unpacks peer level/speed nibbles from `LINK_RECV`; preview/result paths read these values for peer display. |
+| `$C705` | `ROUND_RESULT_PENDING` | High | `QueueRoundResult` sets this flag after storing the result code; Bank 1 `Check2PGameState` consumes it to call `ProcessNewHighScore`, and `Send2PData` uses it to skip normal inner-frame updates once result flow is queued. |
+| `$C706` | `ROUND_RESULT_CODE` | High | `QueueRoundResult` stores the argument that Bank 1 later passes to `ProcessNewHighScore`; title/start-next-round setup clears it with `ROUND_RESULT_PENDING`. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
 | `$C75D` | `DROP_ANIM_ACTIVE` | High | `StartDropAnim` sets it to `$FF`, `AnimateDropping` and `CheckMatch` gate on it, and the cascade completion path clears it. |
 | `$C75E` | `DROP_ANIM_FRAME_TIMER` | High | Decremented by `AnimateDropping` and reloaded before advancing drop cascade states. |
