@@ -6,6 +6,11 @@ Recover the lost Game Boy YOSSY NO TAMAGO source as a maintainable, buildable RG
 ## Current Phase
 Phases 2-4
 
+## Work Inventory And Estimate
+
+The current completed-work list, remaining-work list, and time estimate are
+recorded in `docs/source_recovery/work_plan_and_estimate.md`.
+
 ## Phases
 
 ### Phase 1: Baseline & Evidence Inventory
@@ -21,6 +26,8 @@ Phases 2-4
 - [x] Document uncertain variables with evidence and confidence
 - [x] Update constants/includes without changing behavior
 - [x] Recover sound engine WRAM constants for `$C000-$C0ED`
+- [x] Name BG map shadow buffer `$C4A0-$C607`
+- [x] Name result record state `$C709-$C75C`
 - **Status:** in_progress
 
 ### Phase 3: Control Flow & State Machine Recovery
@@ -90,6 +97,8 @@ Phases 2-4
 - [x] Name the next-round and egg-animation helpers at Bank 1 `$445C` and `$4681`
 - [x] Name high-confidence field timer, sprite animation, OAM DMA HRAM, and link-start wait helpers
 - [ ] Name drop, rotation, match, clear, remaining scoring, level, and game-over routines
+- [ ] Investigate remaining score-adjacent state `$C620/$C628/$C629/$C672`
+- [ ] Investigate remaining fall/display/game-over flow bytes `$C69D/$C6AD/$C6AE/$C6AF/$C6BF/$C6C0/$C6F7/$C6F8`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

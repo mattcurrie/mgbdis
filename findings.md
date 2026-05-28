@@ -168,6 +168,15 @@
   - `00:$2E7C-$2EB2` BGM marker strings used by `UpdateContinue`.
   - `00:$2734-$2853` preview/result tile table, indexed as six 48-byte three-line entries by `DrawPreview` and `WaitForRestart`.
   - `00:$2FFB-$304A` countdown digit bitmap table, indexed as ten 8-byte records by `UpdateCountdownTimer`.
+- Work estimate checkpoint:
+  - The detailed completed-work list, remaining-work list, and estimate rationale
+    are recorded in `docs/source_recovery/work_plan_and_estimate.md`.
+  - At this checkpoint, `bank_000.asm` / `bank_001.asm` still contain 145 raw
+    `$Cxxx` occurrences across 87 distinct `$Cxxx` addresses.
+  - The current estimate is 20-40 hours for the remaining high-confidence
+    cleanup pass, 100-200 hours for a practical maintainable recovery, and no
+    bounded estimate for original-source-equivalent recovery without the lost
+    source.
 
 ## Technical Decisions
 | Decision | Rationale |

@@ -2,6 +2,25 @@
 
 ## Session: 2026-05-28
 
+### Planning Checkpoint: Work Inventory And Estimate
+- **Status:** completed
+- Actions taken:
+  - Recorded completed work, remaining work, and estimate rationale in
+    `docs/source_recovery/work_plan_and_estimate.md`.
+  - Added the latest completed chunks to `task_plan.md`:
+    `PROGRESSION_LEVEL`, `BG_MAP_SHADOW`, and result record state.
+  - Recorded current measured scale:
+    145 raw `$Cxxx` occurrences and 87 distinct raw `$Cxxx` addresses remain
+    in `Yoshi/bank_000.asm` / `Yoshi/bank_001.asm`.
+  - Recorded the current estimate:
+    20-40 hours for remaining high-confidence cleanup, 100-200 hours for a
+    practical maintainable recovery, and no finite bound for original-source
+    equivalence without the lost source.
+- Files created/modified:
+  - `docs/source_recovery/work_plan_and_estimate.md`
+  - `task_plan.md`
+  - `progress.md`
+
 ### Phase 1: Baseline & Evidence Inventory
 - **Status:** completed
 - **Started:** 2026-05-28
