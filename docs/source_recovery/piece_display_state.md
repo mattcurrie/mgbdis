@@ -9,6 +9,7 @@ This note records the four-byte piece display state array used by the
 |---------|----------|----------|
 | `$FF97-$FF9A` | `PIECE_DISPLAY_SLOT_ORDER` | `InitPieceDisplaySlotOrder` initializes four slot indices `0,1,2,3`; `ShufflePieceDisplaySlotOrder` swaps two randomly selected entries; `DisplayResults` uses this order array to choose which `PIECE_DISPLAY_STATES` slot receives each display code. |
 | `$C673-$C677` | `PIECE_DISPLAY_CODE_POOL` | `InitPieceDisplayCodePool` fills five codes `1..5`; `ShufflePieceDisplayCodePool` swaps randomly selected entries; `DisplayResults` reads this pool by `display_count - 1` before calling `ProcessMenuSelection`. |
+| `$C698` | `PIECE_DISPLAY_COUNT` | `ProcessMenuLoop` loads this from the second byte of the current `GameTurnParamTable` row, and gameplay setup forces it to `2`; `DisplayLevel`, `UpdateMenuCursor`, and `HandleDrop` pass it back into `DisplayResults`. |
 | `$C6A3-$C6A6` | `PIECE_DISPLAY_STATES` | `DisplayResults` clears four bytes, writes one state per selected slot, and `HandleGameOver` scans the same four bytes to emit sprite object type `$02` through `AnimateGameOver`. |
 
 ## Flow
@@ -27,6 +28,9 @@ This note records the four-byte piece display state array used by the
 - During initial board fill, `ProcessInputTitle` shuffles
   `PIECE_DISPLAY_CODE_POOL` three times, then uses pool entry `+3` as the next
   generated piece/display code before rotating it away from an adjacent match.
+- `$C697` receives the same table byte as `PIECE_DISPLAY_COUNT` and is
+  decremented by `ShowResults`, but no independent read has been confirmed yet,
+  so it remains unnamed.
 - `HandleGameOver` scans the four entries. Each nonzero value becomes the
   frame/tile payload passed to `AnimateGameOver`.
 - `AnimateGameOver` writes sprite object type `$02` into slots 1-4, sets the

@@ -9,9 +9,9 @@ column.
 
 Evidence:
 
-- `GetRandomPiece` seeds all four entries from `$C699`, which is loaded from
-  `LevelCountTable` in the B-game setup path or forced to `$0F` in the A-game
-  path.
+- `SeedColumnTopRows` seeds all four entries from `COLUMN_TOP_ROW_SEED`
+  (`$C699`), which is loaded from `LevelCountTable` in the B-game setup path or
+  forced to `$0F` in the A-game path.
 - `MovePieceUp` indexes the array by `PIECE_ROTATION` and returns the selected
   column's current row/fall target.
 - `DrawColumnSprite` indexes the same array while drawing the column blink

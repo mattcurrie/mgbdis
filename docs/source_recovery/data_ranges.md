@@ -76,7 +76,7 @@ Notes:
 
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
-| `00:$0B8D-$0ED2` | `GameTurnParamTable` | Labeled full table; converted fake-code head to `db` | `DrawMenuCursor` seeds `GAME_TURN_TABLE_INDEX` from `LevelThresholds`, and both it and `ProcessMenuLoop` compute `GameTurnParamTable + index * 4`. The first byte reloads `GAME_TURN_STEP_TIMER`, the second selects a `DisplayResults` state, and the third reloads `GAME_TURN_DELAY`. |
+| `00:$0B8D-$0ED2` | `GameTurnParamTable` | Labeled full table; converted fake-code head to `db` | `DrawMenuCursor` seeds `GAME_TURN_TABLE_INDEX` from `LevelThresholds`, and both it and `ProcessMenuLoop` compute `GameTurnParamTable + index * 4`. The first byte reloads `GAME_TURN_STEP_TIMER`, the second reloads `PIECE_DISPLAY_COUNT` / `DisplayResults`, and the third reloads `GAME_TURN_DELAY`. |
 | `00:$117C-$119B` | `MatchingOamTemplateTop`, `MatchingOamTemplateMiddle`, `MatchingOamTemplateFinal` | Converted to `db` OAM templates | `ProcessMatching` copies the middle template to `$C408`; the later matching/result animation copies the top and final templates to `$C400`. Each record is standard four-byte OAM layout data. |
 | `00:$119C-$11D3` | `MatchingScoreBonusTable` | Converted to `db` big-endian BCD pairs | `UpdateScore` indexes this table with `STATE_TRANSITION * 2`, loads the first byte into `H` and second byte into `L`, then calls `AddScore`. |
 | `00:$11D4-$11EF` | `MatchingTileBaseIndexTable` | Converted to `db` | `ProcessMatching` and the later matching/result animation index this 28-byte table with `STATE_TRANSITION`, then scale the value to choose result sprite tile IDs. |

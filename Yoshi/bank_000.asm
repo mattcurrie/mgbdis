@@ -2880,7 +2880,7 @@ jr_000_12bd:
     call ProcessMenuInput
     call DisplaySpeed
     call CalcResults
-    ld a, [$c698]
+    ld a, [PIECE_DISPLAY_COUNT]
     call DisplayResults
     ret
 
@@ -3312,11 +3312,11 @@ jr_000_14d2:
 
 jr_000_14d8:
     ld a, $02
-    ld [$c698], a
+    ld [PIECE_DISPLAY_COUNT], a
     ld a, [ACTIVE_LEVEL]
     ld hl, LevelCountTable
     call GetArrayElement
-    ld [$c699], a
+    ld [COLUMN_TOP_ROW_SEED], a
     ld a, $30
     ld [$c672], a
     ld hl, $c6b0
@@ -3355,10 +3355,10 @@ jr_000_150d:
     ret
 
 
-GetRandomPiece::
+SeedColumnTopRows::
     ld b, COLUMN_COUNT
     ld hl, COLUMN_TOP_ROWS
-    ld a, [$c699]
+    ld a, [COLUMN_TOP_ROW_SEED]
 
 jr_000_151b:
     ld [hl+], a
@@ -3408,7 +3408,7 @@ jr_000_1543:
 
 
 ProcessInputTitle::
-    ld a, [$c699]
+    ld a, [COLUMN_TOP_ROW_SEED]
     cp $0f
     ret z
 
@@ -3490,7 +3490,7 @@ DropPiece::
 HandleDrop::
     call MovePieceRight
     call GenerateNextPiece
-    call GetRandomPiece
+    call SeedColumnTopRows
     call InitPieceDisplaySlotOrder
     call InitPieceDisplayCodePool
     call DropPiece
@@ -3500,18 +3500,18 @@ HandleDrop::
 
     call SetArrayElement
     ld a, $0f
-    ld [$c699], a
-    call GetRandomPiece
+    ld [COLUMN_TOP_ROW_SEED], a
+    call SeedColumnTopRows
     jr jr_000_15e8
 
 jr_000_15d0:
     call ValidatePosition
-    call GetRandomPiece
+    call SeedColumnTopRows
     call ProcessInputGame
-    ld a, [$c698]
+    ld a, [PIECE_DISPLAY_COUNT]
     call DisplayResults
     call CalcResults
-    ld a, [$c698]
+    ld a, [PIECE_DISPLAY_COUNT]
     call DisplayResults
 
 jr_000_15e8:
@@ -4270,7 +4270,7 @@ jr_000_19fd:
     call DisplayResults
     pop af
     ld [$c697], a
-    ld [$c698], a
+    ld [PIECE_DISPLAY_COUNT], a
     ret
 
 
@@ -4284,7 +4284,7 @@ UpdateMenuCursor::
     ld [PIECE_FALL_DELAY], a
     ld [PIECE_FALL_TIMER], a
     call CalcResults
-    ld a, [$c698]
+    ld a, [PIECE_DISPLAY_COUNT]
     call DisplayResults
     ret
 

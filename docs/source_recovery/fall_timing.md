@@ -24,6 +24,6 @@ This note records the recovered timing pair that gates falling-piece updates.
 - `DisplaySpeed` reloads its own ten-frame divider in `$C6B0` and lowers
   `PIECE_FALL_DELAY` until it reaches `PIECE_FALL_DELAY_MIN` (`$02`).
 
-The surrounding `$C697-$C699` values are intentionally still unnamed here.
-They interact with `DisplayResults`, `GameTurnParamTable`, and initial column
-setup, but their exact roles need a separate trace.
+The adjacent `$C697` byte is still intentionally unnamed. It receives the same
+value as `PIECE_DISPLAY_COUNT` and is decremented by `ShowResults`, but no
+independent read has been confirmed.
