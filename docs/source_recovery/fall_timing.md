@@ -6,7 +6,7 @@ This note records the recovered timing pair that gates falling-piece updates.
 
 | Address | Constant | Evidence |
 |---------|----------|----------|
-| `$C696` | `PIECE_FALL_TIMER` | `DisplayScore` decrements it and reloads it from `PIECE_FALL_DELAY`; `UpdateMatchState` returns without moving the staged object while it is nonzero; `CheckMatch` clamps it to at most 3 when active piece slots are already in update phase. |
+| `$C696` | `PIECE_FALL_TIMER` | `DisplayScore` decrements it and reloads it from `PIECE_FALL_DELAY`; `UpdateMatchState` returns without moving the staged object while it is nonzero; `CheckMatch` clamps it to at most `PIECE_FAST_FALL_TIMER_CLAMP` (`3`) while Down is held and active piece slots are already in update phase. |
 | `$C6A7` | `PIECE_FALL_DELAY` | Setup paths load it from either `ProcessFalling` or `GAME_TURN_DELAY`; `ProcessFalling` indexes `LevelFallDelayTable` with `PROGRESSION_LEVEL` capped at `$13`; `DisplayScore` copies it into `PIECE_FALL_TIMER` when the timer is zero; `DisplaySpeed` periodically decrements it down to `PIECE_FALL_DELAY_MIN`. |
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | `ValidatePosition` initializes it, and `DisplaySpeed` decrements it each update, reloads it with `PIECE_FALL_ACCEL_PERIOD`, then lowers `PIECE_FALL_DELAY` until the minimum delay is reached. |
 

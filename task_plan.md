@@ -116,6 +116,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name option text label row coordinates
 - [x] Name option marker coordinates and tile IDs
 - [x] Name option cursor decoration triplets and tile IDs
+- [x] Name gameplay cursor/drop input masks and fast-fall clamp constants
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

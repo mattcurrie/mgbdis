@@ -2950,7 +2950,7 @@ jr_000_1301:
 
 CheckMatch::
     ldh a, [JOYPAD_PRESSED]
-    and $30
+    and PADF_RIGHT | PADF_LEFT
     jr z, jr_000_1317
 
     ld a, SND_CURSOR_MOVE
@@ -2958,7 +2958,7 @@ CheckMatch::
 
 jr_000_1317:
     ldh a, [JOYPAD_PRESSED]
-    and $03
+    and PADF_A | PADF_B
     jr z, jr_000_1341
 
     ld a, [DROP_ANIM_ACTIVE]
@@ -2984,14 +2984,14 @@ jr_000_1317:
 jr_000_1341:
     ld hl, SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_BASE_X
     ldh a, [JOYPAD_HELD]
-    bit 7, a
+    bit PADB_DOWN, a
     jr nz, jr_000_136d
 
     ldh a, [JOYPAD_PRESSED]
-    bit 4, a
+    bit PADB_RIGHT, a
     jr nz, jr_000_1355
 
-    bit 5, a
+    bit PADB_LEFT, a
     jr nz, jr_000_1361
 
     ret
@@ -2999,8 +2999,8 @@ jr_000_1341:
 
 jr_000_1355:
     ld a, [hl]
-    add $20
-    cp $60
+    add PLAYER_CURSOR_X_STEP
+    cp PLAYER_CURSOR_REJECT_RIGHT_X
     ret z
 
     ld [hl], a
@@ -3011,8 +3011,8 @@ jr_000_1355:
 
 jr_000_1361:
     ld a, [hl]
-    sub $20
-    cp $e0
+    sub PLAYER_CURSOR_X_STEP
+    cp PLAYER_CURSOR_REJECT_LEFT_X
     ret z
 
     ld [hl], a
@@ -3044,10 +3044,10 @@ jr_000_136d:
 jr_000_138a:
     ld hl, PIECE_FALL_TIMER
     ld a, [hl]
-    cp $03
+    cp PIECE_FAST_FALL_TIMER_CLAMP
     jr c, jr_000_1394
 
-    ld [hl], $03
+    ld [hl], PIECE_FAST_FALL_TIMER_CLAMP
 
 jr_000_1394:
     ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
@@ -3055,10 +3055,10 @@ jr_000_1394:
 
 jr_000_1399:
     ld a, [hl]
-    cp $03
+    cp PIECE_FAST_FALL_TIMER_CLAMP
     jr c, jr_000_13a0
 
-    ld [hl], $03
+    ld [hl], PIECE_FAST_FALL_TIMER_CLAMP
 
 jr_000_13a0:
     ld a, l

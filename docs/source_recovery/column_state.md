@@ -31,12 +31,15 @@ the short slot-0 cursor frame animation after a drop input starts.
 
 Evidence:
 
-- `CheckMatch` sets `DROP_CURSOR_ANIM_ACTIVE` when it accepts a down/drop input.
+- `CheckMatch` sets `DROP_CURSOR_ANIM_ACTIVE` when it accepts an A/B drop input.
 - `InitGameState2` decrements `DROP_CURSOR_FRAME_TIMER`, reloads it with `2`,
   advances `SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_FRAME`, and clears the active
   flag when the frame reaches `0` or `4`.
 - `DisplayScore` keeps its update timer active while either
   `DROP_CURSOR_ANIM_ACTIVE` or `DROP_ANIM_ACTIVE` is nonzero.
+- The slot-0 cursor uses X positions separated by `$20`; right/left input also
+  increments/decrements `FIELD_COLUMN_TILE_PATTERN_INDEX`, which selects the
+  16-byte `FieldColumnTilePatternTable` record copied by `LoadGameBGTiles`.
 
 The adjacent `$C66E` byte is `SPRITE_OBJECT_DELAY_RELOAD`, documented with the
 sprite object producer state in `sprite_oam.md`.
