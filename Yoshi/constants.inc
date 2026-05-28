@@ -244,6 +244,8 @@ DEF SETTINGS_BLINK_PHASE EQU $c6f1 ; toggles selected settings/result text blank
 DEF SETTINGS_BLINK_TIMER EQU $c6f2 ; reloads before toggling SETTINGS_BLINK_PHASE
 DEF EGG_TEXT_ALT_ANIM_ACTIVE EQU $c6f3 ; enables continuous AnimateSprite frame 1/2 toggling
 DEF EGG_TEXT_ALT_ANIM_PHASE EQU $c6f4
+DEF ROUND_COMPLETE_TILE_BASE_X EQU $c6f5 ; base X used by ProcessRoundComplete sprite slots
+DEF ROUND_COMPLETE_TILE_BASE_Y EQU $c6f6 ; base Y used by ProcessRoundComplete sprite slots
 DEF LINK_SETTINGS_ROW_LEVEL EQU $00
 DEF LINK_SETTINGS_ROW_SPEED EQU $01
 DEF SETTINGS_BLINK_PERIOD EQU $0f

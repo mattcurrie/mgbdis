@@ -7865,11 +7865,11 @@ jr_000_3053:
     ld [hl], b
     inc l
     inc l
-    ld a, [$c6f6]
+    ld a, [ROUND_COMPLETE_TILE_BASE_Y]
     ld [hl], a
     inc l
     inc l
-    ld a, [$c6f5]
+    ld a, [ROUND_COMPLETE_TILE_BASE_X]
     ld [hl], a
     pop hl
     add hl, de
@@ -8835,9 +8835,9 @@ ShowRoundComplete::
     ld c, $0a
     call WaitFrames
     ldh a, [ANIM_SUBFRAME]
-    ld [$c6f5], a
+    ld [ROUND_COMPLETE_TILE_BASE_X], a
     ld a, $80
-    ld [$c6f6], a
+    ld [ROUND_COMPLETE_TILE_BASE_Y], a
     call ProcessRoundComplete
     pop hl
     push hl

@@ -106,6 +106,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6F1` | `SETTINGS_BLINK_PHASE` | High | `TickSettingsBlink` toggles this bit every `$0F` frames. Selected 2P setting/result-option rows use it to alternate between normal text and blank text. |
 | `$C6F2` | `SETTINGS_BLINK_TIMER` | High | Reloaded with `$0F` on setup/input; decremented by `TickSettingsBlink` before toggling `SETTINGS_BLINK_PHASE`. |
 | `$C6F3-$C6F4` | `EGG_TEXT_ALT_ANIM_ACTIVE` / `EGG_TEXT_ALT_ANIM_PHASE` | High | The tens-digit wrap path enables this continuous `AnimateSprite` frame 1/2 alternation; `RunTitleMenu` clears both bytes, round/playfield setup clears the phase byte, and the playing-state VBlank check toggles the phase. |
+| `$C6F5-$C6F6` | `ROUND_COMPLETE_TILE_BASE_X` / `ROUND_COMPLETE_TILE_BASE_Y` | High | `ShowRoundComplete` stores each round-complete tile-group base X (`$10/$30/$50/$70`) and fixed base Y `$80` here; `ProcessRoundComplete` copies the pair into sprite object slots 10-13. |
 | `$C6FA` | `LINK_PENDING_FIELD_RISE` | Medium | Incoming bit-6 link events add to this byte; `SelectMenuItem` consumes it in chunks while adjusting `SCREEN_STATE`. |
 | `$C6FB` | `LINK_STAGING_BYTE` | Low | Cleared with link state; direct read still unconfirmed. |
 | `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |
