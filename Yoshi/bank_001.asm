@@ -591,8 +591,8 @@ GameMainUpdate::
     call DrawBox
     call InitGameState2
     call UpdateAnimFrame
-    call CheckVerticalMatch
-    call ProcessMatch
+    call ShufflePieceDisplaySlotOrder
+    call ShufflePieceDisplayCodePool
     call SetupGameBG
     call DrawTextBox
     call UpdateFieldTimers

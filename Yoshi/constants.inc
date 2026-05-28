@@ -21,6 +21,7 @@ DEF SPRITE_BASE_Y_TMP EQU $ff91 ; UpdateSprites中のスプライト基準Y
 DEF SPRITE_OBJECT_ATTR_TMP EQU $ff92 ; UpdateSprites中のobject属性OR値
 DEF SCREEN_STATE      EQU $ff93 ; 画面状態フラグ
 DEF SPRITE_OBJECT_SLOT_OFFSET_TMP EQU $ff96 ; UpdateSpriteObject中の$C2xxスロットオフセット
+DEF PIECE_DISPLAY_SLOT_ORDER EQU $ff97 ; four slot indices used by DisplayResults
 DEF WAVE_UPDATE       EQU $ff9b ; Wave RAMアップデートフラグ
 DEF SCX_SHADOW        EQU $ff9c ; SCXシャドウ
 DEF JOYPAD_RAW        EQU $ffa0 ; 生入力
@@ -163,6 +164,8 @@ DEF DROP_CURSOR_ANIM_ACTIVE EQU $c66f
 DEF DROP_CURSOR_FRAME_TIMER EQU $c670
 DEF DROP_CURSOR_FRAME_PERIOD EQU $02
 DEF GAME_TYPE         EQU $c671 ; ゲーム種別 (0=A-TYPE系, 1=B-TYPE系)
+DEF PIECE_DISPLAY_CODE_POOL EQU $c673 ; five piece/display codes shuffled before display
+DEF PIECE_DISPLAY_CODE_POOL_SIZE EQU $05
 DEF PIECE_FALL_POS    EQU $c68f ; ピース落下位置
 DEF PIECE_ROTATION    EQU $c691 ; ピース回転状態
 DEF PIECE_FALL_TIMER  EQU $c696 ; current countdown before the falling piece updates

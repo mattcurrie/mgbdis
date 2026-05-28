@@ -3070,13 +3070,13 @@ jr_000_13a0:
     ret
 
 
-CheckVerticalMatch::
-    call CheckHorizontalMatch
+ShufflePieceDisplaySlotOrder::
+    call SelectPieceDisplaySlotOrderEntry
     ld a, [hl]
     ld d, h
     ld e, l
     push af
-    call CheckHorizontalMatch
+    call SelectPieceDisplaySlotOrderEntry
     pop af
     ld b, [hl]
     ld [hl], a
@@ -3085,23 +3085,23 @@ CheckVerticalMatch::
     ret
 
 
-CheckHorizontalMatch::
+SelectPieceDisplaySlotOrderEntry::
     ld c, $38
     call MultiplyAndCount
     ld b, $00
     ld c, a
-    ld hl, $ff97
+    ld hl, PIECE_DISPLAY_SLOT_ORDER
     add hl, bc
     ret
 
 
-ProcessMatch::
-    call ClearMatchedPieces
+ShufflePieceDisplayCodePool::
+    call SelectPieceDisplayCodePoolEntry
     ld a, [hl]
     ld d, h
     ld e, l
     push af
-    call ClearMatchedPieces
+    call SelectPieceDisplayCodePoolEntry
     pop af
     ld b, [hl]
     ld [hl], a
@@ -3110,12 +3110,12 @@ ProcessMatch::
     ret
 
 
-ClearMatchedPieces::
+SelectPieceDisplayCodePoolEntry::
     ld c, $38
     call MultiplyAndCount
     ld b, $00
     ld c, a
-    ld hl, $c673
+    ld hl, PIECE_DISPLAY_CODE_POOL
     add hl, bc
     ret
 
@@ -3368,8 +3368,8 @@ jr_000_151b:
     ret
 
 
-ShuffleRandom::
-    ld hl, $ff97
+InitPieceDisplaySlotOrder::
+    ld hl, PIECE_DISPLAY_SLOT_ORDER
     ld [hl], $00
     inc hl
     ld [hl], $01
@@ -3380,9 +3380,9 @@ ShuffleRandom::
     ret
 
 
-ProcessInput::
-    ld hl, $c673
-    ld b, $05
+InitPieceDisplayCodePool::
+    ld hl, PIECE_DISPLAY_CODE_POOL
+    ld b, PIECE_DISPLAY_CODE_POOL_SIZE
     ld a, $01
 
 jr_000_1536:
@@ -3429,10 +3429,10 @@ jr_000_1560:
     push bc
     push de
     push hl
-    call ProcessMatch
-    call ProcessMatch
-    call ProcessMatch
-    ld a, [$c676]
+    call ShufflePieceDisplayCodePool
+    call ShufflePieceDisplayCodePool
+    call ShufflePieceDisplayCodePool
+    ld a, [PIECE_DISPLAY_CODE_POOL + $03]
     pop hl
     pop de
     pop bc
@@ -3491,8 +3491,8 @@ HandleDrop::
     call MovePieceRight
     call GenerateNextPiece
     call GetRandomPiece
-    call ShuffleRandom
-    call ProcessInput
+    call InitPieceDisplaySlotOrder
+    call InitPieceDisplayCodePool
     call DropPiece
     ld a, [GAME_TYPE]
     and a
@@ -4053,12 +4053,12 @@ jr_000_18fb:
     ld b, a
 
 jr_000_1902:
-    ld hl, $c673
+    ld hl, PIECE_DISPLAY_CODE_POOL
     ld a, b
     dec a
     call GetArrayElement
     push af
-    ld hl, $ff97
+    ld hl, PIECE_DISPLAY_SLOT_ORDER
     ld a, b
     dec a
     call GetArrayElement

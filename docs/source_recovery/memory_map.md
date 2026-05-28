@@ -27,6 +27,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$FF8C` | `ANIM_SUBFRAME` | Medium | Used near result/link/title animation paths. |
 | `$FF8D` | `TEXT_FADE` | Medium | Used by title text fade and other UI fade/timing code. |
 | `$FF93` | `SCREEN_STATE` | Medium | Used in scan/timer/result/menu code; exact semantics still need validation. |
+| `$FF97-$FF9A` | `PIECE_DISPLAY_SLOT_ORDER` | High | Four slot indices initialized to `0,1,2,3`, shuffled by `ShufflePieceDisplaySlotOrder`, and used by `DisplayResults` to choose which `PIECE_DISPLAY_STATES` entry to write. |
 | `$FF9B` | `WAVE_UPDATE` | High | Checked by VBlank before wave RAM update. |
 | `$FF9C` | `SCX_SHADOW` | High | Copied to `rSCX` in VBlank. |
 | `$FFA0` | `JOYPAD_RAW` | High | Written by `ReadJoypadButtons`; consumed as input state. |
@@ -55,6 +56,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C66F` | `DROP_CURSOR_ANIM_ACTIVE` | High | Set when `CheckMatch` accepts a drop input, drives `InitGameState2` cursor-frame animation, and gates `DisplayScore` timing. |
 | `$C670` | `DROP_CURSOR_FRAME_TIMER` | High | Decremented and reloaded by `InitGameState2` before advancing `SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_FRAME`. |
 | `$C671` | `GAME_TYPE` | High | Set from `OPTION_GAME_TYPE` in 1P and forced to 1 in 2P; selects A/B-style gameplay/layout/result behavior, not 1P/2P. |
+| `$C673-$C677` | `PIECE_DISPLAY_CODE_POOL` | High | Five code bytes initialized to `1..5`; the first four are shuffled by `ShufflePieceDisplayCodePool`, and `DisplayResults` indexes this pool before `ProcessMenuSelection`. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
 | `$C6A3-$C6A6` | `PIECE_DISPLAY_STATES` | High | Four display-state bytes built by `DisplayResults` and scanned by `HandleGameOver` / `AnimateGameOver` to emit piece sprite objects in slots 1-4. |
