@@ -1058,11 +1058,11 @@ UpdateSpriteObject::
     ld de, SPRITE_OBJECT_STAGING
     ld bc, SPRITE_OBJECT_STAGING_SIZE
     call MemcopyCall
-    ld a, [SPRITE_OBJECT_STAGING + $08]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_PHASE]
     and a
     ret z
 
-    cp $01
+    cp SPRITE_OBJECT_PHASE_WAIT
     jr z, jr_000_0606
 
     call UpdateMatchState
@@ -1072,14 +1072,14 @@ UpdateSpriteObject::
     jr jr_000_0617
 
 jr_000_0606:
-    ld hl, SPRITE_OBJECT_STAGING + $07
+    ld hl, SPRITE_OBJECT_STAGING + SPRITE_OBJECT_DELAY_COUNTER
     dec [hl]
     jr nz, jr_000_0617
 
     ld a, [$c66e]
-    ld [SPRITE_OBJECT_STAGING + $07], a
-    ld a, $02
-    ld [SPRITE_OBJECT_STAGING + $08], a
+    ld [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_DELAY_COUNTER], a
+    ld a, SPRITE_OBJECT_PHASE_UPDATE
+    ld [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_PHASE], a
 
 jr_000_0617:
     ld hl, SPRITE_OBJECT_STAGING
@@ -3022,20 +3022,20 @@ jr_000_1361:
 
 
 jr_000_136d:
-    ld a, [SPRITE_OBJECT_SLOT_1 + $08]
-    cp $02
+    ld a, [SPRITE_OBJECT_SLOT_1 + SPRITE_OBJECT_PHASE]
+    cp SPRITE_OBJECT_PHASE_UPDATE
     jr z, jr_000_138a
 
-    ld a, [SPRITE_OBJECT_SLOT_2 + $08]
-    cp $02
+    ld a, [SPRITE_OBJECT_SLOT_2 + SPRITE_OBJECT_PHASE]
+    cp SPRITE_OBJECT_PHASE_UPDATE
     jr z, jr_000_138a
 
-    ld a, [SPRITE_OBJECT_SLOT_3 + $08]
-    cp $02
+    ld a, [SPRITE_OBJECT_SLOT_3 + SPRITE_OBJECT_PHASE]
+    cp SPRITE_OBJECT_PHASE_UPDATE
     jr z, jr_000_138a
 
-    ld a, [SPRITE_OBJECT_SLOT_4 + $08]
-    cp $02
+    ld a, [SPRITE_OBJECT_SLOT_4 + SPRITE_OBJECT_PHASE]
+    cp SPRITE_OBJECT_PHASE_UPDATE
     jr z, jr_000_138a
 
     ret
@@ -3150,7 +3150,7 @@ jr_000_13f6:
 
 
 jr_000_140f:
-    ld a, [$c695]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
     cp $07
     call z, ScanBoard
     call MovePieceLeft
@@ -3174,7 +3174,7 @@ jr_000_1429:
     sla a
     sla a
     ld l, a
-    ld a, [$c695]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
     call DrawGridPiece
     call MovePieceUp
     dec a
@@ -3258,7 +3258,7 @@ MovePieceLeft::
 jr_000_14a0:
     ld l, a
     ld b, [hl]
-    ld a, [$c695]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
     dec hl
     dec hl
     ld [hl], a
@@ -3538,7 +3538,7 @@ LevelFallDelayTable::
     db $11, $10, $0f, $0e, $0d, $0c, $0b, $0a, $09, $08
 
 UpdateLandingProgress::
-    ld a, [$c695]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
     cp $08
     jr nz, CommitFallingPieceToBoard
 
