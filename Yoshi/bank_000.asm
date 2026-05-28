@@ -4728,28 +4728,28 @@ SetPalette::
 
 
 DrawOptionTextLabels::
-    ld hl, $0102
+    ld hl, OPTION_TEXT_A_GAME_COORD
     ld de, OptionTextAGame
     call DrawStringToGrid
-    ld hl, $010c
+    ld hl, OPTION_TEXT_B_GAME_COORD
     ld de, OptionTextBGame
     call DrawStringToGrid
-    ld hl, $0402
+    ld hl, OPTION_TEXT_LEVEL_COORD
     ld de, OptionTextLevel
     call DrawStringToGrid
-    ld hl, $0b02
+    ld hl, OPTION_TEXT_SPEED_COORD
     ld de, OptionTextSpeed
     call DrawStringToGrid
-    ld hl, $0f02
+    ld hl, OPTION_TEXT_BGM_COORD
     ld de, OptionTextBgm
     call DrawStringToGrid
-    ld hl, $0c09
+    ld hl, OPTION_TEXT_LOW_COORD
     ld de, OptionTextLow
     call DrawStringToGrid
-    ld hl, $0c0f
+    ld hl, OPTION_TEXT_HIGH_COORD
     ld de, OptionTextHigh
     call DrawStringToGrid
-    ld hl, $1010
+    ld hl, OPTION_TEXT_OFF_COORD
     ld de, OptionTextOff
     call DrawStringToGrid
     ld hl, $0704
