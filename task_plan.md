@@ -27,6 +27,7 @@ Phases 2-4
 - [x] Name all currently observed states in GAME_STATE
 - [ ] Trace title, demo/attract, gameplay, round end, options, and 2P paths
 - [x] Rename the state `$05/$06` 1P/2P pre-play dispatch and loop routines
+- [x] Rename the state `$01` title menu frame loop
 - [ ] Split code/data misclassifications found in bank_000.asm and bank_001.asm
 - [ ] Verify bank assumptions around interrupt-sensitive paths
 - **Status:** in_progress

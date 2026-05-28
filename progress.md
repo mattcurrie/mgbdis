@@ -162,6 +162,8 @@
   - Created `docs/source_recovery/vram_copy.md` to document the primary queue and the unreachable secondary-copy fragment.
   - Renamed the state `$05` pre-play dispatch and loop labels: `RunPreplayLoop`, `Run1PPreplayLoop`, `Run2PPreplayLoop`, `InitPreplayBlinkTimer`, `Init1PPreplayScreen`, and `Draw1PPreplayScreen`.
   - Updated `docs/source_recovery/state_machine.md` to record the 2P `$55` link-start handshake transition into `GAME_STATE_PLAY_SETUP`.
+  - Renamed the state `$01` title frame loop from `InitGameVars` to `RunTitleMenu`.
+  - Created `docs/source_recovery/title_menu.md` to document the title 1P/2P selection and Start/link entry path.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -174,6 +176,7 @@
   - `docs/source_recovery/column_blink_state.md`
   - `docs/source_recovery/settings_blink_state.md`
   - `docs/source_recovery/vram_copy.md`
+  - `docs/source_recovery/title_menu.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -228,6 +231,7 @@
 | Settings blink state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | VRAM copy slot naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Pre-play loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Title menu loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

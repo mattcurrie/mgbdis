@@ -482,7 +482,7 @@ jr_000_02cb:
     jr nz, jr_000_02d3
 
     ; GAME_STATE_TITLE_MENU: poll title/player-selection input.
-    call InitGameVars
+    call RunTitleMenu
     jr MainLoop
 
 jr_000_02d3:
@@ -5722,7 +5722,7 @@ jr_000_2154:
     ret
 
 
-InitGameVars::
+RunTitleMenu::
     xor a
     ld [$c701], a
     ld [$c702], a

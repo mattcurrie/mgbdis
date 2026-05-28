@@ -4,7 +4,7 @@ The recovered egg counter state lives at `$C6D2-$C6D5`.
 
 | Address | Name | Evidence |
 |---------|------|----------|
-| `$C6D2` | `EGG_COUNT_RESERVED` | Cleared with the counter by `StartNextRound`, `InitPlayfield`, `InitGameVars`, and `ClearEggCount`; no direct read has been confirmed. |
+| `$C6D2` | `EGG_COUNT_RESERVED` | Cleared with the counter by `StartNextRound`, `InitPlayfield`, `RunTitleMenu`, and `ClearEggCount`; no direct read has been confirmed. |
 | `$C6D3` | `EGG_COUNT_ONES` | Incremented first by `IncrementEggCounter`; drawn by `DrawEggCount` as tile `EGG_COUNT_TILE_BASE + digit`. |
 | `$C6D4` | `EGG_COUNT_TENS` | Incremented when ones wraps; drawn by `DrawEggCount` as tile `EGG_COUNT_TILE_BASE + digit`. |
 | `$C6D5` | `EGG_COUNT_HUNDREDS` | Incremented when tens wraps; copied into result/history records before tens and ones. |
