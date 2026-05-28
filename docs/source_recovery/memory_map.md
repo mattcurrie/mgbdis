@@ -53,6 +53,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C54C` | `RESULT_MAIN_PANEL_RIGHT_EDGE` | Medium | `ProcessMatching` writes tile `$05` down six rows from this origin using `BG_MAP_ROW_STRIDE`; it is the right-edge column of the `RESULT_MAIN_PANEL_TOP_LEFT` area. |
 | `$C5D1` | `RESULT_SCORE_LABEL_TOP_LEFT` | Medium | `UpdateLevel` fills four score-label tiles starting at `$C8` here immediately before drawing the five `SCORE_DIGITS` at `RESULT_SCORE_VALUE_TOP_LEFT`. It is `BG_MAP_SHADOW + row 15 * $14 + column 5`. |
 | `$C5D6` | `RESULT_SCORE_VALUE_TOP_LEFT` | Medium | `UpdateLevel` writes five rendered `SCORE_DIGITS` here, and result fill helpers also clear/fill this value area. It is `BG_MAP_SHADOW + row 15 * $14 + column 10`. |
+| `$C5E5` | `RESULT_TIME_LABEL_TOP_LEFT` | Medium | `UpdateLevel` fills three timer-label tiles starting at `$E0` here immediately before drawing elapsed-time digits. It is `BG_MAP_SHADOW + row 16 * $14 + column 5`. |
+| `$C5EA` | `RESULT_TIME_VALUE_TOP_LEFT` | Medium | `UpdateLevel` writes four rendered `ROUND_TIMER_DIGITS` here with separator tile `$E3` between the second and third digits. It is `BG_MAP_SHADOW + row 16 * $14 + column 10`. |
 | `$C61C` | `LCD_REDRAW` | High | Read by `UpdateSprites`, written around LCD/VRAM refresh paths. |
 | `$C61D-$C61F` | `SCORE_BCD_LOW` / `SCORE_BCD_MID` / `SCORE_BCD_HIGH` | High | Bank 1 `AddScore` adds an `HL` BCD score delta with `daa`, caps overflow at `99999`, and stores the packed BCD accumulator here. |
 | `$C621-$C625` | `SCORE_DIGITS` | High | `AddScore` unpacks the BCD score into five low-nibble display digits; Bank 0 `UpdateLevel` reads five bytes from this range when drawing the score. |

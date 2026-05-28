@@ -2618,10 +2618,10 @@ jr_000_111b:
     inc a
     ld [hl], a
     ld a, $e0
-    ld hl, $c5e5
+    ld hl, RESULT_TIME_LABEL_TOP_LEFT
     ld bc, $0103
     call FillRect
-    ld hl, $c5ea
+    ld hl, RESULT_TIME_VALUE_TOP_LEFT
     ld de, ROUND_TIMER_DIGITS
     ld a, [de]
     inc de

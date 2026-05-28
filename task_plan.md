@@ -108,6 +108,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name result main panel right-edge tilemap origin `$C54C`
 - [x] Name result score value tilemap origin `$C5D6`
 - [x] Name result score label tilemap origin `$C5D1`
+- [x] Name result timer label/value tilemap origins `$C5E5/$C5EA`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending
