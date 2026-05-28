@@ -469,7 +469,7 @@ MainLoop::
     ld a, SND_TITLE_BGM
     call PlaySound
     call InitSpriteBuffer
-    call FillOAMTitleTile
+    call FillTitleTilemap
     call InitGameScreen
     call InitTitleUI
     ld a, $01
@@ -495,7 +495,7 @@ jr_000_02d3:
     ld [LCD_REDRAW], a
     call LoadGameTiles
     call LCDOn
-    call FillOAMGameTile
+    call FillGameTilemap
     ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_02f2
@@ -847,17 +847,17 @@ StartGame::
     jp StateInit
 
 
-FillOAMGameTile::
+FillGameTilemap::
     ld a, $4a
     jr jr_000_0513
 
-FillOAMTitleTile::
+FillTitleTilemap::
     ld a, $e0
 
 jr_000_0513:
-    ld bc, $0168
+    ld bc, BG_MAP_SHADOW_SIZE
     inc b
-    ld hl, $c4a0
+    ld hl, BG_MAP_SHADOW
 
 jr_000_051a:
     ld [hl+], a
@@ -885,14 +885,14 @@ jr_000_051a:
     ret
 
 
-CalcOAMAddress::
+CalcTilemapAddress::
     ld a, h
     sla a
     sla a
     add h
     sla a
     sla a
-    ld h, $c4
+    ld h, BG_MAP_SHADOW_HI
     jr nc, jr_000_0544
 
     inc h
@@ -904,7 +904,7 @@ jr_000_0544:
     inc h
 
 jr_000_0548:
-    add $a0
+    add BG_MAP_SHADOW_LO
     jr nc, jr_000_054d
 
     inc h
@@ -1197,7 +1197,7 @@ jr_000_0680:
     dec h
     ld a, c
     call GetSpriteDataOffset1
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop af
     dec a
     jr nz, jr_000_06b9
@@ -1215,14 +1215,14 @@ jr_000_0680:
     cp $ff
     jr z, jr_000_06a8
 
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop af
     call GetSpriteDataOffset1
     jr jr_000_06b9
 
 jr_000_06a8:
     inc h
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop af
     call GetSpriteDataOffset1
     ld a, $04
@@ -1271,7 +1271,7 @@ DrawGridPiece::
 jr_000_06d9:
     pop af
     call GetSpriteDataOffset2
-    call CalcOAMAddress
+    call CalcTilemapAddress
     call CopySprite4Bytes
     ld a, $11
     add l
@@ -1290,7 +1290,7 @@ ClearColumnLeft::
     push bc
     ld b, a
     dec l
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 jr_000_06f5:
     ld [hl], $4a
@@ -1321,7 +1321,7 @@ ClearColumnRight::
     inc l
     inc l
     inc l
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 jr_000_0710:
     ld [hl], $4a
@@ -2326,8 +2326,8 @@ jr_000_0f4b:
     dec c
     jr nz, jr_000_0f4b
 
-    ld hl, $c4a0
-    ld bc, $0168
+    ld hl, BG_MAP_SHADOW
+    ld bc, BG_MAP_SHADOW_SIZE
     ld d, $05
     call DrawCharacter
     ld a, $01
@@ -2377,8 +2377,8 @@ jr_000_0f95:
     dec a
     jr nz, jr_000_0f6a
 
-    ld hl, $c4a0
-    ld bc, $0168
+    ld hl, BG_MAP_SHADOW
+    ld bc, BG_MAP_SHADOW_SIZE
     ld d, $05
     call DrawCharacter
     ld c, $3c
@@ -2489,7 +2489,7 @@ jr_000_1040:
     ld c, $0a
     call DrawString
     ld hl, $c54c
-    ld de, $0014
+    ld de, BG_MAP_ROW_STRIDE
     ld c, $06
 
 jr_000_106e:
@@ -2699,7 +2699,7 @@ UnusedDrawNumberPairUnlessFF::
 
     push hl
     push de
-    ld de, $0014
+    ld de, BG_MAP_ROW_STRIDE
     sla a
     add $d2
     ld [hl], a
@@ -2753,7 +2753,7 @@ DrawCharacter::
 
 
 FillRect::
-    ld de, $0014
+    ld de, BG_MAP_ROW_STRIDE
 
 jr_000_1232:
     push bc
@@ -4689,7 +4689,7 @@ ClearTextArea::
 
 
 InitTextSystem::
-    call FillOAMGameTile
+    call FillGameTilemap
     call DrawLabel
     call DrawOptionTextLabels
     ret
@@ -4759,7 +4759,7 @@ DrawOptionTextLabels::
 jr_000_1c9e:
     push hl
     push af
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop af
     ld [hl], a
     pop hl
@@ -4774,7 +4774,7 @@ jr_000_1c9e:
 
 
 UpdateBGMap::
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, d
     ldh [STATE_TRANSITION], a
     push hl
@@ -4791,7 +4791,7 @@ UpdateBGMap::
     add d
     ld [hl], a
     pop hl
-    ld de, $0014
+    ld de, BG_MAP_ROW_STRIDE
     add hl, de
 
 jr_000_1cce:
@@ -4808,7 +4808,7 @@ jr_000_1cce:
     add d
     ld [hl], a
     pop hl
-    ld de, $0014
+    ld de, BG_MAP_ROW_STRIDE
     add hl, de
     dec b
     jr nz, jr_000_1cce
@@ -4963,7 +4963,7 @@ jr_000_1dc4:
     push hl
     ld h, d
     ld l, e
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $4a
     pop hl
     dec b
@@ -5029,7 +5029,7 @@ jr_000_1e1f:
 
 
 DrawOptionMarker::
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $9a
     ret
 
@@ -5044,7 +5044,7 @@ DrawTileTripletList::
     ld a, [de]
     ld l, a
     inc de
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, [de]
     inc de
     ld [hl], a
@@ -5552,7 +5552,7 @@ ResetTitleState::
 
 DrawStringToGrid::
     push hl
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 jr_000_214b:
     ld a, [de]
@@ -5566,7 +5566,7 @@ jr_000_214b:
 jr_000_2154:
     inc de
     pop hl
-    ld bc, $0014
+    ld bc, BG_MAP_ROW_STRIDE
     add hl, bc
     ret
 
@@ -6416,7 +6416,7 @@ jr_000_267c:
 
 DrawSpeedDisplay::
     push af
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop af
     ld de, $0013
     ld [hl+], a
@@ -6797,8 +6797,8 @@ jr_000_29a0:
     xor a
     ldh [rBGP], a
     call LCDOn
-    ld hl, $c4a0
-    ld bc, $0168
+    ld hl, BG_MAP_SHADOW
+    ld bc, BG_MAP_SHADOW_SIZE
     ld d, $02
     call DrawCharacter
     ld a, $00
@@ -8115,7 +8115,7 @@ jr_000_31ab:
 
 DrawRankEntry::
     ld c, a
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, c
 
 jr_000_31be:
@@ -8230,8 +8230,8 @@ jr_000_3220:
     call MemcopyCall
 
 jr_000_3264:
-    ld hl, $c4a0
-    ld bc, $0168
+    ld hl, BG_MAP_SHADOW
+    ld bc, BG_MAP_SHADOW_SIZE
     ld d, $18
     call DrawCharacter
     ld a, ROM_BANK_MAIN_CODE
@@ -8715,7 +8715,7 @@ jr_000_3576:
     call DrawCharacter
     xor a
     ld [GAME_ACTIVE], a
-    ld hl, $c4a0
+    ld hl, BG_MAP_SHADOW
     ld de, $0004
     ld a, $4a
     ld c, $10

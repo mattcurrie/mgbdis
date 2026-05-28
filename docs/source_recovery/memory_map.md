@@ -48,6 +48,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 
 | Address | Name | Confidence | Evidence |
 |---------|------|------------|----------|
+| `$C4A0-$C607` | `BG_MAP_SHADOW` | High | `FillGameTilemap` / `FillTitleTilemap` fill `$0168` bytes, `CalcTilemapAddress` maps row/column pairs as `$C4A0 + row * 20 + column`, and Bank 1 copies chunks of this buffer to BG map VRAM `$9C00-$9DDF`. |
 | `$C61C` | `LCD_REDRAW` | High | Read by `UpdateSprites`, written around LCD/VRAM refresh paths. |
 | `$C61D-$C61F` | `SCORE_BCD_LOW` / `SCORE_BCD_MID` / `SCORE_BCD_HIGH` | High | Bank 1 `AddScore` adds an `HL` BCD score delta with `daa`, caps overflow at `99999`, and stores the packed BCD accumulator here. |
 | `$C621-$C625` | `SCORE_DIGITS` | High | `AddScore` unpacks the BCD score into five low-nibble display digits; Bank 0 `UpdateLevel` reads five bytes from this range when drawing the score. |
@@ -143,8 +144,8 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | `$C000-$C0ED` | Many references from Bank 1 sound routines and tables; now named as `SOUND_*` constants. | Sound engine state, channel sequence pointers, timers, pitch slide state, tempo, and wave selectors. Continue refining medium-confidence field names. |
 | `$C200-$C2FF` | `SPRITE_OBJECTS`; 16 logical sprite object slots, `$10` bytes each. | `UpdateSprites` scans this page in `$10`-byte steps and expands active slots into shadow OAM; `UpdateSpriteObject` stages gameplay slots 1-4 through `$C68C-$C695`. |
 | `$C300-$C3FF` | Sprite/field-adjacent work area, not yet fully mapped. | Some references may still be from real field/UI state or from older data artifacts; needs separate trace. |
-| `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
-| `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
+| `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. The adjacent `$C4A0-$C607` range is `BG_MAP_SHADOW`, not OAM. |
+| `$C4A0-$C607` | Now named `BG_MAP_SHADOW`; used by result/title/2P display routines as tilemap destinations before Bank 1 copies chunks to VRAM. | BG map shadow, not OAM. Continue refining named offsets inside the buffer. |
 
 ## Code/Data Misclassification Candidates
 

@@ -461,7 +461,7 @@ jr_001_4305:
     ld hl, $0210
 
 jr_001_4308:
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $12
     inc hl
 
@@ -486,7 +486,7 @@ jr_001_4314:
     ret
 
 
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 jr_001_4324:
     ld a, [de]
@@ -560,7 +560,7 @@ jr_001_4387:
 
 
     ld b, a
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 DrawBCDNumber::
     xor a
@@ -634,7 +634,7 @@ SetupGameBG::
     ld b, $10
     ld h, $01
     ld l, $00
-    call CalcOAMAddress
+    call CalcTilemapAddress
 
 jr_001_4401:
     ld [hl], $4d
@@ -657,7 +657,7 @@ LoadGameBGTiles::
     ld e, l
     ld hl, $1000
     push de
-    call CalcOAMAddress
+    call CalcTilemapAddress
     pop de
     ld b, $10
 
@@ -755,7 +755,7 @@ ProcessColumn::
 
 UpdateColumn::
     ld e, a
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld d, b
 
 jr_001_44ef:
@@ -783,7 +783,7 @@ jr_001_44fd:
 
 
 DrawColumnData::
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, c
 
 jr_001_4505:
@@ -829,7 +829,7 @@ InitPlayfield::
 
 
 SpriteAnimTable::
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, [SPRITE_ANIM_FRAME]
     add $40
     ld [hl], a
@@ -915,7 +915,7 @@ GetFramePointer::
     ret
 
 
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $f0
     inc hl
     ld [hl], $f1
@@ -1026,7 +1026,7 @@ jr_001_466d:
     ld hl, $0c13
 
 jr_001_4670:
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, [EGG_COUNT_ONES]
     add EGG_COUNT_TILE_BASE
     ld [hl], a
@@ -1161,24 +1161,24 @@ jr_001_472f:
 
 GenerateNext::
     ld hl, $0f05
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $e0
     ld hl, $1005
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $e0
     ld a, [TWO_PLAYER_FLAG]
     and a
     jr nz, jr_001_475a
 
     ld hl, $0f05
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $60
     ret
 
 
 jr_001_475a:
     ld hl, $1005
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $60
     ret
 
@@ -1301,7 +1301,7 @@ DrawNextBottom::
 
 
 UpdateNextDisplay::
-    call FillOAMGameTile
+    call FillGameTilemap
     call FieldUpdate1
     ld hl, $0010
     ld bc, $0412
@@ -1478,7 +1478,7 @@ jr_001_48f4:
 
 FieldUpdate7::
     ld hl, $1001
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld [hl], $fb
     inc l
     ld [hl], $fc
@@ -1505,14 +1505,14 @@ FieldUpdate7::
 
 FieldUpdate8::
     ld hl, $0510
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld hl, $0b10
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
@@ -1523,21 +1523,21 @@ FieldUpdate8::
 
 FieldUpdate9::
     ld hl, $0410
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld hl, $0810
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld hl, $0d10
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
@@ -1548,14 +1548,14 @@ FieldUpdate9::
 
 FieldUpdate10::
     ld hl, $0610
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld hl, $0c10
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, $4b
     ld [hl+], a
     ld [hl+], a
@@ -1591,7 +1591,7 @@ FieldUpdate12::
     ret nz
 
     ld hl, $0110
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld a, [GAME_TYPE]
     and a
     jr nz, jr_001_49a9
@@ -1643,7 +1643,7 @@ FieldUpdate14::
     and a
     ret nz
 
-    call CalcOAMAddress
+    call CalcTilemapAddress
     ld de, ROUND_TIMER_DIGITS
     ld a, [de]
     add $40
@@ -1782,7 +1782,7 @@ ProcessFieldLogic::
     jr jr_001_4ab2
 
 jr_001_4a9f:
-    ld hl, $c4a0
+    ld hl, BG_MAP_SHADOW
     ld sp, hl
     ld hl, $9c00
     inc a

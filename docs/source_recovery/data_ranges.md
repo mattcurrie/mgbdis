@@ -114,7 +114,7 @@ Notes:
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
 | `00:$1D84-$1DAE` | `OptionTextAGame` through `OptionTextOff` | Converted to `db` strings | `DrawOptionTextLabels` loads each address into `DE` and calls `DrawStringToGrid`; bytes are `$FF`-terminated tile strings for `A GAME`, `B GAME`, `LEVEL`, `SPEED`, `BGM`, `LOW`, `HIGH`, and `OFF`. |
-| `00:$1DAF-$1DBE` | `OptionMarkerPositions` | Converted to `db` coordinate pairs | `DrawOptionMarkers` iterates eight row/column pairs, calls `CalcOAMAddress`, clears each marker tile, then draws the active marker. |
+| `00:$1DAF-$1DBE` | `OptionMarkerPositions` | Converted to `db` coordinate pairs | `DrawOptionMarkers` iterates eight row/column pairs, calls `CalcTilemapAddress`, clears each marker tile, then draws the active marker. |
 | `00:$1E3D-$1E4F` | `SettingsCursorTileData` | Converted to `db` triplets | `DrawTileTripletList` consumes row/column/tile triples until `$FF`; `UpdateCursorDisplay` uses this list to draw the inactive cursor tiles. |
 | `00:$1E75-$1E89` | `SettingsCursorSpriteInit0..2` | Converted to `db` records | `ApplySettings` copies three fixed 7-byte records to `$C290`, `$C2A0`, and `$C2B0`. |
 | `00:$1F4C-$1F4F` | `OptionMaxValueTable` | Converted to `db` limits | Option increment code indexes this four-byte table with `MENU_CURSOR` before accepting a right-button change. |
