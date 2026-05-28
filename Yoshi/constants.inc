@@ -193,8 +193,12 @@ DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス
 DEF LINK_FIELD_EVENT_PAYLOAD EQU $c6e6 ; staged bit-6 field event copied into send queue
 DEF LINK_2P_SELECTED_LEVEL EQU $c6eb
 DEF LINK_2P_SELECTED_SPEED EQU $c6ec
-DEF MENU_SELECT       EQU $c6f0 ; メニュー選択インデックス
-DEF GAME_MODE_FLAG    EQU $c6f1 ; ゲームモードフラグ
+DEF LINK_SETTINGS_CURSOR EQU $c6f0 ; 2P pre-play settings cursor (0=level, 1=speed)
+DEF SETTINGS_BLINK_PHASE EQU $c6f1 ; toggles selected settings/result text blanking
+DEF SETTINGS_BLINK_TIMER EQU $c6f2 ; reloads before toggling SETTINGS_BLINK_PHASE
+DEF LINK_SETTINGS_ROW_LEVEL EQU $00
+DEF LINK_SETTINGS_ROW_SPEED EQU $01
+DEF SETTINGS_BLINK_PERIOD EQU $0f
 DEF LINK_PENDING_FIELD_RISE EQU $c6fa ; accumulated incoming bit-6 field event value
 DEF LINK_STAGING_BYTE EQU $c6fb ; cleared with link state; direct read still unconfirmed
 DEF LINK_SEND_QUEUE_0 EQU $c6fc

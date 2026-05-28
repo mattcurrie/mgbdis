@@ -7,10 +7,11 @@ This note documents the recovered 2-player/link staging bytes around
 
 | Address | Name | Evidence |
 |---------|------|----------|
-| `$C6EB` | `LINK_2P_SELECTED_LEVEL` | The 2P option loop edits this byte through `MENU_SELECT`, `UpdateGameField` sends it in the high nibble, and the 2P game setup copies it into `ACTIVE_LEVEL`. |
-| `$C6EC` | `LINK_2P_SELECTED_SPEED` | The 2P option loop edits this byte through `MENU_SELECT`, `UpdateGameField` sends it in the low nibble, and the 2P game setup copies it into `ACTIVE_SPEED`. |
+| `$C6EB` | `LINK_2P_SELECTED_LEVEL` | The 2P option loop edits this byte when `LINK_SETTINGS_CURSOR` selects row 0, `UpdateGameField` sends it in the high nibble, and the 2P game setup copies it into `ACTIVE_LEVEL`. |
+| `$C6EC` | `LINK_2P_SELECTED_SPEED` | The 2P option loop edits this byte when `LINK_SETTINGS_CURSOR` selects row 1, `UpdateGameField` sends it in the low nibble, and the 2P game setup copies it into `ACTIVE_SPEED`. |
 | `$C6FF` | `LINK_RECV_LEVEL` | `UpdateGameField` receives a packed peer option byte, stores the high nibble here, and the preview/result path draws it as the peer selection. |
 | `$C700` | `LINK_RECV_SPEED` | `UpdateGameField` receives a packed peer option byte, stores the low nibble here, and result text chooses the peer speed label from it. |
+| `$C6F0` | `LINK_SETTINGS_CURSOR` | The 2P pre-play loop moves this cursor between level (`0`) and speed (`1`) and uses it to index `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED`. |
 
 `UpdateGameField` packs `LINK_2P_SELECTED_LEVEL << 4 | LINK_2P_SELECTED_SPEED`
 into `LINK_SEND`. The peer unpacks the received byte into `LINK_RECV_LEVEL`

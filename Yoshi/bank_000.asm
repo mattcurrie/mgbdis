@@ -6289,7 +6289,7 @@ jr_000_249d:
 UpdateGameLoop::
     call UpdateGameField
     call FormatNumber
-    call ContinueCountdown
+    call TickSettingsBlink
     call Multiply
     ld a, [LINK_ROLE]
     cp $01
@@ -6301,9 +6301,9 @@ UpdateGameLoop::
 
     push af
     xor a
-    ld [GAME_MODE_FLAG], a
-    ld a, $0f
-    ld [$c6f2], a
+    ld [SETTINGS_BLINK_PHASE], a
+    ld a, SETTINGS_BLINK_PERIOD
+    ld [SETTINGS_BLINK_TIMER], a
     pop af
     bit 3, a
     jr z, jr_000_24ff
@@ -6364,11 +6364,11 @@ jr_000_24ff:
 jr_000_2510:
     ld a, SND_CURSOR_MOVE
     call PlaySound
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     and a
     ret z
 
-    ld hl, MENU_SELECT
+    ld hl, LINK_SETTINGS_CURSOR
     dec [hl]
     ret
 
@@ -6376,11 +6376,11 @@ jr_000_2510:
 jr_000_251f:
     ld a, SND_CURSOR_MOVE
     call PlaySound
-    ld a, [MENU_SELECT]
-    cp $01
+    ld a, [LINK_SETTINGS_CURSOR]
+    cp LINK_SETTINGS_ROW_SPEED
     ret z
 
-    ld hl, MENU_SELECT
+    ld hl, LINK_SETTINGS_CURSOR
     inc [hl]
     ret
 
@@ -6389,13 +6389,13 @@ jr_000_252f:
     ld a, SND_CURSOR_MOVE
     call PlaySound
     ld hl, LINK_2P_SELECTED_LEVEL
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     call GetArrayElement
     inc a
     ld b, a
     push hl
     ld hl, $254e
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     call GetArrayElement
     cp b
     pop hl
@@ -6411,7 +6411,7 @@ jr_000_252f:
 jr_000_2550:
     ld a, SND_CURSOR_MOVE
     call PlaySound
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     ld hl, LINK_2P_SELECTED_LEVEL
     call GetArrayElement
     and a
@@ -6422,8 +6422,8 @@ jr_000_2550:
 
 
 DisplayP1Score::
-    ld a, $0f
-    ld [$c6f2], a
+    ld a, SETTINGS_BLINK_PERIOD
+    ld [SETTINGS_BLINK_TIMER], a
     ret
 
 
@@ -6488,11 +6488,11 @@ ScoreHeaderTextRoleOther::
 
 CalcBonus::
     ld hl, $0708
-    ld a, [MENU_SELECT]
-    cp $01
+    ld a, [LINK_SETTINGS_CURSOR]
+    cp LINK_SETTINGS_ROW_SPEED
     jr nz, jr_000_25f6
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_25f6
 
@@ -6593,7 +6593,7 @@ DrawLinesDisplay::
 
 DrawStatLabel::
     ld b, $04
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     and a
     jr z, jr_000_26b7
 
@@ -6616,8 +6616,8 @@ DrawStatValue::
 
 DrawStatRow::
     ld b, $04
-    ld a, [MENU_SELECT]
-    cp $01
+    ld a, [LINK_SETTINGS_CURSOR]
+    cp LINK_SETTINGS_ROW_SPEED
     jr z, jr_000_26d3
 
     ld bc, $04b2
@@ -6648,11 +6648,11 @@ DrawNextPiece::
 
 DrawNextPieceSprite::
     ldh [TEXT_FADE], a
-    ld a, [MENU_SELECT]
+    ld a, [LINK_SETTINGS_CURSOR]
     and a
     jr nz, jr_000_270c
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_270c
 
@@ -7262,8 +7262,8 @@ jr_000_2b91:
     db $e4
 
 InitP1Settings::
-    ld a, $0f
-    ld [$c6f2], a
+    ld a, SETTINGS_BLINK_PERIOD
+    ld [SETTINGS_BLINK_TIMER], a
     ret
 
 
@@ -7302,16 +7302,16 @@ ProcessRoundEndLoop::
     call TickBgmPreviewTimer
     call ProcessRoundEnd
     call Multiply
-    call ContinueCountdown
+    call TickSettingsBlink
     ldh a, [JOYPAD_PRESSED]
     and a
     ret z
 
     push af
     xor a
-    ld [GAME_MODE_FLAG], a
-    ld a, $0f
-    ld [$c6f2], a
+    ld [SETTINGS_BLINK_PHASE], a
+    ld a, SETTINGS_BLINK_PERIOD
+    ld [SETTINGS_BLINK_TIMER], a
     call DrawCountdownNum
     pop af
     bit 3, a
@@ -7444,7 +7444,7 @@ ShowWinScreen::
     cp $02
     jr nz, jr_000_2cec
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_2cec
 
@@ -7570,7 +7570,7 @@ WaitForRestart::
     cp $01
     jr nz, jr_000_2d8f
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_2d8f
 
@@ -7608,7 +7608,7 @@ ProcessRestart::
     and a
     jr nz, jr_000_2dcb
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_2dcb
 
@@ -7662,7 +7662,7 @@ UpdateContinue::
     cp $03
     jr nz, jr_000_2e58
 
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     and a
     jr z, jr_000_2e58
 
@@ -7725,16 +7725,16 @@ jr_000_2ec3:
     ret
 
 
-ContinueCountdown::
-    ld hl, $c6f2
+TickSettingsBlink::
+    ld hl, SETTINGS_BLINK_TIMER
     dec [hl]
     ret nz
 
-    ld a, $0f
+    ld a, SETTINGS_BLINK_PERIOD
     ld [hl], a
-    ld a, [GAME_MODE_FLAG]
+    ld a, [SETTINGS_BLINK_PHASE]
     xor $01
-    ld [GAME_MODE_FLAG], a
+    ld [SETTINGS_BLINK_PHASE], a
     ret
 
 

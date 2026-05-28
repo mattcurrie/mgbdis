@@ -55,6 +55,7 @@ Phases 2-4
 - [x] Name 2P selected settings, peer settings, and link send queue at `$C6EB-$C700`
 - [x] Name column blink state and result rank position at `$C7A4-$C7AD`
 - [x] Name countdown digit buffers and blit state at `$C7AE-$C7CF`
+- [x] Name 2P settings cursor and shared settings/result blink timer at `$C6F0-$C6F2`
 - [x] Convert Bank 0 tail graphics data at `$3839-$3FFF`
 - [x] Convert Bank 1 field-column tile pattern table at `$442C` and restore the `$445C` code boundary
 - [x] Reclassify Bank 1 `$55E2` sound setup entry as code and split immediate sound support tables
