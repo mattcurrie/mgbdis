@@ -120,7 +120,7 @@ each accepted change must remain byte-identical to `Yoshi/yoshi.gb`.
 
 ### Immediate Next Chunks
 
-- Continue classifying `$C69D`, `$C6AD`, `$C6AE`, `$C6AF`, `$C6BF`, `$C6C0`,
+- Continue classifying `$C69D`, `$C6AD`, `$C6AE`, `$C6BF`, `$C6C0`,
   `$C6F7`, and `$C6F8` around falling, display-state, and game-over flow.
 - Continue replacing raw tilemap offsets with named screen-region constants only
   where a repeated layout role is clear.

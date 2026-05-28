@@ -72,6 +72,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6AA` | `GAME_TURN_STEP_TIMER` | High | Reloaded from the first byte of the current `GameTurnParamTable` record, decremented by `UpdateMenuCursor`, and advances the table when it reaches zero. |
 | `$C6AB` | `RESULT_FLOW_ACTIVE` | High | Set by `ProcessNewHighScore` and `QueueRoundResult`, cleared by `DropPiece` and the return-to-title path, and read by Bank 1 `SetupGameBG` to suppress normal field background setup during result/high-score flow. |
 | `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
+| `$C6AF` | `PIECE_DISPLAY_BLINK_TIMER` | High | Decremented each `GameMainUpdate`; when it expires, it reloads to `$20` and toggles bit `$10` in the sprite frame byte for active piece-display sprite objects, except frames `$07/$08`. |
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type; copied into `GAME_TYPE` by `InitGameState`. |

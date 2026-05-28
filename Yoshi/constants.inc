@@ -189,6 +189,8 @@ DEF GAME_TURN_TABLE_INDEX EQU $c6a9 ; index into GameTurnParamTable
 DEF GAME_TURN_STEP_TIMER EQU $c6aa ; per-record countdown before advancing the turn table
 DEF RESULT_FLOW_ACTIVE EQU $c6ab ; result/high-score flow suppresses normal field BG setup
 DEF GAME_TURN_DELAY EQU $c6ac ; fall/update delay loaded from GameTurnParamTable
+DEF PIECE_DISPLAY_BLINK_TIMER EQU $c6af ; toggles piece display sprite frames
+DEF PIECE_DISPLAY_BLINK_PERIOD EQU $20
 DEF MENU_CURSOR       EQU $c6b1 ; メニューカーソル位置
 DEF OPTION_GAME_TYPE  EQU $c6b2 ; オプション: ゲーム種別
 DEF OPTION_LEVEL      EQU $c6b3 ; オプション: レベル

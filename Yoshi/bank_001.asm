@@ -594,7 +594,7 @@ GameMainUpdate::
     call ShufflePieceDisplaySlotOrder
     call ShufflePieceDisplayCodePool
     call SetupGameBG
-    call DrawTextBox
+    call UpdatePieceDisplayBlink
     call UpdateFieldTimers
     call AnimateDropping
     call LoadGameBGTiles
@@ -723,7 +723,7 @@ jr_001_449e:
     call InitGameBoard
     call InitBlinkState
     call ClearAnimState
-    call ClearTextArea
+    call ResetPieceDisplayBlinkTimer
     call ClearSpriteAnimTickCounter
     call InitEggSystem
     call CalcDifficulty
@@ -814,7 +814,7 @@ InitPlayfield::
     call InitGameBoard
     call InitBlinkState
     call ClearAnimState
-    call ClearTextArea
+    call ResetPieceDisplayBlinkTimer
     call ClearSpriteAnimTickCounter
     call ClearEggCount
     call CalcDifficulty

@@ -12,6 +12,7 @@ This note records the four-byte piece display state array used by the
 | `$C697` | `PIECE_DISPLAY_REMAINING` | `ProcessMenuLoop` stores the same table byte as `PIECE_DISPLAY_COUNT`; `MovePieceLeft` and `ShowResults` decrement it, but no independent read has been confirmed. |
 | `$C698` | `PIECE_DISPLAY_COUNT` | `ProcessMenuLoop` loads this from the second byte of the current `GameTurnParamTable` row, and gameplay setup forces it to `2`; `DisplayLevel`, `UpdateMenuCursor`, and `HandleDrop` pass it back into `DisplayResults`. |
 | `$C6A3-$C6A6` | `PIECE_DISPLAY_STATES` | `DisplayResults` clears four bytes, writes one state per selected slot, and `HandleGameOver` scans the same four bytes to emit sprite object type `$02` through `AnimateGameOver`. |
+| `$C6AF` | `PIECE_DISPLAY_BLINK_TIMER` | `GameMainUpdate` calls `UpdatePieceDisplayBlink` every frame. When this timer reaches zero, the routine reloads `$20`, scans sprite object slots 1-8, and toggles bit `$10` in the frame byte for active object type `$02`, except frames `$07` and `$08`. |
 
 ## Flow
 
@@ -37,6 +38,9 @@ This note records the four-byte piece display state array used by the
 - `AnimateGameOver` writes sprite object type `$02` into slots 1-4, sets the
   frame from the state byte, sets base X from the array index, sets base Y to
   `$28`, and copies the state byte into the slot's `SPRITE_OBJECT_TILE_ID`.
+- `PIECE_DISPLAY_BLINK_TIMER` drives the visible display-piece blink by toggling
+  bit `$10` in the sprite frame field for active type `$02` objects. Frames
+  `$07` and `$08` are left unchanged.
 - `CheckGameOver` and `TitleScreenLoop` can force one or more nonzero entries
   to `$07`, matching the special piece/display code used in the game-over path.
 

@@ -4638,12 +4638,12 @@ jr_000_1bc8:
     ret
 
 
-DrawTextBox::
-    ld hl, $c6af
+UpdatePieceDisplayBlink::
+    ld hl, PIECE_DISPLAY_BLINK_TIMER
     dec [hl]
     ret nz
 
-    ld [hl], $20
+    ld [hl], PIECE_DISPLAY_BLINK_PERIOD
     ld hl, SPRITE_OBJECT_SLOT_1
     ld de, $0010
     ld b, $08
@@ -4653,7 +4653,7 @@ jr_000_1bdf:
     cp $02
     jr nz, jr_000_1be7
 
-    call DrawTextString
+    call TogglePieceDisplayFrame
 
 jr_000_1be7:
     add hl, de
@@ -4663,7 +4663,7 @@ jr_000_1be7:
     ret
 
 
-DrawTextString::
+TogglePieceDisplayFrame::
     inc hl
     inc hl
     ld a, [hl]
@@ -4682,9 +4682,9 @@ jr_000_1bfa:
     ret
 
 
-ClearTextArea::
-    ld hl, $c6af
-    ld [hl], $20
+ResetPieceDisplayBlinkTimer::
+    ld hl, PIECE_DISPLAY_BLINK_TIMER
+    ld [hl], PIECE_DISPLAY_BLINK_PERIOD
     ret
 
 
