@@ -118,9 +118,9 @@
   - Converted Bank 0 `00:$15FE-$1611` from fake instructions to `LevelFallDelayTable` and restored the real `00:$1612` landing-progress code entry.
   - Converted Bank 0 `00:$18CB-$18E3` from fake instructions to `RoundCompleteStateRemapTable` and `RoundCompleteDelayParamTable`.
   - Named Bank 1 `01:$432F` as `AddScore` and added score accumulator/display constants for `$C61D-$C621`.
-  - Replaced Bank 0 direct calls to `$432F`, `$42F5`, `$43F2`, `$445C`, and `$4681` with `AddScore`, `UpdateAnimFrame`, `SetupGameBG`, `StartNextRound`, and `AdvanceEggAnimation` where the target meaning is now known.
+  - Replaced Bank 0 direct calls to `$432F`, `$42F5`, `$43F2`, `$445C`, and `$4681` with `AddScore`, `UpdateAnimFrame`, `SetupGameBG`, `StartNextRound`, and `IncrementEggCounter` where the target meaning is now known.
   - Converted Bank 1 `01:$442C-$445B` from fake instructions to `FieldColumnTilePatternTable` and preserved `StartNextRound` as the real code entry at `01:$445C`.
-  - Named Bank 1 `01:$4681` as `AdvanceEggAnimation`.
+  - Named Bank 1 `01:$4681` as `IncrementEggCounter`.
   - Converted Bank 0 `00:$22CC-$234B` from fake instructions to `FieldSideDeltaTable` and `FieldRowDeltaTable`, restoring `UpdateFieldTimers` as real code at `00:$234C`.
   - Replaced remaining high-confidence raw cross-bank direct calls with labels, including `WaitVBlank`, `VBlankHandler`, `InitSpriteBuffer`, `InitGameScreen`, `InitPlayfield`, `GameMainUpdate`, `SoundEngine`, `LoadGameBGTiles`, `UpdateFieldTimers`, `SpriteAnimTable`, `DrawTitleLabels`, `ProcessTitleInput`, `ProcessOptionInput`, `UpdateColumn`, and `DrawColumnData`.
   - Added `OAM_DMA_HRAM` for the HRAM DMA routine at `$FF80`, and replaced the VBlank call and setup copy target with that name.
@@ -147,12 +147,15 @@
   - Named the title 1P/2P selection marker blink timer/phase at `$C6BC/$C6BE`.
   - Named field animation cursors, active flags, and column timers at `$C6C3-$C6CE`, tying them to logical sprite object slots 10-13 and the `FieldSideDeltaTable` / `FieldRowDeltaTable` consumers.
   - Created `docs/source_recovery/field_animation_state.md` to document the recovered slot/timer mapping.
+  - Named the title sprite animation tick divider at `$C6D1` and the egg counter digits at `$C6D3-$C6D5`; documented `$C6D2` as a cleared-with-counter reserved byte with no confirmed direct read.
+  - Created `docs/source_recovery/egg_counter.md` to document the recovered egg counter and result-copy behavior.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
   - `docs/source_recovery/graphics_loads.md`
   - `docs/source_recovery/sprite_oam.md`
   - `docs/source_recovery/field_animation_state.md`
+  - `docs/source_recovery/egg_counter.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -200,6 +203,7 @@
 | Bank 1 tile string conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Title marker WRAM naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Field animation state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Egg counter state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

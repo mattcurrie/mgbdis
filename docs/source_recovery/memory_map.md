@@ -72,8 +72,11 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6C3-$C6C6` | `FIELD_ANIM_SLOT_*_CURSOR` | High | Four table cursors for sprite object slots 11, 10, 13, and 12. `StepFieldAnimSlot*` routines index `FieldSideDeltaTable` / `FieldRowDeltaTable` until sentinel `$10`, then reset the matching cursor. |
 | `$C6C7-$C6CA` | `FIELD_ANIM_SLOT_*_ACTIVE` | High | Active flags for sprite object slots 12, 11, 10, and 13. Round-complete paths set all four flags; each slot update routine tests its flag and clears it when its delta table terminates. |
 | `$C6CB-$C6CE` | `FIELD_COLUMN_TIMERS` | High | Four timers tied to logical sprite object slots 10-13. `UpdateBoard` reloads one timer by `PIECE_ROTATION`; `UpdateFieldTimers` decrements them and clears the matching `$C2xx` slot when a timer reaches zero. |
-| `$C6CF` | `SPRITE_ANIM_FRAME` | Medium | Used by init/update animation paths; exact scope needs validation. |
-| `$C6D0` | `SPRITE_ANIM_STATE` | Medium | Used with `SPRITE_ANIM_FRAME`. |
+| `$C6CF` | `SPRITE_ANIM_FRAME` | Medium | Used by init/update animation paths; copied into result/history records. |
+| `$C6D0` | `SPRITE_ANIM_STATE` | Medium | Used with `SPRITE_ANIM_FRAME`; copied into result/history records. |
+| `$C6D1` | `SPRITE_ANIM_TICK_COUNTER` | High | `TitleInputHandler` increments this divider and advances `SPRITE_ANIM_FRAME` / `SPRITE_ANIM_STATE` every 10 ticks; setup paths clear it through `ClearSpriteAnimTickCounter`. |
+| `$C6D2` | `EGG_COUNT_RESERVED` | Low | Cleared together with the egg counter in init/reset paths, but no direct read has been confirmed. |
+| `$C6D3-$C6D5` | `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` | High | `IncrementEggCounter` updates these as decimal digits capped at 999; `DrawEggCount` renders ones/tens as tile `$40+digit`, and result setup copies hundreds/tens/ones into `$C752-$C754`. |
 | `$C6E1` | `BGM_INDEX` | Medium | Used when selecting BGM/sound. |
 | `$C6F0` | `MENU_SELECT` | Medium | Used in result/stat/next-piece UI paths; may need a more specific name. |
 | `$C6F1` | `GAME_MODE_FLAG` | Medium | Used in game loop, score/bonus/result drawing; exact semantics need validation. |
@@ -91,7 +94,6 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
 | `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
 | `$C6EB-$C6EC` | Used by 2P initialization as sources for `ACTIVE_LEVEL`/`ACTIVE_SPEED`. | Link/2P selected level and speed staging bytes. |
-| `$C6D2-$C6D5` | Cleared/initialized with sprite animation state; used by playfield/egg logic. | Per-player or per-side animation/playfield state. |
 | `$C6FA-$C6FE` | 2P/link code uses these with `LINK_SEND`/`LINK_RECV`. | Link protocol staging bytes / last exchanged settings. |
 | `$C7A9-$C7CF` | Title/result/high-score-like code writes here. | UI/result state tables; needs trace. |
 
@@ -103,7 +105,7 @@ The reference scan intentionally reports address-like operands even when they oc
 |------|----------|--------|
 | `Yoshi/bank_001.asm` `01:$40A0-$42F4` | `UpdateSprites` indexes `$40A0` as a pointer table; the range before `UpdateAnimFrame` was previously decoded as bogus instructions. | Converted to `SpriteUpdatePointerTable`, object frame tables, tile-id lists, and layout triples in source. |
 | `Yoshi/bank_001.asm` `01:$442C-$445B` | `LoadGameBGTiles` indexes `$442C` as six 16-byte records before real code at `$445C`. | Converted to `FieldColumnTilePatternTable`; `$445C` is now the real `StartNextRound` entry. |
-| `Yoshi/bank_001.asm` `01:$462B-$465C` | `AnimateSprite` selects `$462B`, `$4639`, or `$464B`, then calls `DrawStringToGrid` four times. | Converted to `SpriteAnimTextFrame0..2` tile-string blocks; `$465D` remains the real `ProcessEgg` entry. |
+| `Yoshi/bank_001.asm` `01:$462B-$465C` | `AnimateSprite` selects `$462B`, `$4639`, or `$464B`, then calls `DrawStringToGrid` four times. | Converted to `SpriteAnimTextFrame0..2` tile-string blocks; `$465D` remains the real `DrawEggCount` entry. |
 | `Yoshi/bank_001.asm` `01:$46ED-$46FE` | `DrawTitleLabels` draws `$46ED` and `$46F6` through `DrawStringToGrid`. | Converted to `TitleLabelTextPlayer` and `TitleLabelTextYoshi`; `$46FF` remains the real `ProcessTitleInput` entry. |
 | `Yoshi/bank_001.asm` `01:$55E2-$5668` | `SoundEngine` and `SoundLookupIndex` jump to `$55E2`; the bytes form a coherent sound setup routine. | Converted to `StartSoundSequence` code. |
 | `Yoshi/bank_001.asm` `01:$5669-$5699` | Sound routines directly index `$566A`, `$5672`, `$567A`, and `$5682`; `$569A` is a sequence entry target, not pitch-table data. | Split into small sound support tables. |

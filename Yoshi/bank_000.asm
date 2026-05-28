@@ -4093,7 +4093,7 @@ jr_000_184b:
     ld h, d
     call AddScore
     call UpdateAnimFrame
-    call AdvanceEggAnimation
+    call IncrementEggCounter
     ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $00
     ret
@@ -4722,10 +4722,10 @@ jr_000_1b79:
 
 
 TitleInputHandler::
-    ld hl, $c6d1
+    ld hl, SPRITE_ANIM_TICK_COUNTER
     inc [hl]
     ld a, [hl]
-    cp $0a
+    cp SPRITE_ANIM_TICK_PERIOD
     ret nz
 
     xor a
@@ -5724,10 +5724,10 @@ InitGameVars::
     xor a
     ld [$c701], a
     ld [$c702], a
-    ld [$c6d2], a
-    ld [$c6d3], a
-    ld [$c6d4], a
-    ld [$c6d5], a
+    ld [EGG_COUNT_RESERVED], a
+    ld [EGG_COUNT_ONES], a
+    ld [EGG_COUNT_TENS], a
+    ld [EGG_COUNT_HUNDREDS], a
     ld [$c6fc], a
     ld [$c6fa], a
     ld [$c6f4], a
@@ -6785,7 +6785,7 @@ ClearField::
     and a
     jr nz, jr_000_28d4
 
-    ld hl, $c6d5
+    ld hl, EGG_COUNT_HUNDREDS
     ld de, $c752
     ld a, [hl-]
     ld [de], a
@@ -8831,7 +8831,7 @@ FillScoreArea2::
 InitAnimFrame::
     xor a
     ldh [ANIM_FRAME], a
-    ld hl, $c6d3
+    ld hl, EGG_COUNT_ONES
     ld a, [hl]
     and $0f
     ld [hl+], a
@@ -8844,7 +8844,7 @@ InitAnimFrame::
     and a
     jr nz, jr_000_3572
 
-    ld a, [$c6d4]
+    ld a, [EGG_COUNT_TENS]
     and a
     ret z
 
@@ -8913,7 +8913,7 @@ jr_000_35ab:
     call VRAMCopySetup
     ld a, $01
     ld [GAME_ACTIVE], a
-    ld a, [$c6d5]
+    ld a, [EGG_COUNT_HUNDREDS]
     and a
     jr z, jr_000_35e6
 
@@ -8921,7 +8921,7 @@ jr_000_35ab:
     jr jr_000_35f5
 
 jr_000_35e6:
-    ld a, [$c6d4]
+    ld a, [EGG_COUNT_TENS]
     cp $04
     jr c, jr_000_35f2
 

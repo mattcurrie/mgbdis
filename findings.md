@@ -108,7 +108,9 @@
 - Bank 0 range `00:$18CB-$18E3` is round-complete data after `HandlePieceLanding`, not code. `$18CB-$18D1` remaps `SCREEN_STATE`, and `$18D2-$18E3` is a big-endian parameter table loaded into `HL` before calling `$432F`; `CalcResults` starts at `00:$18E4`.
 - Bank 1 `01:$432F` is now labeled `AddScore`. It adds an `HL` packed-BCD score delta into `$C61D-$C61F`, caps at `99999`, and writes five unpacked display digits at `$C621-$C625`.
 - Bank 1 `01:$442C-$445B` is `FieldColumnTilePatternTable`, six 16-byte tile patterns selected by `LoadGameBGTiles`; `01:$445C` is real code and is now labeled `StartNextRound`.
-- Bank 1 `01:$4681` is now labeled `AdvanceEggAnimation`; it advances the `$C6D3-$C6D5` egg animation counters and is called from the round-complete score/result path.
+- Bank 1 `01:$465D` is now labeled `DrawEggCount`; it renders `EGG_COUNT_ONES` / `EGG_COUNT_TENS` as tile IDs `$40+digit` in the gameplay display.
+- Bank 1 `01:$4681` is now labeled `IncrementEggCounter`; it advances `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` as decimal digits capped at 999 and is called from the round-complete score/result path.
+- `$C6D2` is now `EGG_COUNT_RESERVED`: init paths clear it with the egg counter, but no direct read has been confirmed.
 - Bank 0 `00:$22CC-$230E` and `00:$230F-$234B` are field animation delta tables. `StepFieldAnimSlot11SideDelta` / `StepFieldAnimSlot10SideDelta` index `FieldSideDeltaTable`, while `StepFieldAnimSlot13RowDelta` / `StepFieldAnimSlot12RowDelta` index `FieldRowDeltaTable`; both tables terminate with `$10`.
 - WRAM `$C6C3-$C6C6` now names the per-slot field animation cursors for logical sprite object slots 11, 10, 13, and 12. `$C6C7-$C6CA` now names the matching active flags, in slot order 12, 11, 10, and 13.
 - `UpdateFieldTimers` is called from both Bank 1 `GameMainUpdate` and Bank 0 `Send2PData`, decrementing `FIELD_COLUMN_TIMERS` at `$C6CB-$C6CE` and clearing logical sprite object slots 10-13 when each timer expires.

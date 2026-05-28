@@ -683,10 +683,10 @@ StartNextRound::
     xor a
     ld [$c705], a
     ld [$c706], a
-    ld [$c6d3], a
-    ld [$c6d4], a
-    ld [$c6d5], a
-    ld [$c6d2], a
+    ld [EGG_COUNT_ONES], a
+    ld [EGG_COUNT_TENS], a
+    ld [EGG_COUNT_HUNDREDS], a
+    ld [EGG_COUNT_RESERVED], a
     ld [$c703], a
     ld [$c704], a
     ld [$c6fa], a
@@ -724,7 +724,7 @@ jr_001_449e:
     call InitBlinkState
     call ClearAnimState
     call ClearTextArea
-    call UpdateSpriteFrame
+    call ClearSpriteAnimTickCounter
     call InitEggSystem
     call CalcDifficulty
     call FieldUpdate15
@@ -800,10 +800,10 @@ InitPlayfield::
     ld [$c703], a
     ld [$c704], a
     ld [$c6f4], a
-    ld [$c6d3], a
-    ld [$c6d4], a
-    ld [$c6d5], a
-    ld [$c6d2], a
+    ld [EGG_COUNT_ONES], a
+    ld [EGG_COUNT_TENS], a
+    ld [EGG_COUNT_HUNDREDS], a
+    ld [EGG_COUNT_RESERVED], a
     call UpdateNextDisplay
     call HandleDrop
     call ProcessColumn
@@ -815,8 +815,8 @@ InitPlayfield::
     call InitBlinkState
     call ClearAnimState
     call ClearTextArea
-    call UpdateSpriteFrame
-    call UpdateEggState
+    call ClearSpriteAnimTickCounter
+    call ClearEggCount
     call CalcDifficulty
     call RefreshField
     call FieldUpdate16
@@ -902,9 +902,9 @@ jr_001_45b9:
     ret
 
 
-UpdateSpriteFrame::
+ClearSpriteAnimTickCounter::
     xor a
-    ld [$c6d1], a
+    ld [SPRITE_ANIM_TICK_COUNTER], a
     ret
 
 
@@ -1010,7 +1010,7 @@ SpriteAnimTextFrame2::
     db $eb, $ec, $ed, $4c, $ff
     db $ee, $ef, $fd, $4c, $ff
 
-ProcessEgg::
+DrawEggCount::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
@@ -1027,57 +1027,57 @@ jr_001_466d:
 
 jr_001_4670:
     call CalcOAMAddress
-    ld a, [$c6d3]
-    add $40
+    ld a, [EGG_COUNT_ONES]
+    add EGG_COUNT_TILE_BASE
     ld [hl], a
     dec hl
-    ld a, [$c6d4]
-    add $40
+    ld a, [EGG_COUNT_TENS]
+    add EGG_COUNT_TILE_BASE
     ld [hl], a
     ret
 
 
-AdvanceEggAnimation::
-    ld hl, $c6d3
+IncrementEggCounter::
+    ld hl, EGG_COUNT_ONES
     inc [hl]
     ld a, [hl]
-    cp $0a
+    cp EGG_COUNT_DIGIT_LIMIT
     jr c, jr_001_46ab
 
     xor a
     ld [hl], a
     call FieldUpdate17
-    ld hl, $c6d4
+    ld hl, EGG_COUNT_TENS
     inc [hl]
     ld a, [hl]
-    cp $0a
+    cp EGG_COUNT_DIGIT_LIMIT
     jr c, jr_001_46ab
 
     xor a
     ld [hl], a
     call ResetFieldState
-    ld hl, $c6d5
+    ld hl, EGG_COUNT_HUNDREDS
     inc [hl]
     ld a, [hl]
-    cp $0a
+    cp EGG_COUNT_DIGIT_LIMIT
     jr c, jr_001_46ab
 
-    ld a, $09
+    ld a, EGG_COUNT_MAX_DIGIT
     ld [hl-], a
     ld [hl-], a
     ld [hl], a
 
 jr_001_46ab:
-    call ProcessEgg
+    call DrawEggCount
     ret
 
 
-UpdateEggState::
+ClearEggCount::
     xor a
-    ld [$c6d3], a
-    ld [$c6d4], a
-    ld [$c6d5], a
-    ld [$c6d2], a
+    ld [EGG_COUNT_ONES], a
+    ld [EGG_COUNT_TENS], a
+    ld [EGG_COUNT_HUNDREDS], a
+    ld [EGG_COUNT_RESERVED], a
     ret
 
 
@@ -1472,7 +1472,7 @@ jr_001_48f1:
 
 jr_001_48f4:
     call GetFramePointer
-    call ProcessEgg
+    call DrawEggCount
     ret
 
 
