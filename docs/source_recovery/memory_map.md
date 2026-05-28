@@ -72,6 +72,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6AA` | `GAME_TURN_STEP_TIMER` | High | Reloaded from the first byte of the current `GameTurnParamTable` record, decremented by `UpdateMenuCursor`, and advances the table when it reaches zero. |
 | `$C6AB` | `RESULT_FLOW_ACTIVE` | High | Set by `ProcessNewHighScore` and `QueueRoundResult`, cleared by `DropPiece` and the return-to-title path, and read by Bank 1 `SetupGameBG` to suppress normal field background setup during result/high-score flow. |
 | `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
+| `$C6AD` | `PIECE_DISPLAY_FORCE_ALL_STATES_FLAG` | High | Set by a timer-gated `ProcessMenuSelection` branch; `ApplyAllForcedPieceDisplayStates` rewrites every nonzero display-state entry to `PIECE_DISPLAY_FORCED_STATE`, and `DisplayResults` clears the flag afterward. |
 | `$C6AF` | `PIECE_DISPLAY_BLINK_TIMER` | High | Decremented each `GameMainUpdate`; when it expires, it reloads to `$20` and toggles bit `$10` in the sprite frame byte for active piece-display sprite objects, except frames `$07/$08`. |
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
@@ -112,6 +113,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6F2` | `SETTINGS_BLINK_TIMER` | High | Reloaded with `$0F` on setup/input; decremented by `TickSettingsBlink` before toggling `SETTINGS_BLINK_PHASE`. |
 | `$C6F3-$C6F4` | `EGG_TEXT_ALT_ANIM_ACTIVE` / `EGG_TEXT_ALT_ANIM_PHASE` | High | The tens-digit wrap path enables this continuous `AnimateSprite` frame 1/2 alternation; `RunTitleMenu` clears both bytes, round/playfield setup clears the phase byte, and the playing-state VBlank check toggles the phase. |
 | `$C6F5-$C6F6` | `ROUND_COMPLETE_TILE_BASE_X` / `ROUND_COMPLETE_TILE_BASE_Y` | High | `ShowRoundComplete` stores each round-complete tile-group base X (`$10/$30/$50/$70`) and fixed base Y `$80` here; `ProcessRoundComplete` copies the pair into sprite object slots 10-13. |
+| `$C6F7` | `PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG` | High | Set by a timer-gated `ProcessMenuSelection` branch; `ApplyFirstForcedPieceDisplayState` consumes it and rewrites the first nonzero display-state entry to `PIECE_DISPLAY_FORCED_STATE`. |
+| `$C6F8` | `PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG` | High | One-shot flag set by `DisplayResults` for display counts of three or more; the next `ProcessMenuSelection` call clears it and skips the timer-gated special-selection path. |
 | `$C6FA` | `LINK_PENDING_FIELD_RISE` | Medium | Incoming bit-6 link events add to this byte; `SelectMenuItem` consumes it in chunks while adjusting `SCREEN_STATE`. |
 | `$C6FB` | `LINK_STAGING_BYTE` | Low | Cleared with link state; direct read still unconfirmed. |
 | `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |

@@ -181,6 +181,7 @@ DEF COLUMN_TOP_ROW_SEED EQU $c699 ; value copied into COLUMN_TOP_ROWS on setup
 DEF ROUND_COMPLETE_PARAM_INDEX EQU $c6a2 ; indexes RoundCompleteDelayParamTable
 DEF PIECE_DISPLAY_STATES EQU $c6a3 ; four piece display states built by DisplayResults
 DEF PIECE_DISPLAY_STATE_COUNT EQU $04
+DEF PIECE_DISPLAY_FORCED_STATE EQU $07
 DEF PIECE_FALL_DELAY  EQU $c6a7 ; reload value for PIECE_FALL_TIMER
 DEF PIECE_FALL_DELAY_MIN EQU $02
 DEF PIECE_FALL_ACCEL_TIMER EQU $c6b0 ; divider before PIECE_FALL_DELAY decreases
@@ -189,6 +190,7 @@ DEF GAME_TURN_TABLE_INDEX EQU $c6a9 ; index into GameTurnParamTable
 DEF GAME_TURN_STEP_TIMER EQU $c6aa ; per-record countdown before advancing the turn table
 DEF RESULT_FLOW_ACTIVE EQU $c6ab ; result/high-score flow suppresses normal field BG setup
 DEF GAME_TURN_DELAY EQU $c6ac ; fall/update delay loaded from GameTurnParamTable
+DEF PIECE_DISPLAY_FORCE_ALL_STATES_FLAG EQU $c6ad ; forces all nonzero display states to PIECE_DISPLAY_FORCED_STATE
 DEF PIECE_DISPLAY_BLINK_TIMER EQU $c6af ; toggles piece display sprite frames
 DEF PIECE_DISPLAY_BLINK_PERIOD EQU $20
 DEF MENU_CURSOR       EQU $c6b1 ; メニューカーソル位置
@@ -256,6 +258,8 @@ DEF EGG_TEXT_ALT_ANIM_ACTIVE EQU $c6f3 ; enables continuous AnimateSprite frame 
 DEF EGG_TEXT_ALT_ANIM_PHASE EQU $c6f4
 DEF ROUND_COMPLETE_TILE_BASE_X EQU $c6f5 ; base X used by ProcessRoundComplete sprite slots
 DEF ROUND_COMPLETE_TILE_BASE_Y EQU $c6f6 ; base Y used by ProcessRoundComplete sprite slots
+DEF PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG EQU $c6f7 ; forces first nonzero display state to PIECE_DISPLAY_FORCED_STATE
+DEF PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG EQU $c6f8 ; one-shot bypass of timer-gated display selection
 DEF LINK_SETTINGS_ROW_LEVEL EQU $00
 DEF LINK_SETTINGS_ROW_SPEED EQU $01
 DEF SETTINGS_BLINK_PERIOD EQU $0f

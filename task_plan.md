@@ -101,7 +101,8 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [ ] Revisit `$C620/$C628/$C629/$C672` only after finding an independent consumer
 - [x] Name sprite object delay reload byte `$C66E`
 - [x] Name piece display blink timer `$C6AF`
-- [ ] Investigate remaining fall/display/game-over flow bytes `$C69D/$C6AD/$C6AE/$C6BF/$C6C0/$C6F7/$C6F8`
+- [x] Name piece display forced-state flags `$C6AD/$C6F7/$C6F8`
+- [ ] Investigate remaining fall/display/game-over flow bytes `$C69D/$C6AE/$C6BF/$C6C0`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

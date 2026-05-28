@@ -3480,7 +3480,7 @@ DropPiece::
     ld [RESULT_FLOW_ACTIVE], a
     ld [$c69d], a
     ld [$c6ae], a
-    ld [$c6ad], a
+    ld [PIECE_DISPLAY_FORCE_ALL_STATES_FLAG], a
     ld [$c6bf], a
     ld a, $14
     ld [$c6c0], a
@@ -4037,7 +4037,7 @@ DisplayResults::
     cp $03
     jr c, jr_000_18f6
 
-    ld hl, $c6f8
+    ld hl, PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG
     ld [hl], $01
 
 jr_000_18f6:
@@ -4076,22 +4076,22 @@ jr_000_1902:
 
     push bc
     push hl
-    call CheckGameOver
+    call ApplyFirstForcedPieceDisplayState
     pop hl
     pop bc
-    call TitleScreenLoop
-    ld hl, $c6ad
+    call ApplyAllForcedPieceDisplayStates
+    ld hl, PIECE_DISPLAY_FORCE_ALL_STATES_FLAG
     ld [hl], $00
     ret
 
 
-CheckGameOver::
-    ld a, [$c6f7]
+ApplyFirstForcedPieceDisplayState::
+    ld a, [PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG]
     and a
     ret z
 
     xor a
-    ld [$c6f7], a
+    ld [PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG], a
     ld hl, PIECE_DISPLAY_STATES
     ld b, PIECE_DISPLAY_STATE_COUNT
 
@@ -4107,7 +4107,7 @@ jr_000_1943:
     nop
 
 jr_000_194c:
-    ld a, $07
+    ld a, PIECE_DISPLAY_FORCED_STATE
     ld [hl], a
     ret
 
@@ -4348,12 +4348,12 @@ jr_000_1a74:
 
 
 ProcessMenuSelection::
-    ld a, [$c6f8]
+    ld a, [PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG]
     and a
     jr z, jr_000_1a8d
 
     xor a
-    ld [$c6f8], a
+    ld [PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG], a
     jr jr_000_1ae2
 
 jr_000_1a8d:
@@ -4394,12 +4394,12 @@ jr_000_1aa0:
     jr c, jr_000_1b04
 
     ld a, $01
-    ld [$c6ad], a
+    ld [PIECE_DISPLAY_FORCE_ALL_STATES_FLAG], a
     jr jr_000_1b07
 
 jr_000_1acc:
     ld a, $01
-    ld [$c6f7], a
+    ld [PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG], a
     call Multiply
     cp $4b
     jr c, jr_000_1afb
@@ -4452,7 +4452,7 @@ jr_000_1b04:
 
 
 jr_000_1b07:
-    ld a, $07
+    ld a, PIECE_DISPLAY_FORCED_STATE
     ret
 
 
@@ -4549,8 +4549,8 @@ jr_000_1b58:
     ret
 
 
-TitleScreenLoop::
-    ld a, [$c6ad]
+ApplyAllForcedPieceDisplayStates::
+    ld a, [PIECE_DISPLAY_FORCE_ALL_STATES_FLAG]
     and a
     ret z
 
@@ -4562,7 +4562,7 @@ jr_000_1b73:
     and a
     jr z, jr_000_1b79
 
-    ld [hl], $07
+    ld [hl], PIECE_DISPLAY_FORCED_STATE
 
 jr_000_1b79:
     inc hl

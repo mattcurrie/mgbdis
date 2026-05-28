@@ -12,7 +12,10 @@ This note records the four-byte piece display state array used by the
 | `$C697` | `PIECE_DISPLAY_REMAINING` | `ProcessMenuLoop` stores the same table byte as `PIECE_DISPLAY_COUNT`; `MovePieceLeft` and `ShowResults` decrement it, but no independent read has been confirmed. |
 | `$C698` | `PIECE_DISPLAY_COUNT` | `ProcessMenuLoop` loads this from the second byte of the current `GameTurnParamTable` row, and gameplay setup forces it to `2`; `DisplayLevel`, `UpdateMenuCursor`, and `HandleDrop` pass it back into `DisplayResults`. |
 | `$C6A3-$C6A6` | `PIECE_DISPLAY_STATES` | `DisplayResults` clears four bytes, writes one state per selected slot, and `HandleGameOver` scans the same four bytes to emit sprite object type `$02` through `AnimateGameOver`. |
+| `$C6AD` | `PIECE_DISPLAY_FORCE_ALL_STATES_FLAG` | Set by one `ProcessMenuSelection` path that returns `PIECE_DISPLAY_FORCED_STATE`; `ApplyAllForcedPieceDisplayStates` tests it and rewrites every nonzero entry in `PIECE_DISPLAY_STATES` to that forced state. `DisplayResults` clears the flag after applying it. |
 | `$C6AF` | `PIECE_DISPLAY_BLINK_TIMER` | `GameMainUpdate` calls `UpdatePieceDisplayBlink` every frame. When this timer reaches zero, the routine reloads `$20`, scans sprite object slots 1-8, and toggles bit `$10` in the frame byte for active object type `$02`, except frames `$07` and `$08`. |
+| `$C6F7` | `PIECE_DISPLAY_FORCE_FIRST_STATE_FLAG` | Set by another timer-gated `ProcessMenuSelection` path; `ApplyFirstForcedPieceDisplayState` consumes it and rewrites only the first nonzero `PIECE_DISPLAY_STATES` entry to `PIECE_DISPLAY_FORCED_STATE`. |
+| `$C6F8` | `PIECE_DISPLAY_SKIP_SPECIAL_SELECTION_FLAG` | `DisplayResults` sets this one-shot flag when the requested display count is at least three. The next `ProcessMenuSelection` call clears it and skips the B-type timer-gated special-selection branch. |
 
 ## Flow
 
@@ -41,8 +44,9 @@ This note records the four-byte piece display state array used by the
 - `PIECE_DISPLAY_BLINK_TIMER` drives the visible display-piece blink by toggling
   bit `$10` in the sprite frame field for active type `$02` objects. Frames
   `$07` and `$08` are left unchanged.
-- `CheckGameOver` and `TitleScreenLoop` can force one or more nonzero entries
-  to `$07`, matching the special piece/display code used in the game-over path.
+- `ApplyFirstForcedPieceDisplayState` and `ApplyAllForcedPieceDisplayStates` can
+  force one or more nonzero entries to `PIECE_DISPLAY_FORCED_STATE` (`$07`).
+  The flags are written by timer-gated branches in `ProcessMenuSelection`.
 
 The name is intentionally generic. These bytes are not only a raw game-over
 flag; they are the per-slot display state consumed by the piece sprite builder.
