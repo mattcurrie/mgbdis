@@ -11,6 +11,7 @@ This note documents the recovered 2-player/link staging bytes around
 | `$C6EC` | `LINK_2P_SELECTED_SPEED` | The 2P option loop edits this byte when `LINK_SETTINGS_CURSOR` selects row 1, `UpdateGameField` sends it in the low nibble, and the 2P game setup copies it into `ACTIVE_SPEED`. |
 | `$C6FF` | `LINK_RECV_LEVEL` | `UpdateGameField` receives a packed peer option byte, stores the high nibble here, and the preview/result path draws it as the peer selection. |
 | `$C700` | `LINK_RECV_SPEED` | `UpdateGameField` receives a packed peer option byte, stores the low nibble here, and result text chooses the peer speed label from it. |
+| `$C708` | `LINK_PEER_RESULT_CODE` | `UpdateDifficulty` waits for a bit-7 result packet from the peer, clears bit 7, and stores the peer code here for `CalcRankPosition` to compare against the local result code. |
 | `$C6F0` | `LINK_SETTINGS_CURSOR` | The 2P pre-play loop moves this cursor between level (`0`) and speed (`1`) and uses it to index `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED`. |
 
 `UpdateGameField` packs `LINK_2P_SELECTED_LEVEL << 4 | LINK_2P_SELECTED_SPEED`

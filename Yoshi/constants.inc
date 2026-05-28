@@ -239,6 +239,7 @@ DEF LINK_RECV_SPEED EQU $c700
 DEF ROUND_RESULT_PENDING EQU $c705 ; queued result/high-score processing flag
 DEF ROUND_RESULT_CODE EQU $c706 ; queued argument for ProcessNewHighScore
 DEF PAUSE_FLAG        EQU $c707 ; ポーズフラグ
+DEF LINK_PEER_RESULT_CODE EQU $c708 ; peer result code received during 2P result handshake
 DEF DROP_ANIM_ACTIVE EQU $c75d ; active while the column swap/drop cascade is running
 DEF DROP_ANIM_FRAME_TIMER EQU $c75e
 DEF DROP_ANIM_COLUMN EQU $c761 ; selected column when the drop animation starts

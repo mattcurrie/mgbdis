@@ -6116,7 +6116,7 @@ jr_000_246a:
     jr z, jr_000_246a
 
     res 7, a
-    ld [$c708], a
+    ld [LINK_PEER_RESULT_CODE], a
     ldh a, [ANIM_FRAME]
     ld [LINK_SEND], a
     ld [LINK_SEND_QUEUE_0], a
@@ -8157,7 +8157,7 @@ CalcRankPosition::
 
 jr_000_31e6:
     pop af
-    ld hl, $c708
+    ld hl, LINK_PEER_RESULT_CODE
     cp [hl]
     ret nz
 

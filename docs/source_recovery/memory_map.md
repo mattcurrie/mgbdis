@@ -106,6 +106,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C705` | `ROUND_RESULT_PENDING` | High | `QueueRoundResult` sets this flag after storing the result code; Bank 1 `Check2PGameState` consumes it to call `ProcessNewHighScore`, and `Send2PData` uses it to skip normal inner-frame updates once result flow is queued. |
 | `$C706` | `ROUND_RESULT_CODE` | High | `QueueRoundResult` stores the argument that Bank 1 later passes to `ProcessNewHighScore`; title/start-next-round setup clears it with `ROUND_RESULT_PENDING`. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
+| `$C708` | `LINK_PEER_RESULT_CODE` | High | `UpdateDifficulty` receives the peer's bit-7 result packet, clears bit 7, and stores the peer result code here; `CalcRankPosition` compares it with the local result code during 2P result resolution. |
 | `$C75D` | `DROP_ANIM_ACTIVE` | High | `StartDropAnim` sets it to `$FF`, `AnimateDropping` and `CheckMatch` gate on it, and the cascade completion path clears it. |
 | `$C75E` | `DROP_ANIM_FRAME_TIMER` | High | Decremented by `AnimateDropping` and reloaded before advancing drop cascade states. |
 | `$C761` | `DROP_ANIM_COLUMN` | High | Stores the selected column index for collision checks, grid-position calculation, and final `$C66A` column-state swap. |
