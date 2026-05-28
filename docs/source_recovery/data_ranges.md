@@ -34,7 +34,7 @@ Notes:
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
 | `01:$462B-$465C` | `SpriteAnimTextFrame0..2` | Converted to `db` string blocks | `AnimateSprite` selects one of three `DE` bases and calls `DrawStringToGrid` four times; each block is four `$FF`-terminated tile rows. |
-| `01:$46ED-$46FE` | `TitleLabelTextPlayer`, `TitleLabelTextYoshi` | Converted to `db` strings | `DrawTitleLabels` loads each address into `DE` and calls `DrawStringToGrid`; the next byte at `01:$46FF` is the real `ProcessTitleInput` code entry. |
+| `01:$46ED-$46FE` | `TitleLabelTextPlayer`, `TitleLabelTextYoshi` | Converted to `db` strings | `DrawTitleLabels` loads each address into `DE` and calls `DrawStringToGrid` at row/column pairs `$0F06` and `$1006`; the next byte at `01:$46FF` is the real `ProcessTitleInput` code entry. |
 
 Notes:
 

@@ -1095,10 +1095,10 @@ InitEggSystem::
 
 
 DrawTitleLabels::
-    ld hl, $0f06
+    ld hl, TITLE_LABEL_PLAYER_COORD
     ld de, TitleLabelTextPlayer
     call DrawStringToGrid
-    ld hl, $1006
+    ld hl, TITLE_LABEL_YOSHI_COORD
     ld de, TitleLabelTextYoshi
     call DrawStringToGrid
     call GenerateNext
