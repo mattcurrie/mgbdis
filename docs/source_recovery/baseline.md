@@ -44,6 +44,16 @@ On 2026-05-28, `make -B` completed successfully with installed RGBDS tools:
 
 The rebuilt `Yoshi/game.gb` matches `Yoshi/yoshi.gb` byte-for-byte after the forced rebuild.
 
+The repository also contains `tools/verify_yoshi_build.sh`, which reruns the
+current recovery gate:
+
+- `git diff --check`
+- forced `Yoshi` rebuild
+- byte-for-byte `yoshi.gb` / `game.gb` comparison
+- ROM size, SHA-256, and key header byte checks
+- generated artifact cleanliness check
+- raw direct branch scan for `call $`, `jp $`, and `jr $`
+
 ## Tracked vs Generated Files
 
 Tracked source/baseline files include:

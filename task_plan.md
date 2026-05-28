@@ -111,7 +111,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 
 ### Phase 6: Build & Regression Verification
 - [x] Confirm RGBDS build reproduces yoshi.gb or document exact differences
-- [ ] Add scripts/checks for checksum, size, header, and binary comparison
+- [x] Add scripts/checks for checksum, size, header, and binary comparison
 - [ ] Keep source edits behavior-preserving
 - **Status:** pending
 

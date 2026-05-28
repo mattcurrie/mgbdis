@@ -27,6 +27,8 @@ each accepted change must remain byte-identical to `Yoshi/yoshi.gb`.
 - Established `Yoshi/yoshi.gb` as the behavioral baseline.
 - Confirmed the ROM is 64KB, MBC1, with four 16KB banks.
 - Confirmed RGBDS rebuild produces byte-identical `Yoshi/game.gb`.
+- Added `tools/verify_yoshi_build.sh` to run the current rebuild, checksum,
+  header, generated-artifact, and raw-branch verification gate.
 - Added persistent planning files:
   - `task_plan.md`
   - `findings.md`
@@ -145,12 +147,8 @@ each accepted change must remain byte-identical to `Yoshi/yoshi.gb`.
 
 ### Longer-Term Work
 
-- Add automated verification scripts for:
-  - `make -B`
-  - `cmp -s yoshi.gb game.gb`
-  - expected SHA-256
-  - generated artifact cleanliness
-  - raw direct branch scan
+- Extend automated verification beyond `tools/verify_yoshi_build.sh` if future
+  recovery adds more generated artifacts or subsystem-specific checks.
 - Build a higher-level architecture overview of the recovered source.
 - Produce subsystem-level handoff notes for gameplay, link, sound, graphics,
   result records, and rendering.
