@@ -43,7 +43,7 @@ High-confidence recovery areas already have dedicated notes:
 | Area | Primary notes |
 |------|---------------|
 | Build and ROM identity | `baseline.md` |
-| WRAM/HRAM names and confidence | `memory_map.md` |
+| WRAM/HRAM names and confidence | `memory_map.md`, `confidence_and_open_questions.md` |
 | Code/data boundaries and recovered data tables | `data_ranges.md` |
 | Sprite/OAM object model | `sprite_oam.md` |
 | Gameplay board/fall/drop state | `board_layout.md`, `column_state.md`, `drop_animation_state.md`, `fall_timing.md` |
@@ -85,4 +85,3 @@ The most valuable remaining recovery work is:
 Every chunk should leave the repository in a rebuildable state. Before commit,
 run `tools/verify_yoshi_build.sh`; if it does not pass, either fix the source or
 do not treat the chunk as recovered source.
-
