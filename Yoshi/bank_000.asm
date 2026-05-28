@@ -3240,7 +3240,7 @@ jr_000_1481:
 
 
 MovePieceLeft::
-    ld hl, $c697
+    ld hl, PIECE_DISPLAY_REMAINING
     dec [hl]
     call MovePieceUp
     ld hl, BOARD_DATA
@@ -3996,7 +3996,7 @@ jr_000_18af:
 
 
 ShowResults::
-    ld hl, $c697
+    ld hl, PIECE_DISPLAY_REMAINING
     dec [hl]
     ret
 
@@ -4269,7 +4269,7 @@ jr_000_19fd:
     push af
     call DisplayResults
     pop af
-    ld [$c697], a
+    ld [PIECE_DISPLAY_REMAINING], a
     ld [PIECE_DISPLAY_COUNT], a
     ret
 

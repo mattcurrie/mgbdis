@@ -59,6 +59,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C673-$C677` | `PIECE_DISPLAY_CODE_POOL` | High | Five code bytes initialized to `1..5`; the first four are shuffled by `ShufflePieceDisplayCodePool`, and `DisplayResults` indexes this pool before `ProcessMenuSelection`. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
+| `$C697` | `PIECE_DISPLAY_REMAINING` | Medium | `ProcessMenuLoop` stores the same value as `PIECE_DISPLAY_COUNT`; `MovePieceLeft` and `ShowResults` decrement it, but no independent read has been confirmed. |
 | `$C698` | `PIECE_DISPLAY_COUNT` | High | Loaded from the second byte of the current `GameTurnParamTable` row or forced to `2` during gameplay setup; callers pass it into `DisplayResults`. |
 | `$C699` | `COLUMN_TOP_ROW_SEED` | High | Loaded from `LevelCountTable` or forced to `$0F`; `SeedColumnTopRows` copies it into all four `COLUMN_TOP_ROWS` entries, and `ProcessInputTitle` uses it to size the initial board-fill loop. |
 | `$C6A2` | `ROUND_COMPLETE_PARAM_INDEX` | High | `UpdateTimer` saves the pre-remap `SCREEN_STATE` here before applying `RoundCompleteStateRemapTable`; the round-complete tail doubles it to index `RoundCompleteDelayParamTable` before calling `AddScore`. |
