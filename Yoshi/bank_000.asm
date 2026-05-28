@@ -2131,9 +2131,9 @@ jr_000_0b1b:
     ld [ACTIVE_LEVEL], a
     ld [PROGRESSION_LEVEL], a
     inc a
-    ld [SPRITE_ANIM_FRAME], a
+    ld [LEVEL_DISPLAY_ONES], a
     xor a
-    ld [SPRITE_ANIM_STATE], a
+    ld [LEVEL_DISPLAY_TENS], a
     ld a, [OPTION_SPEED]
     ld [ACTIVE_SPEED], a
     ret
@@ -2146,9 +2146,9 @@ jr_000_0b33:
     ld [ACTIVE_LEVEL], a
     ld [PROGRESSION_LEVEL], a
     inc a
-    ld [SPRITE_ANIM_FRAME], a
+    ld [LEVEL_DISPLAY_ONES], a
     xor a
-    ld [SPRITE_ANIM_STATE], a
+    ld [LEVEL_DISPLAY_TENS], a
     ld a, [LINK_2P_SELECTED_SPEED]
     ld [ACTIVE_SPEED], a
     ret
@@ -2604,10 +2604,10 @@ jr_000_111b:
     ld bc, HeaderLogo
     call FillRect
     ld hl, $c510
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     add $d4
     ld [hl-], a
-    ld a, [SPRITE_ANIM_STATE]
+    ld a, [LEVEL_DISPLAY_TENS]
     add $d4
     ld [hl], a
     ld hl, $c511
@@ -4573,17 +4573,17 @@ jr_000_1b79:
 
 
 TitleInputHandler::
-    ld hl, SPRITE_ANIM_TICK_COUNTER
+    ld hl, LEVEL_DISPLAY_TICK_COUNTER
     inc [hl]
     ld a, [hl]
-    cp SPRITE_ANIM_TICK_PERIOD
+    cp LEVEL_DISPLAY_TICK_PERIOD
     ret nz
 
     xor a
     ld [hl], a
-    call AdvanceSpriteAnimFrame
+    call AdvanceATypeLevelDisplayDigits
     ld hl, $0812
-    call SpriteAnimTable
+    call DrawLevelDisplayDigits
     ret
 
 
@@ -6628,10 +6628,10 @@ ClearField::
     ld de, CURRENT_RESULT_RECORD
     ld bc, $0005
     call Memcopy
-    ld a, [SPRITE_ANIM_FRAME]
-    ld [CURRENT_RESULT_SPRITE_ANIM_FRAME], a
-    ld a, [SPRITE_ANIM_STATE]
-    ld [CURRENT_RESULT_SPRITE_ANIM_STATE], a
+    ld a, [LEVEL_DISPLAY_ONES]
+    ld [CURRENT_RESULT_LEVEL_ONES], a
+    ld a, [LEVEL_DISPLAY_TENS]
+    ld [CURRENT_RESULT_LEVEL_TENS], a
     ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_28d4
@@ -6696,7 +6696,7 @@ jr_000_28ff:
 
     ld de, $0005
     add hl, de
-    ld de, CURRENT_RESULT_SPRITE_ANIM_STATE
+    ld de, CURRENT_RESULT_LEVEL_TENS
     ld c, $02
     call InitRound
     jr c, jr_000_294a

@@ -129,7 +129,7 @@
 - Bank 0 `00:$22CC-$230E` and `00:$230F-$234B` are field animation delta tables. `StepFieldAnimSlot11SideDelta` / `StepFieldAnimSlot10SideDelta` index `FieldSideDeltaTable`, while `StepFieldAnimSlot13RowDelta` / `StepFieldAnimSlot12RowDelta` index `FieldRowDeltaTable`; both tables terminate with `$10`.
 - WRAM `$C6C3-$C6C6` now names the per-slot field animation cursors for logical sprite object slots 11, 10, 13, and 12. `$C6C7-$C6CA` now names the matching active flags, in slot order 12, 11, 10, and 13.
 - `UpdateFieldTimers` is called from both Bank 1 `GameMainUpdate` and Bank 0 `Send2PData`, decrementing `FIELD_COLUMN_TIMERS` at `$C6CB-$C6CE` and clearing logical sprite object slots 10-13 when each timer expires.
-- Bank 1 `01:$4570` is now labeled `AdvanceSpriteAnimFrame`; title/input code calls it before `SpriteAnimTable` to advance the shared sprite animation frame/state.
+- Bank 1 `01:$4570` is now labeled `AdvanceATypeLevelDisplayDigits`; title/input code calls it before `DrawLevelDisplayDigits` to advance the shared level display digits.
 - HRAM `$FF80` is now named `OAM_DMA_HRAM`; `SetupOAMDMA` copies the DMA routine there and `VBlankHandler` calls it.
 - Bank 0 `00:$33F7` is a real link-start confirmation loop, now labeled `WaitLinkStartConfirm`. It had been hidden behind a short `db` escape.
 - Bank 0 `00:$3839-$3FFF` is graphics data, not code. Result setup copies `$3839` and `$3D39` to VRAM through `VRAMCopySetup`; the remaining tail is now explicit `db`.

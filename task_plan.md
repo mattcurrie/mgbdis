@@ -65,7 +65,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name field animation cursors, active flags, and column timers at `$C6C3-$C6CE`
 - [x] Name drop-input animation active/timer/column/cascade state at `$C75D-$C774`
 - [x] Name column top-row array and drop cursor animation state at `$C66A-$C670`
-- [x] Name egg counter digits and sprite animation tick divider at `$C6D1-$C6D5`
+- [x] Name egg counter digits and level-display tick divider at `$C6D1-$C6D5`
 - [x] Name 2P selected settings, peer settings, and link send queue at `$C6EB-$C700`
 - [x] Name column blink state and result rank position at `$C7A4-$C7AD`
 - [x] Name countdown digit buffers and blit state at `$C7AE-$C7CF`
@@ -95,7 +95,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Recover first-pass column top-row state and drop cursor animation state
 - [x] Name the high-confidence score addition/display routine at Bank 1 `$432F`
 - [x] Name the next-round and egg-animation helpers at Bank 1 `$445C` and `$4681`
-- [x] Name high-confidence field timer, sprite animation, OAM DMA HRAM, and link-start wait helpers
+- [x] Name high-confidence field timer, level display, OAM DMA HRAM, and link-start wait helpers
 - [ ] Name drop, rotation, match, clear, remaining scoring, level, and game-over routines
 - [x] Investigate remaining score-adjacent state `$C620/$C628/$C629/$C672`
 - [ ] Revisit `$C620/$C628/$C629/$C672` only after finding an independent consumer
@@ -109,6 +109,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name result score value tilemap origin `$C5D6`
 - [x] Name result score label tilemap origin `$C5D1`
 - [x] Name result timer label/value tilemap origins `$C5E5/$C5EA`
+- [x] Correct level display digit labels `$C6CF/$C6D0/$C6D1`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

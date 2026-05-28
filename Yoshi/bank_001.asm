@@ -711,7 +711,7 @@ jr_001_448c:
 jr_001_4495:
     ld a, [BGM_INDEX]
     call PlaySound
-    call AnimFrameData
+    call AdvanceLevelDisplayDigits
 
 jr_001_449e:
     call UpdateNextDisplay
@@ -724,7 +724,7 @@ jr_001_449e:
     call InitBlinkState
     call ClearAnimState
     call ResetPieceDisplayBlinkTimer
-    call ClearSpriteAnimTickCounter
+    call ClearLevelDisplayTickCounter
     call InitEggSystem
     call CalcDifficulty
     call FieldUpdate15
@@ -815,7 +815,7 @@ InitPlayfield::
     call InitBlinkState
     call ClearAnimState
     call ResetPieceDisplayBlinkTimer
-    call ClearSpriteAnimTickCounter
+    call ClearLevelDisplayTickCounter
     call ClearEggCount
     call CalcDifficulty
     call RefreshField
@@ -828,30 +828,30 @@ InitPlayfield::
     ret
 
 
-SpriteAnimTable::
+DrawLevelDisplayDigits::
     call CalcTilemapAddress
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     add $40
     ld [hl], a
     dec hl
-    ld a, [SPRITE_ANIM_STATE]
+    ld a, [LEVEL_DISPLAY_TENS]
     add $40
     ld [hl], a
     ret
 
 
-AdvanceSpriteAnimFrame::
+AdvanceATypeLevelDisplayDigits::
     ld a, [GAME_TYPE]
     and a
     ret nz
 
     ld hl, PROGRESSION_LEVEL
     inc [hl]
-    ld a, [SPRITE_ANIM_STATE]
+    ld a, [LEVEL_DISPLAY_TENS]
     cp $09
     jr nz, jr_001_4588
 
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     cp $09
     jr nz, jr_001_4588
 
@@ -859,28 +859,28 @@ AdvanceSpriteAnimFrame::
 
 
 jr_001_4588:
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     inc a
     cp $0a
     jr c, jr_001_4595
 
-    ld hl, SPRITE_ANIM_STATE
+    ld hl, LEVEL_DISPLAY_TENS
     inc [hl]
     xor a
 
 jr_001_4595:
-    ld [SPRITE_ANIM_FRAME], a
+    ld [LEVEL_DISPLAY_ONES], a
     ret
 
 
-AnimFrameData::
+AdvanceLevelDisplayDigits::
     ld hl, PROGRESSION_LEVEL
     inc [hl]
-    ld a, [SPRITE_ANIM_STATE]
+    ld a, [LEVEL_DISPLAY_TENS]
     cp $09
     jr nz, jr_001_45ac
 
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     cp $09
     jr nz, jr_001_45ac
 
@@ -888,23 +888,23 @@ AnimFrameData::
 
 
 jr_001_45ac:
-    ld a, [SPRITE_ANIM_FRAME]
+    ld a, [LEVEL_DISPLAY_ONES]
     inc a
     cp $0a
     jr c, jr_001_45b9
 
-    ld hl, SPRITE_ANIM_STATE
+    ld hl, LEVEL_DISPLAY_TENS
     inc [hl]
     xor a
 
 jr_001_45b9:
-    ld [SPRITE_ANIM_FRAME], a
+    ld [LEVEL_DISPLAY_ONES], a
     ret
 
 
-ClearSpriteAnimTickCounter::
+ClearLevelDisplayTickCounter::
     xor a
-    ld [SPRITE_ANIM_TICK_COUNTER], a
+    ld [LEVEL_DISPLAY_TICK_COUNTER], a
     ret
 
 
@@ -1417,7 +1417,7 @@ jr_001_48b0:
     ld hl, $0a12
 
 jr_001_48b3:
-    call SpriteAnimTable
+    call DrawLevelDisplayDigits
     ret
 
 

@@ -25,5 +25,5 @@ frame 1/2 pulse. When the tens digit wraps, `EnableEggTextAltAnimation` enables
 the continuous frame 1/2 alternate path driven by the playing-state VBlank
 check.
 
-`SPRITE_ANIM_TICK_COUNTER` at `$C6D1` is a separate 10-tick divider used by the
-title sprite animation path before calling `AdvanceSpriteAnimFrame`.
+`LEVEL_DISPLAY_TICK_COUNTER` at `$C6D1` is a separate 10-tick divider used by the
+title level-display path before calling `AdvanceATypeLevelDisplayDigits`.

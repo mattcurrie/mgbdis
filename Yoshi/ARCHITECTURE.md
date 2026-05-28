@@ -104,7 +104,7 @@ Round flow:                                      State 3 → State 4 → State 3
 
 - **UpdateSprites**: $C200オブジェクトテーブル→$C400 OAMバッファ展開
 - **InitSpriteBuffer**: バッファクリア
-- SpriteAnimTable/AnimFrameData: アニメーションテーブル
+- DrawLevelDisplayDigits/AdvanceLevelDisplayDigits: レベル表示桁の描画と進行
 
 ### Sound Engine ($5187-$5699)
 

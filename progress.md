@@ -141,9 +141,9 @@
   - Converted Bank 1 `01:$442C-$445B` from fake instructions to `FieldColumnTilePatternTable` and preserved `StartNextRound` as the real code entry at `01:$445C`.
   - Named Bank 1 `01:$4681` as `IncrementEggCounter`.
   - Converted Bank 0 `00:$22CC-$234B` from fake instructions to `FieldSideDeltaTable` and `FieldRowDeltaTable`, restoring `UpdateFieldTimers` as real code at `00:$234C`.
-  - Replaced remaining high-confidence raw cross-bank direct calls with labels, including `WaitVBlank`, `VBlankHandler`, `InitSpriteBuffer`, `InitGameScreen`, `InitPlayfield`, `GameMainUpdate`, `SoundEngine`, `LoadGameBGTiles`, `UpdateFieldTimers`, `SpriteAnimTable`, `DrawTitleLabels`, `ProcessTitleInput`, `ProcessOptionInput`, `UpdateColumn`, and `DrawColumnData`.
+  - Replaced remaining high-confidence raw cross-bank direct calls with labels, including `WaitVBlank`, `VBlankHandler`, `InitSpriteBuffer`, `InitGameScreen`, `InitPlayfield`, `GameMainUpdate`, `SoundEngine`, `LoadGameBGTiles`, `UpdateFieldTimers`, `DrawLevelDisplayDigits`, `DrawTitleLabels`, `ProcessTitleInput`, `ProcessOptionInput`, `UpdateColumn`, and `DrawColumnData`.
   - Added `OAM_DMA_HRAM` for the HRAM DMA routine at `$FF80`, and replaced the VBlank call and setup copy target with that name.
-  - Named Bank 1 `01:$4570` as `AdvanceSpriteAnimFrame`.
+  - Named Bank 1 `01:$4570` as `AdvanceATypeLevelDisplayDigits`.
   - Recovered Bank 0 `00:$33F7` as real code `WaitLinkStartConfirm`, removing a short `db` escape that hid the link-start wait loop.
   - Converted Bank 0 `00:$3839-$3FFF` from fake instructions to `TitleResultTileData0`, `TitleResultTileData1`, and `Bank0TailGraphicsData`.
   - Confirmed there are no remaining raw direct `call $xxxx`, `jp $xxxx`, or `jr $xxxx` operands in `Yoshi/bank_000.asm` and `Yoshi/bank_001.asm`.
@@ -166,7 +166,7 @@
   - Named the title 1P/2P selection marker blink timer/phase at `$C6BC/$C6BE`.
   - Named field animation cursors, active flags, and column timers at `$C6C3-$C6CE`, tying them to logical sprite object slots 10-13 and the `FieldSideDeltaTable` / `FieldRowDeltaTable` consumers.
   - Created `docs/source_recovery/field_animation_state.md` to document the recovered slot/timer mapping.
-  - Named the title sprite animation tick divider at `$C6D1` and the egg counter digits at `$C6D3-$C6D5`; documented `$C6D2` as a cleared-with-counter reserved byte with no confirmed direct read.
+  - Named the title level-display tick divider at `$C6D1` and the egg counter digits at `$C6D3-$C6D5`; documented `$C6D2` as a cleared-with-counter reserved byte with no confirmed direct read.
   - Created `docs/source_recovery/egg_counter.md` to document the recovered egg counter and result-copy behavior.
   - Named the 2P selected level/speed bytes at `$C6EB-$C6EC`, peer received level/speed at `$C6FF-$C700`, and the two-byte link send queue at `$C6FC-$C6FE`.
   - Created `docs/source_recovery/link_state.md` to document the recovered 2P option packing, link send queue, and incoming bit-6 field-event accumulator.
