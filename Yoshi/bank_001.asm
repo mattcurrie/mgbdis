@@ -546,7 +546,7 @@ InitGameScreen::
     ld a, [$c620]
     ld c, a
     xor a
-    ld hl, $c61d
+    ld hl, SCORE_BCD_LOW
     ld b, $09
 
 jr_001_4387:

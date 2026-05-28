@@ -7612,7 +7612,7 @@ UpdateCountdownTimer::
     ld [COUNTDOWN_BLIT_PHASE], a
     jr nz, jr_000_2f54
 
-    ld a, [$c61e]
+    ld a, [SCORE_BCD_MID]
     swap a
     and $f0
     srl a
@@ -7636,7 +7636,7 @@ jr_000_2f0e:
     dec b
     jr nz, jr_000_2f0e
 
-    ld a, [$c61d]
+    ld a, [SCORE_BCD_LOW]
     and $f0
     srl a
     ld de, CountdownDigitPatternTable
@@ -7660,7 +7660,7 @@ jr_000_2f2c:
     dec b
     jr nz, jr_000_2f2c
 
-    ld a, [$c61d]
+    ld a, [SCORE_BCD_LOW]
     swap a
     and $f0
     srl a
@@ -7686,7 +7686,7 @@ jr_000_2f4d:
 
 
 jr_000_2f54:
-    ld a, [$c61e]
+    ld a, [SCORE_BCD_MID]
     swap a
     and $f0
     srl a
@@ -7710,7 +7710,7 @@ jr_000_2f6a:
     dec b
     jr nz, jr_000_2f6a
 
-    ld a, [$c61e]
+    ld a, [SCORE_BCD_MID]
     and $f0
     srl a
     ld de, CountdownDigitPatternTable
@@ -7735,7 +7735,7 @@ jr_000_2f88:
     dec b
     jr nz, jr_000_2f88
 
-    ld a, [$c61f]
+    ld a, [SCORE_BCD_HIGH]
     swap a
     and $f0
     srl a
