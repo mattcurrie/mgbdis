@@ -7,7 +7,7 @@ to explicit data.
 
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
-| `01:$40A0-$42F4` | `SpriteUpdatePointerTable` and `SpriteUpdateData_*` | Converted to `dw`/`db` | `UpdateSprites` loads `$40A0`, indexes it as a 2-byte pointer table, and then reads sprite frame/meta data through the selected pointer. The next confirmed code label is `UpdateAnimFrame` at `01:$42F5`. |
+| `01:$40A0-$42F4` | `SpriteUpdatePointerTable`, `SpriteFrameTable_Object*`, `SpriteTileList_*`, and `SpriteLayout_*` | Converted to structured `dw`/`db` | `UpdateSprites` loads `$40A0`, indexes it as a 2-byte object frame-table pointer, then reads each frame as `dw tile_id_list, layout_list`. The next confirmed code label is `UpdateAnimFrame` at `01:$42F5`. |
 
 Notes:
 

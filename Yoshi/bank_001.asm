@@ -148,119 +148,299 @@ jr_001_4097:
 
 
 SpriteUpdatePointerTable::
-    dw SpriteUpdateData_40fa ; 00
-    dw SpriteUpdateData_411a ; 01
-    dw SpriteUpdateData_417e ; 02
-    dw SpriteUpdateData_41d2 ; 03
-    dw SpriteUpdateData_40ae ; 04
-    dw SpriteUpdateData_41e2 ; 05
-    dw SpriteUpdateData_41ea ; 06
+    dw SpriteFrameTable_Object1
+    dw SpriteFrameTable_Object2
+    dw SpriteFrameTable_Object3
+    dw SpriteFrameTable_Object4
+    dw SpriteFrameTable_Object5
+    dw SpriteFrameTable_Object6
+    dw SpriteFrameTable_Object7
 
-SpriteUpdateData_40ae::
-    dw SpriteUpdateData_4233 ; 07
-    dw SpriteUpdateData_42bf ; 08
-    dw SpriteUpdateData_4237 ; 09
-    dw SpriteUpdateData_42bf ; 10
-    dw SpriteUpdateData_423b ; 11
-    dw SpriteUpdateData_42bf ; 12
-    dw SpriteUpdateData_4233 ; 13
-    dw SpriteUpdateData_42bf ; 14
-    dw SpriteUpdateData_4237 ; 15
-    dw SpriteUpdateData_42bf ; 16
-    dw SpriteUpdateData_423b ; 17
-    dw SpriteUpdateData_42bf ; 18
-    dw SpriteUpdateData_4233 ; 19
-    dw SpriteUpdateData_42bf ; 20
-    dw SpriteUpdateData_4237 ; 21
-    dw SpriteUpdateData_42bf ; 22
-    dw SpriteUpdateData_423b ; 23
-    dw SpriteUpdateData_42bf ; 24
-    dw SpriteUpdateData_4233 ; 25
-    dw SpriteUpdateData_42bf ; 26
-    dw SpriteUpdateData_4237 ; 27
-    dw SpriteUpdateData_42bf ; 28
-    dw SpriteUpdateData_423b ; 29
-    dw SpriteUpdateData_42bf ; 30
-    dw SpriteUpdateData_4233 ; 31
-    dw SpriteUpdateData_42bf ; 32
-    dw SpriteUpdateData_4233 ; 33
-    dw SpriteUpdateData_42bf ; 34
-    dw SpriteUpdateData_4233 ; 35
-    dw SpriteUpdateData_42bf ; 36
-    dw SpriteUpdateData_4233 ; 37
-    dw SpriteUpdateData_42bf ; 38
-    dw SpriteUpdateData_4235 ; 39
-    dw SpriteUpdateData_42bf ; 40
-    dw SpriteUpdateData_4239 ; 41
-    dw SpriteUpdateData_42bf ; 42
-    dw SpriteUpdateData_423d ; 43
-    dw SpriteUpdateData_42bf ; 44
+SpriteFrameTable_Object5::
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4237, SpriteLayout_42bf
+    dw SpriteTileList_423b, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4237, SpriteLayout_42bf
+    dw SpriteTileList_423b, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4237, SpriteLayout_42bf
+    dw SpriteTileList_423b, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4237, SpriteLayout_42bf
+    dw SpriteTileList_423b, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4233, SpriteLayout_42bf
+    dw SpriteTileList_4235, SpriteLayout_42bf
+    dw SpriteTileList_4239, SpriteLayout_42bf
+    dw SpriteTileList_423d, SpriteLayout_42bf
 
-SpriteUpdateData_40fa::
-    db $0e, $42, $cb, $42, $14, $42, $dd, $42, $18, $42, $dd, $42, $1c, $42, $dd, $42
-    db $20, $42, $cb, $42, $1c, $42, $e9, $42, $18, $42, $e9, $42, $14, $42, $e9, $42
+SpriteFrameTable_Object1::
+    dw SpriteTileList_420e, SpriteLayout_42cb
+    dw SpriteTileList_4214, SpriteLayout_42dd
+    dw SpriteTileList_4218, SpriteLayout_42dd
+    dw SpriteTileList_421c, SpriteLayout_42dd
+    dw SpriteTileList_4220, SpriteLayout_42cb
+    dw SpriteTileList_421c, SpriteLayout_42e9
+    dw SpriteTileList_4218, SpriteLayout_42e9
+    dw SpriteTileList_4214, SpriteLayout_42e9
 
-SpriteUpdateData_411a::
-    db $a7, $42, $bf, $42, $a7, $42, $c5, $42, $a9, $42, $c5, $42, $ab, $42, $c5, $42
-    db $ad, $42, $c5, $42, $af, $42, $c5, $42, $b1, $42, $c5, $42, $b1, $42, $c5, $42
-    db $b3, $42, $c5, $42, $a7, $42, $bf, $42, $a7, $42, $bf, $42, $a7, $42, $bf, $42
-    db $a7, $42, $bf, $42, $a7, $42, $bf, $42, $a7, $42, $bf, $42, $a7, $42, $bf, $42
-    db $a7, $42, $bf, $42, $b5, $42, $c5, $42, $b7, $42, $c5, $42, $b9, $42, $c5, $42
-    db $bb, $42, $c5, $42, $bd, $42, $c5, $42, $bf, $42, $c5, $42, $bf, $42, $c5, $42
-    db $bf, $42, $c5, $42
+SpriteFrameTable_Object2::
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42c5
+    dw SpriteTileList_42a9, SpriteLayout_42c5
+    dw SpriteTileList_42ab, SpriteLayout_42c5
+    dw SpriteTileList_42ad, SpriteLayout_42c5
+    dw SpriteTileList_42af, SpriteLayout_42c5
+    dw SpriteTileList_42b1, SpriteLayout_42c5
+    dw SpriteTileList_42b1, SpriteLayout_42c5
+    dw SpriteTileList_42b3, SpriteLayout_42c5
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42a7, SpriteLayout_42bf
+    dw SpriteTileList_42b5, SpriteLayout_42c5
+    dw SpriteTileList_42b7, SpriteLayout_42c5
+    dw SpriteTileList_42b9, SpriteLayout_42c5
+    dw SpriteTileList_42bb, SpriteLayout_42c5
+    dw SpriteTileList_42bd, SpriteLayout_42c5
+    dw SpriteTileList_42bf, SpriteLayout_42c5
+    dw SpriteTileList_42bf, SpriteLayout_42c5
+    dw SpriteTileList_42bf, SpriteLayout_42c5
 
-SpriteUpdateData_417e::
-    db $3f, $42, $6b, $42, $45, $42, $6b, $42, $4b, $42, $71, $42, $55, $42, $7d, $42
-    db $63, $42, $8f, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42
-    db $3f, $42, $6b, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42
-    db $3f, $42, $6b, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42, $3f, $42, $6b, $42
-    db $41, $42, $6b, $42, $43, $42, $6b, $42, $47, $42, $71, $42, $4f, $42, $7d, $42
-    db $5b, $42, $8f, $42
+SpriteFrameTable_Object3::
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_4245, SpriteLayout_426b
+    dw SpriteTileList_424b, SpriteLayout_4271
+    dw SpriteTileList_4255, SpriteLayout_427d
+    dw SpriteTileList_4263, SpriteLayout_428f
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_423f, SpriteLayout_426b
+    dw SpriteTileList_4241, SpriteLayout_426b
+    dw SpriteTileList_4243, SpriteLayout_426b
+    dw SpriteTileList_4247, SpriteLayout_4271
+    dw SpriteTileList_424f, SpriteLayout_427d
+    dw SpriteTileList_425b, SpriteLayout_428f
 
-SpriteUpdateData_41d2::
-    db $26, $42, $27, $42, $26, $42, $2a, $42, $26, $42, $2d, $42, $26, $42, $30, $42
+SpriteFrameTable_Object4::
+    dw SpriteTileList_4226, SpriteLayout_4227
+    dw SpriteTileList_4226, SpriteLayout_422a
+    dw SpriteTileList_4226, SpriteLayout_422d
+    dw SpriteTileList_4226, SpriteLayout_4230
 
-SpriteUpdateData_41e2::
-    db $f6, $41, $fc, $41, $f6, $41, $05, $42
+SpriteFrameTable_Object6::
+    dw SpriteTileList_41f6, SpriteLayout_41fc
+    dw SpriteTileList_41f6, SpriteLayout_4205
 
-SpriteUpdateData_41ea::
-    db $ee, $41, $f0, $41, $e0, $e0, $00, $08, $00, $00, $10, $21, $da, $dc, $de, $da
-    db $dc, $de, $10, $04, $00, $10, $0c, $00, $10, $14, $00, $00, $04, $00, $00, $0c
-    db $00, $00, $14, $01, $1c, $1e, $20, $20, $1e, $1c, $24, $26, $28, $2a, $2c, $2e
-    db $30, $32, $34, $36, $38, $3a, $3c, $3e, $40, $40, $3e, $3c, $80, $f0, $f8, $01
-    db $f0, $00, $21, $f0, $f8, $41, $f0, $00, $61
+SpriteFrameTable_Object7::
+    dw SpriteTileList_41ee, SpriteLayout_41f0
 
-SpriteUpdateData_4233::
+SpriteTileList_41ee::
+    db $e0, $e0
+
+SpriteLayout_41f0::
+    db $00, $08, $00
+    db $00, $10, $21
+
+SpriteTileList_41f6::
+    db $da, $dc, $de, $da, $dc, $de
+
+SpriteLayout_41fc::
+    db $10, $04, $00
+    db $10, $0c, $00
+    db $10, $14, $00
+
+; Also the tail of SpriteLayout_41fc; the terminator is in the final triple.
+SpriteLayout_4205::
+    db $00, $04, $00
+    db $00, $0c, $00
+    db $00, $14, $01
+
+SpriteTileList_420e::
+    db $1c, $1e, $20, $20, $1e, $1c
+
+SpriteTileList_4214::
+    db $24, $26, $28, $2a
+
+SpriteTileList_4218::
+    db $2c, $2e, $30, $32
+
+SpriteTileList_421c::
+    db $34, $36, $38, $3a
+
+SpriteTileList_4220::
+    db $3c, $3e, $40, $40, $3e, $3c
+
+SpriteTileList_4226::
+    db $80
+
+SpriteLayout_4227::
+    db $f0, $f8, $01
+
+SpriteLayout_422a::
+    db $f0, $00, $21
+
+SpriteLayout_422d::
+    db $f0, $f8, $41
+
+SpriteLayout_4230::
+    db $f0, $00, $61
+
+SpriteTileList_4233::
     db $60, $62
 
-SpriteUpdateData_4235::
+SpriteTileList_4235::
     db $64, $66
 
-SpriteUpdateData_4237::
+SpriteTileList_4237::
     db $68, $6a
 
-SpriteUpdateData_4239::
+SpriteTileList_4239::
     db $6c, $6e
 
-SpriteUpdateData_423b::
+SpriteTileList_423b::
     db $70, $72
 
-SpriteUpdateData_423d::
-    db $74, $76, $82, $84, $86, $88, $8a, $8c, $8e, $90, $92, $94, $96, $98, $9a, $9c
-    db $9e, $a0, $a2, $a4, $a6, $a8, $aa, $ac, $ae, $b0, $b2, $b4, $b6, $b8, $ba, $bc
-    db $be, $c0, $c2, $c4, $c6, $c8, $ca, $cc, $ce, $d0, $d2, $d4, $d6, $d8, $f0, $f8
-    db $00, $f0, $00, $01, $e8, $f8, $00, $f8, $f8, $00, $e8, $00, $00, $f8, $00, $01
-    db $e8, $f4, $00, $f8, $f4, $00, $e8, $fc, $00, $f8, $fc, $00, $e8, $04, $00, $f8
-    db $04, $01, $e0, $f0, $00, $f0, $f0, $00, $e0, $f8, $00, $f0, $f8, $00, $e0, $00
-    db $00, $f0, $00, $00, $e0, $08, $00, $f0, $08, $01, $00, $02, $04, $06, $08, $0a
-    db $0c, $0e, $10, $12, $18, $1a, $14, $16, $4c, $4e, $50, $52, $54, $56, $58, $5a
+SpriteTileList_423d::
+    db $74, $76
+
+SpriteTileList_423f::
+    db $82, $84
+
+SpriteTileList_4241::
+    db $86, $88
+
+SpriteTileList_4243::
+    db $8a, $8c
+
+SpriteTileList_4245::
+    db $8e, $90
+
+SpriteTileList_4247::
+    db $92, $94, $96, $98
+
+SpriteTileList_424b::
+    db $9a, $9c, $9e, $a0
+
+SpriteTileList_424f::
+    db $a2, $a4, $a6, $a8, $aa, $ac
+
+SpriteTileList_4255::
+    db $ae, $b0, $b2, $b4, $b6, $b8
+
+SpriteTileList_425b::
+    db $ba, $bc, $be, $c0, $c2, $c4, $c6, $c8
+
+SpriteTileList_4263::
+    db $ca, $cc, $ce, $d0, $d2, $d4, $d6, $d8
+
+SpriteLayout_426b::
+    db $f0, $f8, $00
+    db $f0, $00, $01
+
+SpriteLayout_4271::
+    db $e8, $f8, $00
+    db $f8, $f8, $00
+    db $e8, $00, $00
+    db $f8, $00, $01
+
+SpriteLayout_427d::
+    db $e8, $f4, $00
+    db $f8, $f4, $00
+    db $e8, $fc, $00
+    db $f8, $fc, $00
+    db $e8, $04, $00
+    db $f8, $04, $01
+
+SpriteLayout_428f::
+    db $e0, $f0, $00
+    db $f0, $f0, $00
+    db $e0, $f8, $00
+    db $f0, $f8, $00
+    db $e0, $00, $00
+    db $f0, $00, $00
+    db $e0, $08, $00
+    db $f0, $08, $01
+
+SpriteTileList_42a7::
+    db $00, $02
+
+SpriteTileList_42a9::
+    db $04, $06
+
+SpriteTileList_42ab::
+    db $08, $0a
+
+SpriteTileList_42ad::
+    db $0c, $0e
+
+SpriteTileList_42af::
+    db $10, $12
+
+SpriteTileList_42b1::
+    db $18, $1a
+
+SpriteTileList_42b3::
+    db $14, $16
+
+SpriteTileList_42b5::
+    db $4c, $4e
+
+SpriteTileList_42b7::
+    db $50, $52
+
+SpriteTileList_42b9::
+    db $54, $56
+
+SpriteTileList_42bb::
+    db $58, $5a
+
+SpriteTileList_42bd::
     db $5c, $5e
 
-SpriteUpdateData_42bf::
-    db $00, $08, $00, $00, $10, $01, $00, $08, $10, $00, $10, $11, $00, $08, $00, $00
-    db $10, $00, $00, $18, $00, $00, $20, $20, $00, $28, $20, $00, $30, $21, $00, $10
-    db $00, $00, $18, $00, $00, $20, $00, $00, $28, $01, $00, $28, $22, $00, $20, $22
-    db $00, $18, $22, $00, $10, $23
+SpriteTileList_42bf::
+SpriteLayout_42bf::
+    db $00, $08, $00
+    db $00, $10, $01
+
+SpriteLayout_42c5::
+    db $00, $08, $10
+    db $00, $10, $11
+
+SpriteLayout_42cb::
+    db $00, $08, $00
+    db $00, $10, $00
+    db $00, $18, $00
+    db $00, $20, $20
+    db $00, $28, $20
+    db $00, $30, $21
+
+SpriteLayout_42dd::
+    db $00, $10, $00
+    db $00, $18, $00
+    db $00, $20, $00
+    db $00, $28, $01
+
+SpriteLayout_42e9::
+    db $00, $28, $22
+    db $00, $20, $22
+    db $00, $18, $22
+    db $00, $10, $23
 
 UpdateAnimFrame::
     ld a, [TWO_PLAYER_FLAG]

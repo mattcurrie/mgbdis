@@ -58,6 +58,14 @@ table pointer. `UpdateSprites` does not mask off bit `$80` before indexing, so
 high-bit object types may intentionally select alternate entries while also
 supplying an inherited attribute bit.
 
+In source, the formerly flat `01:$40A0-$42F4` payload is split into:
+
+| Label family | Meaning |
+|--------------|---------|
+| `SpriteFrameTable_Object*` | Per-object animation frame records. |
+| `SpriteTileList_*` | Tile IDs read sequentially, one byte for each emitted hardware sprite. |
+| `SpriteLayout_*` | Repeated `y_delta, x_delta, attr` triples. |
+
 Each frame table entry is 4 bytes:
 
 ```text
@@ -85,6 +93,10 @@ Attr = attr, optionally ORed with the saved object `$80` bit when `attr` bit 1 i
 been emitted. This makes bit 0 a local end marker as well as part of the final
 OAM attribute byte.
 
+Some labels intentionally overlap because the original data reuses subranges.
+For example, `SpriteLayout_4205` starts inside `SpriteLayout_41fc`, and
+`SpriteTileList_42bf` shares its address with `SpriteLayout_42bf`.
+
 ## Redraw Gate
 
 `LCD_REDRAW` controls `UpdateSprites`:
@@ -106,5 +118,5 @@ Y=`$A0` for all 40 hardware sprites.
   `+$09`, and `+$0F` still need narrower names.
 - The exact set of high-bit object types, if any, needs runtime/call-site
   confirmation because the high bit is not masked before the frame-table index.
-- The frame tables are now structurally understood, but the individual object
-  types still need semantic names.
+- The frame tables are now structurally split, but the individual object types
+  still need semantic names beyond `Object1` through `Object7`.

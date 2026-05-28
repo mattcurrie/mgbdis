@@ -58,7 +58,7 @@
 - **Status:** in_progress
 - **Started:** 2026-05-28
 - Actions taken:
-  - Converted Bank 1 `01:$40A0-$42F4` from bogus instructions to `SpriteUpdatePointerTable` plus `SpriteUpdateData_*` data blocks.
+  - Converted Bank 1 `01:$40A0-$42F4` from bogus instructions to `SpriteUpdatePointerTable`, object frame tables, tile-id lists, and layout triples.
   - Preserved compatibility symbols for old fake labels that are still referenced by downstream unconverted data.
   - Created `docs/source_recovery/data_ranges.md`.
   - Verified the conversion remains byte-identical to the preserved ROM.
@@ -141,6 +141,7 @@
   - Replaced high-confidence `UpdateSprites`, `ClearOAM`, `HideAllSprites`, and pause overlay raw OAM addresses with those constants.
   - Created `docs/source_recovery/sprite_oam.md` to document the current logical-object and frame/layout-table format.
   - Traced the first sprite producer path: `UpdateSpriteObject` stages gameplay slots 1-4 through `$C68C-$C695`, while slot 0 and slots 9-13 are managed by separate UI/gameplay setup paths.
+  - Split the Bank 1 sprite update payload into `SpriteFrameTable_Object*`, `SpriteTileList_*`, and `SpriteLayout_*` labels.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -188,6 +189,7 @@
 | Bank 2/3 graphics label rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Sprite/OAM constantization rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Sprite object producer constantization rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Sprite frame/tile/layout table split rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log
@@ -205,4 +207,4 @@
 | Where am I going? | More code/data separation, graphics/data maps, sound/music data recovery, gameplay algorithms |
 | What's the goal? | Recover the lost Game Boy YOSSY NO TAMAGO source as maintainable, buildable RGBDS assembly |
 | What have I learned? | See findings.md |
-| What have I done? | Captured baseline facts, verified byte-identical rebuild, added recovery docs/tooling, corrected VRAM transfer variables, named the main `GAME_STATE` values, recovered core option/game-type variables, converted the first Bank 1 sprite data range, converted Bank 0 option UI, score/result/preview text, countdown digit tables, the level fall-delay table, round-complete tables, field delta tables, and ROM0 tail graphics data, restored the Bank 1 sound setup entry at `$55E2` as code, labeled and converted the contiguous Bank 1 sound/music stream from `$569A` through `$7C01` to data, separated the real `$7C02` helper from the surrounding music stream, recovered the `$7C2C-$7FFF` sound index/wave/tail sequence data, named the sound WRAM structure from `$C000-$C0ED` with `SOUND_*` constants, named high-confidence sound IDs from call-site evidence, named the score add/display routine and score WRAM, converted the `$442C` field-column tile table, named the next-round, sprite-animation, egg-animation, field-timer, and link-start helpers, removed remaining raw direct call/jump operands from real code paths, added the first rendered graphics evidence pass with Bank 2/3 transfer-start labels, documented the first-pass sprite/OAM object expansion format, and traced the first sprite object producer/staging path |
+| What have I done? | Captured baseline facts, verified byte-identical rebuild, added recovery docs/tooling, corrected VRAM transfer variables, named the main `GAME_STATE` values, recovered core option/game-type variables, converted and structured the first Bank 1 sprite data range, converted Bank 0 option UI, score/result/preview text, countdown digit tables, the level fall-delay table, round-complete tables, field delta tables, and ROM0 tail graphics data, restored the Bank 1 sound setup entry at `$55E2` as code, labeled and converted the contiguous Bank 1 sound/music stream from `$569A` through `$7C01` to data, separated the real `$7C02` helper from the surrounding music stream, recovered the `$7C2C-$7FFF` sound index/wave/tail sequence data, named the sound WRAM structure from `$C000-$C0ED` with `SOUND_*` constants, named high-confidence sound IDs from call-site evidence, named the score add/display routine and score WRAM, converted the `$442C` field-column tile table, named the next-round, sprite-animation, egg-animation, field-timer, and link-start helpers, removed remaining raw direct call/jump operands from real code paths, added the first rendered graphics evidence pass with Bank 2/3 transfer-start labels, documented the first-pass sprite/OAM object expansion format, and traced the first sprite object producer/staging path |
