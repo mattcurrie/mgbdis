@@ -86,7 +86,7 @@ RST_38::
     nop
 
 VBlankInterrupt::
-    jp $4b59
+    jp VBlankHandler
 
 
     nop
@@ -388,14 +388,14 @@ VRAMCopyExec::
     jr nc, jr_000_023a
 
     ldh [$ffae], a
-    call $4bc5
+    call WaitVBlank
     ret
 
 
 jr_000_023a:
     ld a, $08
     ldh [$ffae], a
-    call $4bc5
+    call WaitVBlank
     ld a, c
     sub $08
     ld c, a
@@ -416,14 +416,14 @@ jr_000_0253:
     jr nc, jr_000_025e
 
     ldh [$ffb3], a
-    call $4bc5
+    call WaitVBlank
     ret
 
 
 jr_000_025e:
     ld a, $08
     ldh [$ffb3], a
-    call $4bc5
+    call WaitVBlank
     ld a, c
     sub $08
     ld c, a
@@ -438,25 +438,26 @@ StateInit::
     ld [GAME_ACTIVE], a
 
 MainLoop::
-    call $4bc5
+    call WaitVBlank
     call ReadJoypad
     ldh a, [GAME_STATE]
     and a
     jr nz, jr_000_02cb
 
+    ; GAME_STATE_TITLE_INIT: load title graphics, initialize title UI, then advance.
     call LCDOff
-    ld a, $02
-    ld [$2100], a
-    ld hl, $4000
+    ld a, ROM_BANK_GRAPHICS_0
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, GameTileSet
     ld de, $8000
     ld bc, $0800
     call MemcopyCall
-    ld hl, $6000
+    ld hl, TitleTileSet
     ld de, $8800
     ld bc, $1000
     call MemcopyCall
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     call LCDOn
     ld hl, $c7a9
     xor a
@@ -464,11 +465,11 @@ MainLoop::
     ld [hl+], a
     ld [hl+], a
     ld [hl], a
-    ld a, $30
+    ld a, SND_TITLE_BGM
     call PlaySound
-    call $4094
+    call InitSpriteBuffer
     call FillOAMTitleTile
-    call $437d
+    call InitGameScreen
     call InitTitleUI
     ld a, $01
     ld [LCD_REDRAW], a
@@ -479,6 +480,7 @@ jr_000_02cb:
     dec a
     jr nz, jr_000_02d3
 
+    ; GAME_STATE_TITLE_MENU: poll title/player-selection input.
     call InitGameVars
     jr MainLoop
 
@@ -486,6 +488,7 @@ jr_000_02d3:
     dec a
     jr nz, jr_000_0302
 
+    ; GAME_STATE_PLAY_SETUP: load playfield graphics and initialize the game board.
     call LCDOff
     ld a, $01
     ld [LCD_REDRAW], a
@@ -504,7 +507,7 @@ jr_000_02f2:
     call PlaySound
 
 jr_000_02f8:
-    call $450b
+    call InitPlayfield
     ld a, $01
     ld [LCD_REDRAW], a
     jr AdvanceState
@@ -513,8 +516,9 @@ jr_000_0302:
     dec a
     jr nz, jr_000_030e
 
+    ; GAME_STATE_PLAYING: regular per-frame gameplay update.
     call HandlePause
-    call $43ac
+    call GameMainUpdate
     jp MainLoop
 
 
@@ -522,6 +526,7 @@ jr_000_030e:
     dec a
     jr nz, jr_000_0317
 
+    ; GAME_STATE_ROUND_END: result/high-score/continue processing.
     call HandleRoundEnd
     jp MainLoop
 
@@ -530,6 +535,7 @@ jr_000_0317:
     dec a
     jr nz, jr_000_0320
 
+    ; GAME_STATE_PREPLAY_LOOP: settings/start-wait loop before the play setup state.
     call OptionsScreen
     jp MainLoop
 
@@ -538,22 +544,23 @@ jr_000_0320:
     dec a
     jr nz, jr_000_0352
 
+    ; GAME_STATE_PREPLAY_INIT: load settings/start-wait graphics, then enter the loop.
     call LCDOff
-    ld a, $02
-    ld [$2100], a
-    ld hl, $4800
+    ld a, ROM_BANK_GRAPHICS_0
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, CommonTileSet
     ld de, $8800
     ld bc, $1000
     call MemcopyCall
-    ld hl, $5800
+    ld hl, ExtraTiles
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     call StartGameplay
     call LCDOn
-    ld a, $05
+    ld a, GAME_STATE_PREPLAY_LOOP
     jr jr_000_0358
 
 jr_000_0352:
@@ -570,13 +577,13 @@ jr_000_0358:
 
 
 LoadGameTiles::
-    ld a, $02
-    ld [$2100], a
-    ld hl, $4800
+    ld a, ROM_BANK_GRAPHICS_0
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, CommonTileSet
     ld de, $8800
     ld bc, $1000
     call MemcopyCall
-    ld hl, $4000
+    ld hl, GameTileSet
     ld de, $8000
     ld bc, $0800
     call MemcopyCall
@@ -584,7 +591,7 @@ LoadGameTiles::
     and a
     jr z, jr_000_039f
 
-    ld hl, $71d0
+    ld hl, TwoPlayerTiles2
     ld de, $9500
     ld bc, $0200
     call MemcopyCall
@@ -592,14 +599,14 @@ LoadGameTiles::
     cp $01
     jr z, jr_000_039f
 
-    ld hl, $6f70
+    ld hl, TwoPlayerTiles1
     ld de, $81c0
     ld bc, $0260
     call MemcopyCall
 
 jr_000_039f:
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     ret
 
 
@@ -644,10 +651,10 @@ PauseGame::
     jr nz, jr_000_03da
 
     ld a, $01
-    ld [$c002], a
+    ld [SOUND_PAUSE_FLAG], a
 
 jr_000_03da:
-    ld a, $2e
+    ld a, SND_PAUSE
     call PlaySound
     xor a
     ld [LCD_REDRAW], a
@@ -665,7 +672,7 @@ UnpauseGame::
     ld a, $01
     ld [LCD_REDRAW], a
     xor a
-    ld [$c002], a
+    ld [SOUND_PAUSE_FLAG], a
     ld [PAUSE_FLAG], a
     ret
 
@@ -686,7 +693,7 @@ CheckPause2P::
     call PauseGame
 
 jr_000_0411:
-    call $4bc5
+    call WaitVBlank
     call DrawPauseOverlay
     ld a, [LINK_RECV]
     cp $f0
@@ -701,8 +708,8 @@ PauseSpriteData::
 
 Init::
     di
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     xor a
     ldh [rIF], a
     ldh [rIE], a
@@ -802,7 +809,7 @@ jr_000_04c5:
     jr nz, jr_000_04c5
 
     ld b, $7f
-    ld hl, $ff80
+    ld hl, OAM_DMA_HRAM
 
 jr_000_04d1:
     ld [hl+], a
@@ -831,7 +838,7 @@ jr_000_04d1:
 StartGame::
     ld a, $e3
     ldh [rLCDC], a
-    ld a, $ff
+    ld a, SND_STOP_ALL
     call PlaySound
     xor a
     ld [WAVE_UPDATE], a
@@ -931,7 +938,7 @@ PlaySound::
     push hl
     push de
     push bc
-    call $53c9
+    call SoundEngine
     pop bc
     pop de
     pop hl
@@ -2109,39 +2116,39 @@ InitGameState::
     and a
     jr nz, jr_000_0b33
 
-    ld a, [$c6b2]
-    ld [PLAYER_MODE], a
+    ld a, [OPTION_GAME_TYPE]
+    ld [GAME_TYPE], a
     ld a, [TWO_PLAYER_FLAG]
     jr z, jr_000_0b1b
 
     ld a, $01
-    ld [PLAYER_MODE], a
+    ld [GAME_TYPE], a
 
 jr_000_0b1b:
-    ld a, [$c6b3]
-    ld [$c6b7], a
+    ld a, [OPTION_LEVEL]
+    ld [ACTIVE_LEVEL], a
     ld [$c6e2], a
     inc a
     ld [SPRITE_ANIM_FRAME], a
     xor a
     ld [SPRITE_ANIM_STATE], a
-    ld a, [$c6b4]
-    ld [$c6b8], a
+    ld a, [OPTION_SPEED]
+    ld [ACTIVE_SPEED], a
     ret
 
 
 jr_000_0b33:
     ld a, $01
-    ld [PLAYER_MODE], a
+    ld [GAME_TYPE], a
     ld a, [$c6eb]
-    ld [$c6b7], a
+    ld [ACTIVE_LEVEL], a
     ld [$c6e2], a
     inc a
     ld [SPRITE_ANIM_FRAME], a
     xor a
     ld [SPRITE_ANIM_STATE], a
     ld a, [$c6ec]
-    ld [$c6b8], a
+    ld [ACTIVE_SPEED], a
     ret
 
 
@@ -2374,22 +2381,22 @@ jr_000_0edb:
     ld bc, $0240
     ld d, $05
     call DrawCharacter
-    ld a, $03
-    ld [$2100], a
-    ld hl, $4000
+    ld a, ROM_BANK_GRAPHICS_1
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, Bank3MatchingTilesTo9000
     ld de, $9000
     ld bc, $0800
     call MemcopyCall
-    ld hl, $4800
+    ld hl, Bank3MatchingTilesTo8800
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
-    ld hl, $4e40
+    ld hl, Bank3MatchingTilesTo8000
     ld de, $8000
     ld bc, $0800
     call MemcopyCall
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     call LCDOn
     ld a, $8b
     ldh [rLCDC], a
@@ -2457,10 +2464,10 @@ jr_000_0f80:
     bit 0, a
     jr z, jr_000_0f95
 
-    call $4bc5
+    call WaitVBlank
 
 jr_000_0f95:
-    call $4bc5
+    call WaitVBlank
     ldh a, [SCX_SHADOW]
     inc a
     ldh [SCX_SHADOW], a
@@ -2503,7 +2510,7 @@ jr_000_0fce:
     ld hl, $c546
     ld bc, $0606
     call FillRect
-    call $4bc5
+    call WaitVBlank
     ldh a, [SCX_SHADOW]
     dec a
     ldh [SCX_SHADOW], a
@@ -2543,7 +2550,7 @@ jr_000_0fce:
 jr_000_102a:
     ld c, $02
     call DrawNumber
-    call $4bc5
+    call WaitVBlank
     dec b
     jr nz, jr_000_102a
 
@@ -2566,7 +2573,7 @@ jr_000_1040:
     pop bc
     ld c, $fe
     call DrawNumber
-    call $4bc5
+    call WaitVBlank
     dec b
     jr nz, jr_000_103a
 
@@ -2604,7 +2611,7 @@ jr_000_106e:
     ld bc, $0210
     call FillRect
     call UpdateLevel
-    ld a, $54
+    ld a, SND_CONFIRM
     call PlaySound
     ld hl, $1194
     ld de, $c400
@@ -2632,7 +2639,7 @@ jr_000_10bb:
     ld de, $0004
 
 jr_000_10cc:
-    call $4bc5
+    call WaitVBlank
     ld hl, $c400
     ld a, [hl]
     dec a
@@ -2658,11 +2665,11 @@ UpdateScore::
     ld a, [hl+]
     ld l, [hl]
     ld h, a
-    call $432f
+    call AddScore
     call UpdateLevel
 
 jr_000_10f8:
-    ld a, [$c026]
+    ld a, [SOUND_CH_ACTIVE_ID]
     and a
     jr nz, jr_000_10f8
 
@@ -2679,7 +2686,7 @@ UpdateLevel::
     call FillRect
     ld hl, $c5d6
     ld c, $05
-    ld de, $c621
+    ld de, SCORE_DIGITS
 
 jr_000_111b:
     ld a, [de]
@@ -2702,7 +2709,7 @@ jr_000_111b:
     add $d4
     ld [hl], a
     ld hl, $c511
-    ld a, [$c6b8]
+    ld a, [ACTIVE_SPEED]
     sla a
     add $d0
     ld [hl+], a
@@ -2876,7 +2883,7 @@ DrawDigit::
 
 
 DrawString::
-    call $4bc5
+    call WaitVBlank
     dec c
     jr nz, DrawString
 
@@ -2945,7 +2952,7 @@ jr_000_124d:
 
     call CalcDifficulty
     call DisplayLevel
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     ret z
 
@@ -3010,7 +3017,7 @@ jr_000_12ac:
 
 
 DisplayLevel::
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_12bd
 
@@ -3056,7 +3063,7 @@ DisplaySpeed::
     dec [hl]
     ret nz
 
-    ld a, [$c6b7]
+    ld a, [ACTIVE_LEVEL]
     cp $04
     jr c, jr_000_12f5
 
@@ -3095,7 +3102,7 @@ CheckMatch::
     and $30
     jr z, jr_000_1317
 
-    ld a, $28
+    ld a, SND_CURSOR_MOVE
     call PlaySound
 
 jr_000_1317:
@@ -3117,7 +3124,7 @@ jr_000_1317:
     swap a
     srl a
     push af
-    ld a, $1b
+    ld a, SND_DROP_START
     call PlaySound
     pop af
     call StartDropAnim
@@ -3303,7 +3310,7 @@ jr_000_140f:
     cp $0f
     jr z, jr_000_1429
 
-    call $1612
+    call UpdateLandingProgress
     jr jr_000_1463
 
 jr_000_1429:
@@ -3439,7 +3446,7 @@ SetArrayElement::
 
 ValidatePosition::
     ld hl, $c6a7
-    ld a, [$c6b8]
+    ld a, [ACTIVE_SPEED]
     and a
     jr z, jr_000_14d2
 
@@ -3455,14 +3462,14 @@ jr_000_14d2:
 jr_000_14d8:
     ld a, $02
     ld [$c698], a
-    ld a, [$c6b7]
+    ld a, [ACTIVE_LEVEL]
     ld hl, LevelCountTable
     call GetArrayElement
     ld [$c699], a
     ld a, $30
     ld [$c672], a
     ld hl, $c6b0
-    ld a, [$c6b7]
+    ld a, [ACTIVE_LEVEL]
     cp $03
     jr z, jr_000_1500
 
@@ -3636,7 +3643,7 @@ HandleDrop::
     call ShuffleRandom
     call ProcessInput
     call DropPiece
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_15d0
 
@@ -3663,7 +3670,7 @@ jr_000_15e8:
 
 
 ProcessFalling::
-    ld hl, $15fe
+    ld hl, LevelFallDelayTable
     ld a, [$c6e2]
     cp $14
     jr c, jr_000_15fa
@@ -3675,38 +3682,30 @@ jr_000_15fa:
     ret
 
 
-    ld e, $1c
-    ld a, [de]
-    add hl, de
-    jr @+$19
+LevelFallDelayTable::
+    db $1e, $1c, $1a, $19, $18, $17, $16, $14, $13, $12
+    db $11, $10, $0f, $0e, $0d, $0c, $0b, $0a, $09, $08
 
-    ld d, $14
-    inc de
-    ld [de], a
-    ld de, $0f10
-    ld c, $0d
-    inc c
-    dec bc
-    ld a, [bc]
-    add hl, bc
-    ld [$95fa], sp
-    add $fe
-    ld [$1120], sp
+UpdateLandingProgress::
+    ld a, [$c695]
+    cp $08
+    jr nz, CommitFallingPieceToBoard
+
     ld a, [$c6bf]
     dec a
     dec a
     ld [$c6bf], a
     and a
-    jr nz, jr_000_162a
+    jr nz, CommitFallingPieceToBoard
 
     ld [$c69d], a
     ld [$c6ae], a
 
-jr_000_162a:
-    ld a, $26
+CommitFallingPieceToBoard::
+    ld a, SND_COMMIT_PIECE
     call PlaySound
     ld hl, $0005
-    call $432f
+    call AddScore
     call MovePieceUp
     cp $10
     ret z
@@ -3831,7 +3830,7 @@ jr_000_16d9:
     push bc
     push de
     push hl
-    call $43f2
+    call SetupGameBG
     pop hl
     pop de
     pop bc
@@ -3951,7 +3950,7 @@ UpdateTimer::
     push bc
     push de
     push hl
-    call $43f2
+    call SetupGameBG
     pop hl
     pop de
     pop bc
@@ -3962,7 +3961,7 @@ UpdateTimer::
     inc h
     ld b, h
     ldh a, [SCREEN_STATE]
-    ld hl, $18cb
+    ld hl, RoundCompleteStateRemapTable
     call GetArrayElement
     ldh [SCREEN_STATE], a
     ld hl, $c290
@@ -4033,7 +4032,7 @@ jr_000_17d6:
     ld [$c6c9], a
     ld [$c6ca], a
     ld [$c6c7], a
-    ld a, $2d
+    ld a, SND_ROUND_COMPLETE
     call PlaySound
     ld hl, $c290
     ld [hl], $03
@@ -4085,16 +4084,16 @@ jr_000_184b:
     ld [$c6fc], a
     ld a, [$c6a2]
     sla a
-    ld hl, $18d2
+    ld hl, RoundCompleteDelayParamTable
     call GetArrayElement
     ld d, a
     inc hl
     ld a, [hl]
     ld l, a
     ld h, d
-    call $432f
-    call $42f5
-    call $4681
+    call AddScore
+    call UpdateAnimFrame
+    call AdvanceEggAnimation
     ld hl, $c290
     ld [hl], $00
     ret
@@ -4110,9 +4109,9 @@ Send2PData::
     jr nz, jr_000_18af
 
     call CheckPause2P
-    call $4bc5
+    call WaitVBlank
     ld a, [GAME_STATE]
-    cp $03
+    cp GAME_STATE_PLAYING
     jr nz, jr_000_18af
 
     call ReadJoypad
@@ -4120,11 +4119,11 @@ Send2PData::
     ld a, $01
     ld [$c6e7], a
     call CheckMatch
-    call $4408
+    call LoadGameBGTiles
     xor a
     ld [$c6e7], a
     call SetupMultiplayer
-    call $234c
+    call UpdateFieldTimers
     pop hl
     pop de
     pop bc
@@ -4155,32 +4154,26 @@ HandlePieceLanding::
     ld b, $01
     call UpdateBoard
     call MovePieceDown
-    ld a, $27
+    ld a, SND_PIECE_LAND
     call PlaySound
     pop af
     xor a
     ret
 
 
-    ld bc, $0202
-    ld [bc], a
-    inc bc
-    inc bc
-    inc b
-    nop
-    ld d, b
-    ld bc, $0100
-    nop
-    ld bc, $0200
-    nop
-    ld [bc], a
-    nop
-    dec b
-    nop
-    dec b
-    nop
-    dec b
-    nop
+RoundCompleteStateRemapTable::
+    db $01, $02, $02, $02, $03, $03, $04
+
+RoundCompleteDelayParamTable::
+    db $00, $50
+    db $01, $00
+    db $01, $00
+    db $01, $00
+    db $02, $00
+    db $02, $00
+    db $05, $00
+    db $05, $00
+    db $05, $00
 
 CalcResults::
     call HandleGameOver
@@ -4408,7 +4401,7 @@ ProcessMenuLoop::
     inc hl
     ld a, [hl]
     ld b, a
-    ld a, [$c6b8]
+    ld a, [ACTIVE_SPEED]
     and a
     jr z, jr_000_19fd
 
@@ -4471,7 +4464,7 @@ jr_000_1a3d:
 DrawMenuCursor::
     xor a
     ld [$c6aa], a
-    ld a, [$c6b7]
+    ld a, [ACTIVE_LEVEL]
     ld hl, LevelThresholds
     call GetArrayElement
     ld [$c6a9], a
@@ -4486,7 +4479,7 @@ DrawMenuCursor::
     pop hl
     ld a, [hl]
     ld b, a
-    ld a, [$c6b8]
+    ld a, [ACTIVE_SPEED]
     and a
     jr z, jr_000_1a74
 
@@ -4513,7 +4506,7 @@ ProcessMenuSelection::
     jr jr_000_1ae2
 
 jr_000_1a8d:
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr z, jr_000_1ae2
 
@@ -4737,9 +4730,9 @@ TitleInputHandler::
 
     xor a
     ld [hl], a
-    call $4570
+    call AdvanceSpriteAnimFrame
     ld hl, $0812
-    call $455f
+    call SpriteAnimTable
     ret
 
 
@@ -4847,7 +4840,7 @@ ClearTextArea::
 InitTextSystem::
     call FillOAMGameTile
     call DrawLabel
-    call UpdatePaletteFade
+    call DrawOptionTextLabels
     ret
 
 
@@ -4883,30 +4876,30 @@ SetPalette::
     ret
 
 
-UpdatePaletteFade::
+DrawOptionTextLabels::
     ld hl, $0102
-    ld de, $1d84
+    ld de, OptionTextAGame
     call DrawStringToGrid
     ld hl, $010c
-    ld de, $1d8b
+    ld de, OptionTextBGame
     call DrawStringToGrid
     ld hl, $0402
-    ld de, $1d92
+    ld de, OptionTextLevel
     call DrawStringToGrid
     ld hl, $0b02
-    ld de, $1d98
+    ld de, OptionTextSpeed
     call DrawStringToGrid
     ld hl, $0f02
-    ld de, $1d9e
+    ld de, OptionTextBgm
     call DrawStringToGrid
     ld hl, $0c09
-    ld de, $1da2
+    ld de, OptionTextLow
     call DrawStringToGrid
     ld hl, $0c0f
-    ld de, $1da6
+    ld de, OptionTextHigh
     call DrawStringToGrid
     ld hl, $1010
-    ld de, $1dab
+    ld de, OptionTextOff
     call DrawStringToGrid
     ld hl, $0704
     ld a, $77
@@ -5086,64 +5079,30 @@ TileDataLookupD::
     ret
 
 
-    add b
-    ld c, d
-    add [hl]
-    add b
-    adc h
-    add h
-    rst $38
-    add c
-    ld c, d
-    add [hl]
-    add b
-    adc h
-    add h
-    rst $38
-    adc e
-    add h
-    sub l
-    add h
-    adc e
-    rst $38
-    sub d
-    adc a
-    add h
-    add h
-    add e
-    rst $38
-    add c
-    add [hl]
-    adc h
-    rst $38
-    adc e
-    adc [hl]
-    sub [hl]
-    rst $38
-    add a
-    adc b
-    add [hl]
-    add a
-    rst $38
-    adc [hl]
-    add l
-    add l
-    rst $38
-    ld bc, $0101
-    dec bc
-    inc c
-    ld [$0e0c], sp
-    db $10
-    ld b, $10
-    add hl, bc
-    db $10
-    inc c
-    db $10
-    rrca
+OptionTextAGame::
+    db $80, $4a, $86, $80, $8c, $84, $ff ; "A GAME"
+OptionTextBGame::
+    db $81, $4a, $86, $80, $8c, $84, $ff ; "B GAME"
+OptionTextLevel::
+    db $8b, $84, $95, $84, $8b, $ff ; "LEVEL"
+OptionTextSpeed::
+    db $92, $8f, $84, $84, $83, $ff ; "SPEED"
+OptionTextBgm::
+    db $81, $86, $8c, $ff ; "BGM"
+OptionTextLow::
+    db $8b, $8e, $96, $ff ; "LOW"
+OptionTextHigh::
+    db $87, $88, $86, $87, $ff ; "HIGH"
+OptionTextOff::
+    db $8e, $85, $85, $ff ; "OFF"
 
-UpdateHighScore::
+OptionMarkerPositions::
+    db $01, $01, $01, $0b, $0c, $08, $0c, $0e
+    db $10, $06, $10, $09, $10, $0c, $10, $0f
+
+DrawOptionMarkers::
     ld b, $08
-    ld hl, $1daf
+    ld hl, OptionMarkerPositions
 
 jr_000_1dc4:
     ld a, [hl+]
@@ -5159,38 +5118,38 @@ jr_000_1dc4:
     dec b
     jr nz, jr_000_1dc4
 
-    ld a, [$c6b2]
+    ld a, [OPTION_GAME_TYPE]
     and a
     jr nz, jr_000_1de2
 
     ld hl, $0101
-    call LoadSettings
+    call DrawOptionMarker
     jr jr_000_1de8
 
 jr_000_1de2:
     ld hl, $010b
-    call LoadSettings
+    call DrawOptionMarker
 
 jr_000_1de8:
-    ld a, [$c6b4]
+    ld a, [OPTION_SPEED]
     and a
     jr nz, jr_000_1df6
 
     ld hl, $0c08
-    call LoadSettings
+    call DrawOptionMarker
     jr jr_000_1dfc
 
 jr_000_1df6:
     ld hl, $0c0e
-    call LoadSettings
+    call DrawOptionMarker
 
 jr_000_1dfc:
-    ld a, [$c6b5]
+    ld a, [OPTION_BGM]
     and a
     jr nz, jr_000_1e09
 
     ld hl, $1006
-    call LoadSettings
+    call DrawOptionMarker
     ret
 
 
@@ -5199,7 +5158,7 @@ jr_000_1e09:
     jr nz, jr_000_1e14
 
     ld hl, $1009
-    call LoadSettings
+    call DrawOptionMarker
     ret
 
 
@@ -5208,23 +5167,23 @@ jr_000_1e14:
     jr nz, jr_000_1e1f
 
     ld hl, $100c
-    call LoadSettings
+    call DrawOptionMarker
     ret
 
 
 jr_000_1e1f:
     ld hl, $100f
-    call LoadSettings
+    call DrawOptionMarker
     ret
 
 
-LoadSettings::
+DrawOptionMarker::
     call CalcOAMAddress
     ld [hl], $9a
     ret
 
 
-SaveSettings::
+DrawTileTripletList::
     ld a, [de]
     cp $ff
     ret z
@@ -5238,64 +5197,41 @@ SaveSettings::
     ld a, [de]
     inc de
     ld [hl], a
-    jr SaveSettings
+    jr DrawTileTripletList
 
-    inc b
-    ld bc, $0471
-    rlca
-    ld [hl], b
-    dec bc
-    ld bc, $0b71
-    rlca
-    ld [hl], b
-    rrca
-    ld bc, $0f71
-    dec b
-    ld [hl], b
-    rst $38
+SettingsCursorTileData::
+    db $04, $01, $71, $04, $07, $70
+    db $0b, $01, $71, $0b, $07, $70
+    db $0f, $01, $71, $0f, $05, $70
+    db $ff
 
 ApplySettings::
-    ld hl, $1e75
+    ld hl, SettingsCursorSpriteInit0
     ld de, $c290
     ld bc, $0007
     call MemcopyCall
-    ld hl, $1e7c
+    ld hl, SettingsCursorSpriteInit1
     ld de, $c2a0
     ld bc, $0007
     call MemcopyCall
-    ld hl, $1e83
+    ld hl, SettingsCursorSpriteInit2
     ld de, $c2b0
     ld bc, $0007
     call MemcopyCall
     ret
 
 
-    dec b
-    nop
-    nop
-    nop
-    ld [hl], e
-    nop
-    jr nc, jr_000_1e82
-
-    nop
-    ld bc, $7301
-    nop
-
-jr_000_1e82:
-    ld c, b
-    dec b
-    nop
-    ld [bc], a
-    ld [bc], a
-    ld [hl], e
-    nop
-    ld h, b
+SettingsCursorSpriteInit0::
+    db $05, $00, $00, $00, $73, $00, $30
+SettingsCursorSpriteInit1::
+    db $05, $00, $01, $01, $73, $00, $48
+SettingsCursorSpriteInit2::
+    db $05, $00, $02, $02, $73, $00, $60
 
 ResetSettings::
     ld a, $1b
-    ld [$c6c1], a
-    ld [$c6c2], a
+    ld [BGM_PREVIEW_TIMER], a
+    ld [BGM_PREVIEW_PERIOD], a
     ret
 
 
@@ -5311,7 +5247,7 @@ OptionsScreen::
 
 
     call Multiply
-    call $7c02
+    call TickBgmPreviewTimer
     ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_000_1ec7
@@ -5354,7 +5290,7 @@ jr_000_1ec9:
     cp $01
     jr nz, jr_000_1ee7
 
-    call $4bc5
+    call WaitVBlank
     xor a
     ld [LINK_SEND], a
     ld a, $81
@@ -5362,7 +5298,7 @@ jr_000_1ec9:
 
 jr_000_1ee7:
     call InitGameState
-    ld a, $02
+    ld a, GAME_STATE_PLAY_SETUP
     ldh [GAME_STATE], a
     ret
 
@@ -5412,13 +5348,13 @@ jr_000_1f1a:
 
 
 jr_000_1f21:
-    ld hl, $c6b2
+    ld hl, OPTION_GAME_TYPE
     ld a, [MENU_CURSOR]
     call GetArrayElement
     inc a
     ld b, a
     push hl
-    ld hl, $1f4c
+    ld hl, OptionMaxValueTable
     ld a, [MENU_CURSOR]
     call GetArrayElement
     cp b
@@ -5435,17 +5371,15 @@ jr_000_1f21:
 jr_000_1f42:
     call DrawOptionValues
     call DrawOptionLabel
-    call UpdateHighScore
+    call DrawOptionMarkers
     ret
 
 
-    ld [bc], a
-    dec b
-    ld [bc], a
-    inc b
+OptionMaxValueTable::
+    db $02, $05, $02, $04
 
 jr_000_1f50:
-    ld hl, $c6b2
+    ld hl, OPTION_GAME_TYPE
     ld a, [MENU_CURSOR]
     call GetArrayElement
     and a
@@ -5461,7 +5395,7 @@ jr_000_1f50:
 jr_000_1f64:
     call DrawOptionValues
     call DrawOptionLabel
-    call UpdateHighScore
+    call DrawOptionMarkers
     ret
 
 
@@ -5474,31 +5408,31 @@ ApplyGameSettings::
     cp $01
     jr z, jr_000_1f81
 
-    ld a, $50
+    ld a, SND_LINK_SLAVE
     call PlaySound
     ret
 
 
 jr_000_1f81:
-    ld a, $4c
+    ld a, SND_LINK_MASTER
     call PlaySound
     ret
 
 
 jr_000_1f87:
     call ApplySettings
-    ld a, [$c6b5]
+    ld a, [OPTION_BGM]
     and a
     jr nz, jr_000_1fa5
 
-    ld a, $34
+    ld a, SND_BGM_OPTION0
     ld [BGM_INDEX], a
-    ld a, $38
+    ld a, SND_BGM_PREVIEW0
     call PlaySound
     ld a, $1b
-    ld [$c6c2], a
+    ld [BGM_PREVIEW_PERIOD], a
     ld a, $01
-    ld [$c6c1], a
+    ld [BGM_PREVIEW_TIMER], a
     ret
 
 
@@ -5506,14 +5440,14 @@ jr_000_1fa5:
     cp $01
     jr nz, jr_000_1fbe
 
-    ld a, $3c
+    ld a, SND_BGM_OPTION1
     ld [BGM_INDEX], a
-    ld a, $40
+    ld a, SND_BGM_PREVIEW1
     call PlaySound
     ld a, $2a
-    ld [$c6c2], a
+    ld [BGM_PREVIEW_PERIOD], a
     ld a, $01
-    ld [$c6c1], a
+    ld [BGM_PREVIEW_TIMER], a
     ret
 
 
@@ -5521,21 +5455,21 @@ jr_000_1fbe:
     cp $02
     jr nz, jr_000_1fd7
 
-    ld a, $44
+    ld a, SND_BGM_OPTION2
     ld [BGM_INDEX], a
-    ld a, $48
+    ld a, SND_BGM_PREVIEW2
     call PlaySound
     ld a, $0c
-    ld [$c6c2], a
+    ld [BGM_PREVIEW_PERIOD], a
     ld a, $01
-    ld [$c6c1], a
+    ld [BGM_PREVIEW_TIMER], a
     ret
 
 
 jr_000_1fd7:
-    ld a, $ff
+    ld a, SND_BGM_OFF
     ld [BGM_INDEX], a
-    ld a, $ff
+    ld a, SND_BGM_OFF
     call PlaySound
     ret
 
@@ -5543,10 +5477,10 @@ jr_000_1fd7:
 UpdateCursorDisplay::
     push af
     call DrawLabel
-    call UpdatePaletteFade
+    call DrawOptionTextLabels
     call DrawOptionValues
-    ld de, $1e3d
-    call SaveSettings
+    ld de, SettingsCursorTileData
+    call DrawTileTripletList
     pop af
     and a
     ld d, $06
@@ -5563,46 +5497,37 @@ UpdateCursorDisplay::
 
 SaveConfig1::
     call TileDataLookup4
-    ld de, $2026
-    call SaveSettings
+    ld de, SettingsCursorTileData0
+    call DrawTileTripletList
     ret
 
 
 SaveConfig2::
     call TileDataLookupB
-    ld de, $202d
-    call SaveSettings
+    ld de, SettingsCursorTileData1
+    call DrawTileTripletList
     ret
 
 
 SaveConfig3::
     call TileDataLookupD
-    ld de, $2034
-    call SaveSettings
+    ld de, SettingsCursorTileData2
+    call DrawTileTripletList
     ret
 
 
-    inc b
-    ld bc, $0476
-    rlca
-    ld [hl], l
-    rst $38
-    dec bc
-    ld bc, $0b76
-    rlca
-    ld [hl], l
-    rst $38
-    rrca
-    ld bc, $0f76
-    dec b
-    ld [hl], l
-    rst $38
+SettingsCursorTileData0::
+    db $04, $01, $76, $04, $07, $75, $ff
+SettingsCursorTileData1::
+    db $0b, $01, $76, $0b, $07, $75, $ff
+SettingsCursorTileData2::
+    db $0f, $01, $76, $0f, $05, $75, $ff
     ret
 
 
 DrawOptionValues::
     call SetPalette
-    ld a, [$c6b3]
+    ld a, [OPTION_LEVEL]
     and a
     jr z, jr_000_2053
 
@@ -5656,7 +5581,7 @@ DrawOptionLabel::
     call TileDataLookup1
     ld d, $00
     call TileDataLookup2
-    ld a, [$c6b2]
+    ld a, [OPTION_GAME_TYPE]
     and a
     jr nz, jr_000_208c
 
@@ -5762,7 +5687,7 @@ ResetTitleState::
     ld [$c6bd], a
     xor a
     ld [LINK_ROLE], a
-    ld [PLAYER_MODE], a
+    ld [GAME_TYPE], a
     ld [MENU_CURSOR], a
     ld [LINK_RECV], a
     ld [LINK_SEND], a
@@ -5770,7 +5695,7 @@ ResetTitleState::
     ld [$c620], a
     ld [$ff94], a
     ld [$c66e], a
-    call $46d7
+    call DrawTitleLabels
     ret
 
 
@@ -5810,8 +5735,8 @@ InitGameVars::
     ld [$c705], a
     ld [$c706], a
     call Multiply
-    call $46ff
-    call $4763
+    call ProcessTitleInput
+    call ProcessOptionInput
     ret
 
 
@@ -5832,7 +5757,7 @@ StartGameplay::
     call ResetSettings
     xor a
     call UpdateCursorDisplay
-    call UpdateHighScore
+    call DrawOptionMarkers
     ret
 
 
@@ -5889,7 +5814,7 @@ SetupLinkCable::
     push hl
     ld b, a
     ld a, [$c6c3]
-    ld hl, $22cc
+    ld hl, FieldSideDeltaTable
     call GetArrayElement
     cp $10
     jr z, jr_000_2201
@@ -5940,7 +5865,7 @@ DrawField2::
     push hl
     ld b, a
     ld a, [$c6c4]
-    ld hl, $22cc
+    ld hl, FieldSideDeltaTable
     call GetArrayElement
     cp $10
     jr z, jr_000_2241
@@ -5986,7 +5911,7 @@ DrawField4::
     push hl
     ld b, a
     ld a, [$c6c5]
-    ld hl, $230f
+    ld hl, FieldRowDeltaTable
     call GetArrayElement
     cp $10
     jr z, jr_000_227e
@@ -6039,7 +5964,7 @@ DrawFieldRow::
     push hl
     ld b, a
     ld a, [$c6c6]
-    ld hl, $230f
+    ld hl, FieldRowDeltaTable
     call GetArrayElement
     cp $10
     jr z, jr_000_22be
@@ -6060,64 +5985,28 @@ jr_000_22be:
     ret
 
 
-    ld bc, $01ff
-    rst $38
-    ld bc, $01ff
-    nop
-    ld bc, $0100
-    rst $38
-    ld bc, $0100
-    ld bc, $0001
-    ld bc, $0100
-    ld bc, $0101
-    ld bc, $0101
-    ld bc, $0100
-    nop
-    ld bc, $0101
-    nop
-    ld bc, $0100
-    ld bc, $0001
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0110
-    nop
-    ld bc, $0100
-    ld bc, $0001
-    ld bc, $0100
-    ld bc, $0001
-    ld bc, $0101
-    ld bc, $0101
-    ld bc, $0001
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0101
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $0100
-    nop
-    ld bc, $2110
-    set 0, [hl]
+FieldSideDeltaTable::
+    db $01, $ff, $01, $ff, $01, $ff, $01, $00
+    db $01, $00, $01, $ff, $01, $00, $01, $01
+    db $01, $00, $01, $00, $01, $01, $01, $01
+    db $01, $01, $01, $01, $00, $01, $00, $01
+    db $01, $01, $00, $01, $00, $01, $01, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $10
+FieldRowDeltaTable::
+    db $01, $00, $01, $00, $01, $01, $01, $00
+    db $01, $00, $01, $01, $01, $00, $01, $01
+    db $01, $01, $01, $01, $01, $01, $00, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $00, $01, $01, $01, $00, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $00, $01, $00, $01, $00, $01
+    db $00, $01, $00, $01, $10
+
+UpdateFieldTimers::
+    ld hl, $c6cb
     ld b, $00
 
 jr_000_2351:
@@ -6170,7 +6059,7 @@ TimerTick::
 
 TimerTickCore::
     ld a, [GAME_STATE]
-    cp $03
+    cp GAME_STATE_PLAYING
     ret nz
 
     ld a, [TWO_PLAYER_FLAG]
@@ -6381,12 +6270,12 @@ jr_000_246a:
     ld [LINK_SEND], a
     ld [$c6fc], a
     ld [$c6fd], a
-    call $4bc5
+    call WaitVBlank
     ldh a, [ANIM_FRAME]
     ld [LINK_SEND], a
     ld [$c6fc], a
     ld [$c6fd], a
-    call $4bc5
+    call WaitVBlank
 
 jr_000_249d:
     pop hl
@@ -6418,7 +6307,7 @@ UpdateGameLoop::
     bit 3, a
     jr z, jr_000_24ff
 
-    call $4bc5
+    call WaitVBlank
     xor a
     ld [LINK_SEND], a
     ld a, $55
@@ -6448,9 +6337,9 @@ jr_000_24ed:
     xor a
     ld [LINK_SEND], a
     ld [LINK_RECV], a
-    call $4bc5
+    call WaitVBlank
     call InitGameState
-    ld a, $02
+    ld a, GAME_STATE_PLAY_SETUP
     ldh [GAME_STATE], a
     ret
 
@@ -6472,7 +6361,7 @@ jr_000_24ff:
 
 
 jr_000_2510:
-    ld a, $28
+    ld a, SND_CURSOR_MOVE
     call PlaySound
     ld a, [MENU_SELECT]
     and a
@@ -6484,7 +6373,7 @@ jr_000_2510:
 
 
 jr_000_251f:
-    ld a, $28
+    ld a, SND_CURSOR_MOVE
     call PlaySound
     ld a, [MENU_SELECT]
     cp $01
@@ -6496,7 +6385,7 @@ jr_000_251f:
 
 
 jr_000_252f:
-    ld a, $28
+    ld a, SND_CURSOR_MOVE
     call PlaySound
     ld hl, $c6eb
     ld a, [MENU_SELECT]
@@ -6519,7 +6408,7 @@ jr_000_252f:
     ld [bc], a
 
 jr_000_2550:
-    ld a, $28
+    ld a, SND_CURSOR_MOVE
     call PlaySound
     ld a, [MENU_SELECT]
     ld hl, $c6eb
@@ -6560,15 +6449,15 @@ DrawDigitSprite::
     ld hl, $0000
     ld bc, $1412
     ld a, $d0
-    call $44ea
+    call UpdateColumn
     ld hl, $0301
     ld bc, $1206
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ld hl, $0b01
     ld bc, $1206
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ret
 
 
@@ -6577,11 +6466,11 @@ DrawScoreDigits::
     cp $01
     jr z, jr_000_25b9
 
-    ld de, $25d2
+    ld de, ScoreHeaderTextRoleOther
     jr jr_000_25bc
 
 jr_000_25b9:
-    ld de, $25c3
+    ld de, ScoreHeaderTextRole1
 
 jr_000_25bc:
     ld hl, $0103
@@ -6589,34 +6478,12 @@ jr_000_25bc:
     ret
 
 
-    ld c, d
-    ld [hl], b
-    ld [hl], c
-    ld [hl], d
-    ld [hl], e
-    ld c, d
-    pop de
-    jp nc, $744a
-
-    ld [hl], l
-    db $76
-    ld [hl], a
-    ld c, d
-    rst $38
-    ld c, d
-    ld [hl], h
-    ld [hl], l
-    db $76
-    ld [hl], a
-    ld c, d
-    pop de
-    jp nc, $704a
-
-    ld [hl], c
-    ld [hl], d
-    ld [hl], e
-    ld c, d
-    rst $38
+ScoreHeaderTextRole1::
+    db $4a, $70, $71, $72, $73, $4a, $d1, $d2
+    db $4a, $74, $75, $76, $77, $4a, $ff
+ScoreHeaderTextRoleOther::
+    db $4a, $74, $75, $76, $77, $4a, $d1, $d2
+    db $4a, $70, $71, $72, $73, $4a, $ff
 
 CalcBonus::
     ld hl, $0708
@@ -6628,7 +6495,7 @@ CalcBonus::
     and a
     jr z, jr_000_25f6
 
-    ld de, $264e
+    ld de, ResultTextBlock2
     jr jr_000_2604
 
 jr_000_25f6:
@@ -6636,11 +6503,11 @@ jr_000_25f6:
     and a
     jr nz, jr_000_2601
 
-    ld de, $2622
+    ld de, ResultTextBlock0
     jr jr_000_2604
 
 jr_000_2601:
-    ld de, $2638
+    ld de, ResultTextBlock1
 
 jr_000_2604:
     call DrawStringToGrid
@@ -6650,11 +6517,11 @@ jr_000_2604:
     and a
     jr nz, jr_000_2618
 
-    ld de, $2622
+    ld de, ResultTextBlock0
     jr jr_000_261b
 
 jr_000_2618:
-    ld de, $2638
+    ld de, ResultTextBlock1
 
 jr_000_261b:
     call DrawStringToGrid
@@ -6662,58 +6529,15 @@ jr_000_261b:
     ret
 
 
-    cp h
-    cp l
-    cp [hl]
-    cp a
-    ld c, d
-    ld c, d
-    db $e4
-    push hl
-    and $e7
-    rst $38
-    ret nz
-
-    pop bc
-    jp nz, $4a9d
-
-    ld c, d
-    add sp, -$17
-    ld [$ffeb], a
-    call c, $dedd
-    rst $18
-    ld c, d
-    ld c, d
-    call nc, $d6d5
-    rst $10
-    rst $38
-    ldh [$ffe1], a
-    ldh [c], a
-    db $e3
-    ld c, d
-    ld c, d
-    ret c
-
-    reti
-
-
-    jp c, $ffdb
-
-    call c, $dedd
-    rst $18
-    ld c, d
-    ld c, d
-    db $e4
-    push hl
-    and $e7
-    rst $38
-    ldh [$ffe1], a
-    ldh [c], a
-    db $e3
-    ld c, d
-    ld c, d
-    add sp, -$17
-    ld [$ffeb], a
+ResultTextBlock0::
+    db $bc, $bd, $be, $bf, $4a, $4a, $e4, $e5, $e6, $e7, $ff
+    db $c0, $c1, $c2, $9d, $4a, $4a, $e8, $e9, $ea, $eb, $ff
+ResultTextBlock1::
+    db $dc, $dd, $de, $df, $4a, $4a, $d4, $d5, $d6, $d7, $ff
+    db $e0, $e1, $e2, $e3, $4a, $4a, $d8, $d9, $da, $db, $ff
+ResultTextBlock2::
+    db $dc, $dd, $de, $df, $4a, $4a, $e4, $e5, $e6, $e7, $ff
+    db $e0, $e1, $e2, $e3, $4a, $4a, $e8, $e9, $ea, $eb, $ff
 
 DrawLevelDisplay::
     ld a, [LINK_ROLE]
@@ -6779,7 +6603,7 @@ jr_000_26b7:
     ld bc, $04a6
 
 jr_000_26ba:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -6802,7 +6626,7 @@ jr_000_26d3:
     ld bc, $04ae
 
 jr_000_26d6:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -6831,14 +6655,14 @@ DrawNextPieceSprite::
     and a
     jr z, jr_000_270c
 
-    ld de, $2824
+    ld de, PiecePreviewBlankText
     jr jr_000_2722
 
 jr_000_270c:
     ldh a, [TEXT_FADE]
 
 DrawPreview::
-    ld hl, $2734
+    ld hl, PiecePreviewTextTable
     sla a
     sla a
     sla a
@@ -6861,280 +6685,31 @@ jr_000_2722:
     ret
 
 
-    ld a, [hl+]
-    dec hl
-    inc l
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $ff
-    dec l
-    ld b, c
-    ld a, c
-    daa
-    ld b, d
-    ld a, b
-    daa
-    ld b, e
-    ld a, b
-    daa
-    ld b, h
-    ld a, b
-    daa
-    ld b, l
-    ld a, b
-    rst $38
-    ld l, $7b
-    cpl
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, jr_000_27d6
-
-    add hl, hl
-    jr z, jr_000_27d9
-
-    add hl, hl
-    jr z, jr_000_27dc
-
-    add hl, hl
-    rst $38
-    inc h
-    dec h
-    ld h, $2a
-    dec hl
-    inc l
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $ff
-    daa
-    ld b, c
-    ld a, b
-    dec l
-    ld b, d
-    ld a, c
-    daa
-    ld b, e
-    ld a, b
-    daa
-    ld b, h
-    ld a, b
-    daa
-    ld b, l
-    ld a, b
-    rst $38
-    jr z, @+$7c
-
-    add hl, hl
-    ld l, $7b
-    cpl
-    jr z, jr_000_2806
-
-    add hl, hl
-    jr z, jr_000_2809
-
-    add hl, hl
-    jr z, jr_000_280c
-
-    add hl, hl
-    rst $38
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $2a
-    dec hl
-    inc l
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $ff
-    daa
-    ld b, c
-    ld a, b
-    daa
-    ld b, d
-    ld a, b
-    dec l
-    ld b, e
-    ld a, c
-    daa
-    ld b, h
-    ld a, b
-    daa
-    ld b, l
-    ld a, b
-    rst $38
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, @+$7c
-
-    add hl, hl
-    ld l, $7b
-    cpl
-    jr z, jr_000_2839
-
-    add hl, hl
-    jr z, jr_000_283c
-
-    add hl, hl
-    rst $38
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $2a
-    dec hl
-    inc l
-    inc h
-    dec h
-    ld h, $ff
-    daa
-    ld b, c
-
-jr_000_27d6:
-    ld a, b
-    daa
-    ld b, d
-
-jr_000_27d9:
-    ld a, b
-    daa
-    ld b, e
-
-jr_000_27dc:
-    ld a, b
-    dec l
-    ld b, h
-    ld a, c
-    daa
-    ld b, l
-    ld a, b
-    rst $38
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, jr_000_2866
-
-    add hl, hl
-    ld l, $7b
-    cpl
-    jr z, jr_000_286c
-
-    add hl, hl
-    rst $38
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $2a
-    dec hl
-    inc l
-    rst $38
-    daa
-    ld b, c
-
-jr_000_2806:
-    ld a, b
-    daa
-    ld b, d
-
-jr_000_2809:
-    ld a, b
-    daa
-    ld b, e
-
-jr_000_280c:
-    ld a, b
-    daa
-    ld b, h
-    ld a, b
-    dec l
-    ld b, l
-    ld a, c
-    rst $38
-    jr z, jr_000_2890
-
-    add hl, hl
-    jr z, jr_000_2893
-
-    add hl, hl
-    jr z, jr_000_2896
-
-    add hl, hl
-    jr z, jr_000_2899
-
-    add hl, hl
-    ld l, $7b
-    cpl
-    rst $38
-    inc h
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $24
-    dec h
-    ld h, $ff
-    daa
-    ld b, c
-    ld a, b
-    daa
-    ld b, d
-
-jr_000_2839:
-    ld a, b
-    daa
-    ld b, e
-
-jr_000_283c:
-    ld a, b
-    daa
-    ld b, h
-    ld a, b
-    daa
-    ld b, l
-    ld a, b
-    rst $38
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, @+$7c
-
-    add hl, hl
-    jr z, jr_000_28cc
-
-    add hl, hl
-    rst $38
+PiecePreviewTextTable::
+PiecePreviewText0::
+    db $2a, $2b, $2c, $24, $25, $26, $24, $25, $26, $24, $25, $26, $24, $25, $26, $ff
+    db $2d, $41, $79, $27, $42, $78, $27, $43, $78, $27, $44, $78, $27, $45, $78, $ff
+    db $2e, $7b, $2f, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $ff
+PiecePreviewText1::
+    db $24, $25, $26, $2a, $2b, $2c, $24, $25, $26, $24, $25, $26, $24, $25, $26, $ff
+    db $27, $41, $78, $2d, $42, $79, $27, $43, $78, $27, $44, $78, $27, $45, $78, $ff
+    db $28, $7a, $29, $2e, $7b, $2f, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $ff
+PiecePreviewText2::
+    db $24, $25, $26, $24, $25, $26, $2a, $2b, $2c, $24, $25, $26, $24, $25, $26, $ff
+    db $27, $41, $78, $27, $42, $78, $2d, $43, $79, $27, $44, $78, $27, $45, $78, $ff
+    db $28, $7a, $29, $28, $7a, $29, $2e, $7b, $2f, $28, $7a, $29, $28, $7a, $29, $ff
+PiecePreviewText3::
+    db $24, $25, $26, $24, $25, $26, $24, $25, $26, $2a, $2b, $2c, $24, $25, $26, $ff
+    db $27, $41, $78, $27, $42, $78, $27, $43, $78, $2d, $44, $79, $27, $45, $78, $ff
+    db $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $2e, $7b, $2f, $28, $7a, $29, $ff
+PiecePreviewText4::
+    db $24, $25, $26, $24, $25, $26, $24, $25, $26, $24, $25, $26, $2a, $2b, $2c, $ff
+    db $27, $41, $78, $27, $42, $78, $27, $43, $78, $27, $44, $78, $2d, $45, $79, $ff
+    db $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $2e, $7b, $2f, $ff
+PiecePreviewBlankText::
+    db $24, $25, $26, $24, $25, $26, $24, $25, $26, $24, $25, $26, $24, $25, $26, $ff
+    db $27, $41, $78, $27, $42, $78, $27, $43, $78, $27, $44, $78, $27, $45, $78, $ff
+    db $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $ff
 
 UpdateGameField::
     ld a, [$c6eb]
@@ -7206,7 +6781,7 @@ ClearField::
     ld [$c751], a
     ld a, [SPRITE_ANIM_STATE]
     ld [$c750], a
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_28d4
 
@@ -7244,7 +6819,7 @@ jr_000_28e5:
     xor a
     ldh [ANIM_FRAME], a
     ld hl, $c709
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr z, jr_000_28fb
 
@@ -7280,7 +6855,7 @@ jr_000_28ff:
     inc hl
     inc hl
     ld de, $c752
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2937
 
@@ -7315,7 +6890,7 @@ jr_000_294a:
     cp $03
     jr z, jr_000_2996
 
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2978
 
@@ -7356,18 +6931,18 @@ jr_000_2996:
 jr_000_29a0:
     call LCDOff
     call ClearOAM
-    ld a, $03
-    ld [$2100], a
-    ld hl, $5400
+    ld a, ROM_BANK_GRAPHICS_1
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, Bank3ResultTilesTo9000
     ld de, $9000
     ld bc, $0800
     call MemcopyCall
-    ld hl, $5c00
+    ld hl, Bank3ResultTilesTo8800
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     xor a
     ldh [rBGP], a
     call LCDOn
@@ -7421,7 +6996,7 @@ jr_000_29fc:
     ld hl, $c51d
     ld bc, $010d
     call FillRect
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2a6b
 
@@ -7452,7 +7027,7 @@ jr_000_2a6b:
     call FillRect
 
 jr_000_2a91:
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2aa0
 
@@ -7513,7 +7088,7 @@ jr_000_2ad7:
     ldh [STATE_TRANSITION], a
 
 jr_000_2aea:
-    call $4bc5
+    call WaitVBlank
     call ReadJoypad
     pop hl
     pop bc
@@ -7574,7 +7149,7 @@ jr_000_2b17:
     ld a, $01
     call LoadRoundData
     inc hl
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2b3d
 
@@ -7723,7 +7298,7 @@ ProcessRoundEnd::
 
 
 ProcessRoundEndLoop::
-    call $7c02
+    call TickBgmPreviewTimer
     call ProcessRoundEnd
     call Multiply
     call ContinueCountdown
@@ -7742,7 +7317,7 @@ ProcessRoundEndLoop::
     jr z, jr_000_2c17
 
     call InitGameState
-    ld a, $02
+    ld a, GAME_STATE_PLAY_SETUP
     ldh [GAME_STATE], a
     ret
 
@@ -7784,13 +7359,13 @@ jr_000_2c32:
 
 
 jr_000_2c3d:
-    ld hl, $c6b2
+    ld hl, OPTION_GAME_TYPE
     ld a, [MENU_CURSOR]
     call GetArrayElement
     inc a
     ld b, a
     push hl
-    ld hl, $2c60
+    ld hl, RoundEndOptionMaxValueTable
     ld a, [MENU_CURSOR]
     call GetArrayElement
     cp b
@@ -7806,14 +7381,12 @@ jr_000_2c3d:
     ret
 
 
-    ld [bc], a
-    dec b
-    ld [bc], a
-    inc b
+RoundEndOptionMaxValueTable::
+    db $02, $05, $02, $04
 
 jr_000_2c64:
     ld a, [MENU_CURSOR]
-    ld hl, $c6b2
+    ld hl, OPTION_GAME_TYPE
     call GetArrayElement
     and a
     ret z
@@ -7831,60 +7404,38 @@ CheckWinCondition::
     ld hl, $0000
     ld bc, $1412
     ld a, $cf
-    call $44ea
+    call UpdateColumn
     ld hl, $0301
     ld bc, $1202
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ld hl, $0601
     ld bc, $1204
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ld hl, $0b01
     ld bc, $1202
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ld hl, $0e01
     ld bc, DrawNumber
     ld a, $4a
-    call $44ea
+    call UpdateColumn
     ret
 
 
 ProcessWinLose::
     ld hl, HeaderLogo
-    ld de, $2cbc
+    ld de, ResultHeaderText
     call DrawStringToGrid
     ret
 
 
-    ld b, c
-    ld c, d
-    adc a
-    adc e
-    add b
-    sbc b
-    add h
-    sub c
-    ld c, d
-    add [hl]
-    add b
-    adc h
-    add h
-    rst $38
-    ld c, d
-    sbc b
-    adc [hl]
-    sub d
-    sub d
-    sbc b
-    ld c, d
-    add h
-    add [hl]
-    add [hl]
-    sub d
-    ld c, d
-    rst $38
+ResultHeaderText::
+    db $41, $4a, $8f, $8b, $80, $98, $84, $91
+    db $4a, $86, $80, $8c, $84, $ff ; "1 PLAYER GAME"
+    db $4a, $98, $8e, $92, $92, $98, $4a, $84
+    db $86, $86, $92, $4a, $ff ; " YOSSY EGGS "
 
 ShowWinScreen::
     ld hl, $0b07
@@ -7896,19 +7447,19 @@ ShowWinScreen::
     and a
     jr z, jr_000_2cec
 
-    ld de, $264e
+    ld de, ResultTextBlock2
     jr jr_000_2cfa
 
 jr_000_2cec:
-    ld a, [$c6b4]
+    ld a, [OPTION_SPEED]
     and a
     jr nz, jr_000_2cf7
 
-    ld de, $2622
+    ld de, ResultTextBlock0
     jr jr_000_2cfa
 
 jr_000_2cf7:
-    ld de, $2638
+    ld de, ResultTextBlock1
 
 jr_000_2cfa:
     call DrawStringToGrid
@@ -7935,7 +7486,7 @@ jr_000_2d16:
     ld bc, $04a6
 
 jr_000_2d19:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -7957,7 +7508,7 @@ jr_000_2d30:
     ld bc, $03b6
 
 jr_000_2d33:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -7980,7 +7531,7 @@ jr_000_2d4c:
     ld bc, $04ae
 
 jr_000_2d4f:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -7998,7 +7549,7 @@ jr_000_2d63:
     ld bc, $049e
 
 jr_000_2d66:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -8007,7 +7558,7 @@ ShowFinalResult::
     ld [ANIM_FRAME], a
     ld a, $04
     ld [STATE_TRANSITION], a
-    ld a, [$c6b3]
+    ld a, [OPTION_LEVEL]
     call WaitForRestart
     ret
 
@@ -8022,12 +7573,12 @@ WaitForRestart::
     and a
     jr z, jr_000_2d8f
 
-    ld de, $2824
+    ld de, PiecePreviewBlankText
     jr jr_000_2da5
 
 jr_000_2d8f:
     ldh a, [TEXT_FADE]
-    ld hl, $2734
+    ld hl, PiecePreviewTextTable
     sla a
     sla a
     sla a
@@ -8060,19 +7611,19 @@ ProcessRestart::
     and a
     jr z, jr_000_2dcb
 
-    ld de, $2e14
+    ld de, RestartTextBlock2
     jr jr_000_2dd9
 
 jr_000_2dcb:
-    ld a, [$c6b2]
+    ld a, [OPTION_GAME_TYPE]
     and a
     jr nz, jr_000_2dd6
 
-    ld de, $2de0
+    ld de, RestartTextBlock0
     jr jr_000_2dd9
 
 jr_000_2dd6:
-    ld de, $2dfa
+    ld de, RestartTextBlock1
 
 jr_000_2dd9:
     call DrawStringToGrid
@@ -8080,85 +7631,25 @@ jr_000_2dd9:
     ret
 
 
-    db $f4
-    db $ec
-    db $ed
-    xor $ef
-    push af
-    ld c, d
-    ld a, [$fefd]
-    db $d3
-    ld c, d
-    rst $38
-    or $f0
-    pop af
-    ldh a, [c]
-    di
-    rst $30
-    ld c, d
-    ei
-    dec c
-    inc e
-    dec e
-    ld c, d
-    rst $38
-    ld c, d
-    db $fc
-    db $fd
-    cp $d3
-    ld c, d
-    db $f4
-    ld hl, sp-$13
-    xor $ef
-    push af
-    rst $38
-    ld c, d
-    inc c
-    dec c
-    inc e
-    dec e
-    ld c, d
-    or $f9
-    pop af
-    ldh a, [c]
-    di
-    rst $30
-    rst $38
-    ld c, d
-    db $fc
-    db $fd
-    cp $d3
-    ld c, d
-    ld c, d
-    ld a, [$fefd]
-    db $d3
-    ld c, d
-    rst $38
-    ld c, d
-    inc c
-    dec c
-    inc e
-    dec e
-    ld c, d
-    ld c, d
-    ei
-    dec c
-    inc e
-    dec e
-    ld c, d
-    rst $38
+RestartTextBlock0::
+    db $f4, $ec, $ed, $ee, $ef, $f5, $4a, $fa, $fd, $fe, $d3, $4a, $ff
+    db $f6, $f0, $f1, $f2, $f3, $f7, $4a, $fb, $0d, $1c, $1d, $4a, $ff
+RestartTextBlock1::
+    db $4a, $fc, $fd, $fe, $d3, $4a, $f4, $f8, $ed, $ee, $ef, $f5, $ff
+    db $4a, $0c, $0d, $1c, $1d, $4a, $f6, $f9, $f1, $f2, $f3, $f7, $ff
+RestartTextBlock2::
+    db $4a, $fc, $fd, $fe, $d3, $4a, $4a, $fa, $fd, $fe, $d3, $4a, $ff
+    db $4a, $0c, $0d, $1c, $1d, $4a, $4a, $fb, $0d, $1c, $1d, $4a, $ff
 
 DrawContinue::
     ld hl, $0f10
-    ld de, $2e38
+    ld de, ContinueOffText
     call DrawStringToGrid
     ret
 
 
-    adc [hl]
-    add l
-    add l
-    rst $38
+ContinueOffText::
+    db $8e, $85, $85, $ff ; "OFF"
 
 UpdateContinue::
     ld hl, $0f06
@@ -8166,7 +7657,7 @@ UpdateContinue::
     cp $03
     jr nz, jr_000_2e58
 
-    ld a, [$c6b5]
+    ld a, [OPTION_BGM]
     cp $03
     jr nz, jr_000_2e58
 
@@ -8174,11 +7665,11 @@ UpdateContinue::
     and a
     jr z, jr_000_2e58
 
-    ld de, $2ea8
+    ld de, BgmMarkerNoneText
     jr jr_000_2e78
 
 jr_000_2e58:
-    ld a, [$c6b5]
+    ld a, [OPTION_BGM]
     and a
     jr z, jr_000_2e70
 
@@ -8188,80 +7679,35 @@ jr_000_2e58:
     cp $02
     jr z, jr_000_2e6b
 
-    ld de, $2e9d
+    ld de, BgmMarker3Text
     jr jr_000_2e78
 
 jr_000_2e6b:
-    ld de, $2e92
+    ld de, BgmMarker2Text
     jr jr_000_2e78
 
 jr_000_2e70:
-    ld de, $2e7c
+    ld de, BgmMarker0Text
     jr jr_000_2e78
 
 jr_000_2e75:
-    ld de, $2e87
+    ld de, BgmMarker1Text
 
 jr_000_2e78:
     call DrawStringToGrid
     ret
 
 
-    sbc d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    rst $38
-    ld c, d
-    ld c, d
-    ld c, d
-    sbc d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    rst $38
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    sbc d
-    ld c, d
-    ld c, d
-    ld c, d
-    rst $38
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    sbc d
-    rst $38
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    ld c, d
-    rst $38
+BgmMarker0Text::
+    db $9a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $ff
+BgmMarker1Text::
+    db $4a, $4a, $4a, $9a, $4a, $4a, $4a, $4a, $4a, $4a, $ff
+BgmMarker2Text::
+    db $4a, $4a, $4a, $4a, $4a, $4a, $9a, $4a, $4a, $4a, $ff
+BgmMarker3Text::
+    db $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $9a, $ff
+BgmMarkerNoneText::
+    db $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a, $ff
     ld b, $04
     ld a, [MENU_CURSOR]
     and a
@@ -8274,7 +7720,7 @@ jr_000_2ec0:
     ld bc, $04a6
 
 jr_000_2ec3:
-    call $4501
+    call DrawColumnData
     ret
 
 
@@ -8321,7 +7767,7 @@ UpdateCountdownTimer::
     swap a
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2f09
@@ -8344,7 +7790,7 @@ jr_000_2f0e:
     ld a, [$c61d]
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2f27
@@ -8369,7 +7815,7 @@ jr_000_2f2c:
     swap a
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2f48
@@ -8395,7 +7841,7 @@ jr_000_2f54:
     swap a
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2f65
@@ -8418,7 +7864,7 @@ jr_000_2f6a:
     ld a, [$c61e]
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2f83
@@ -8444,7 +7890,7 @@ jr_000_2f88:
     swap a
     and $f0
     srl a
-    ld de, $2ffb
+    ld de, CountdownDigitPatternTable
     add e
     ld e, a
     jr nc, jr_000_2fa6
@@ -8534,95 +7980,27 @@ jr_000_2ff3:
     ret
 
 
-    jr c, @+$6e
-
-    ld l, h
-    ld l, h
-    ld l, h
-    ld l, h
-    jr c, jr_000_3003
-
-jr_000_3003:
-    jr c, jr_000_301d
-
-    jr jr_000_301f
-
-    jr jr_000_3021
-
-    jr jr_000_300b
-
-jr_000_300b:
-    ld a, b
-    inc c
-    inc c
-    jr c, @+$62
-
-    ld h, b
-    ld a, h
-    nop
-    ld a, b
-    inc c
-    inc c
-    jr c, jr_000_3024
-
-    inc c
-    ld a, b
-    nop
-    ld l, h
-    ld l, h
-
-jr_000_301d:
-    ld l, h
-    ld l, h
-
-jr_000_301f:
-    ld a, h
-    inc c
-
-jr_000_3021:
-    inc c
-    nop
-    ld a, h
-
-jr_000_3024:
-    ld h, b
-    ld h, b
-    ld a, h
-    inc c
-    inc c
-    ld a, b
-    nop
-    jr c, jr_000_308d
-
-    ld h, b
-    ld a, b
-    ld l, h
-    ld l, h
-    jr c, jr_000_3033
-
-jr_000_3033:
-    ld a, h
-    inc c
-    ld [$1818], sp
-    jr nc, jr_000_306a
-
-    nop
-    jr c, @+$6e
-
-    ld l, h
-    jr c, @+$6e
-
-    ld l, h
-    jr c, jr_000_3043
-
-jr_000_3043:
-    jr c, @+$6e
-
-    ld l, h
-    ld l, h
-    inc a
-    inc c
-    jr c, ProcessRoundComplete
+CountdownDigitPatternTable::
+CountdownDigitPattern0::
+    db $38, $6c, $6c, $6c, $6c, $6c, $38, $00
+CountdownDigitPattern1::
+    db $38, $18, $18, $18, $18, $18, $18, $00
+CountdownDigitPattern2::
+    db $78, $0c, $0c, $38, $60, $60, $7c, $00
+CountdownDigitPattern3::
+    db $78, $0c, $0c, $38, $0c, $0c, $78, $00
+CountdownDigitPattern4::
+    db $6c, $6c, $6c, $6c, $7c, $0c, $0c, $00
+CountdownDigitPattern5::
+    db $7c, $60, $60, $7c, $0c, $0c, $78, $00
+CountdownDigitPattern6::
+    db $38, $60, $60, $78, $6c, $6c, $38, $00
+CountdownDigitPattern7::
+    db $7c, $0c, $08, $18, $18, $30, $30, $00
+CountdownDigitPattern8::
+    db $38, $6c, $6c, $38, $6c, $6c, $38, $00
+CountdownDigitPattern9::
+    db $38, $6c, $6c, $6c, $3c, $0c, $38, $00
 
 ProcessRoundComplete::
     ld hl, $c2a0
@@ -8658,7 +8036,7 @@ jr_000_306a:
     ld [$c6c9], a
     ld [$c6ca], a
     ld [$c6c7], a
-    ld a, $2d
+    ld a, SND_ROUND_COMPLETE
     call PlaySound
     ret
 
@@ -8668,7 +8046,7 @@ jr_000_3081:
     jr jr_000_30a1
 
 HandleRoundEnd::
-    call $42f5
+    call UpdateAnimFrame
     ld a, [TWO_PLAYER_FLAG]
     and a
 
@@ -8691,7 +8069,7 @@ jr_000_308d:
     jr jr_000_30a7
 
 jr_000_30a1:
-    ld a, [$c026]
+    ld a, [SOUND_CH_ACTIVE_ID]
     and a
     jr nz, jr_000_30a1
 
@@ -8731,15 +8109,15 @@ jr_000_30c7:
     call CheckHighScoreTable
     jr c, jr_000_310f
 
-    ld hl, $c6b7
-    call $445c
-    ld a, $03
+    ld hl, ACTIVE_LEVEL
+    call StartNextRound
+    ld a, GAME_STATE_PLAYING
     ld [GAME_STATE], a
     ret
 
 
 jr_000_30e0:
-    ld a, [PLAYER_MODE]
+    ld a, [GAME_TYPE]
     and a
 
 Jump_000_30e4:
@@ -8755,8 +8133,8 @@ jr_000_30eb:
 
     ld a, [$c6e2]
     call ProcessMatching
-    call $445c
-    ld a, $03
+    call StartNextRound
+    ld a, GAME_STATE_PLAYING
     ld [GAME_STATE], a
     ret
 
@@ -8776,7 +8154,7 @@ jr_000_3107:
     pop af
 
 jr_000_310f:
-    ld a, $00
+    ld a, GAME_STATE_TITLE_INIT
     ld [GAME_STATE], a
     ld hl, $c6ab
     ld [hl], $00
@@ -8863,7 +8241,7 @@ jr_000_318a:
     and a
     jr z, jr_000_31a1
 
-    ld a, $ff
+    ld a, SND_STOP_ALL
     call PlaySound
     ld a, $69
     call PlaySound
@@ -8871,7 +8249,7 @@ jr_000_318a:
     jr jr_000_31ab
 
 jr_000_31a1:
-    ld a, $ff
+    ld a, SND_STOP_ALL
     call PlaySound
     ld a, $66
     call PlaySound
@@ -8881,7 +8259,7 @@ jr_000_31ab:
     ld a, $3c
     ld [hl+], a
     ld [hl], $00
-    ld a, $04
+    ld a, GAME_STATE_ROUND_END
     ld [GAME_STATE], a
     ret
 
@@ -8901,7 +8279,7 @@ jr_000_31be:
 
 
 jr_000_31c4:
-    call $4bc5
+    call WaitVBlank
     call ReadJoypad
     ldh a, [JOYPAD_PRESSED]
     and $08
@@ -8979,13 +8357,13 @@ jr_000_3220:
     ld [LCD_REDRAW], a
     call LCDOff
     call ClearOAM
-    ld a, $03
-    ld [$2100], a
-    ld hl, $5dd0
+    ld a, ROM_BANK_GRAPHICS_1
+    ld [MBC1_ROM_BANK_REG], a
+    ld hl, Bank3HighScoreTilesTo9000
     ld de, $9000
     ld bc, $0800
     call MemcopyCall
-    ld hl, $65d0
+    ld hl, Bank3HighScoreTilesTo8800
     ld de, $8800
     ld bc, $0800
     call MemcopyCall
@@ -8993,11 +8371,11 @@ jr_000_3220:
     and a
     jr z, jr_000_3264
 
-    ld hl, $6ab0
+    ld hl, Bank3HighScoreOverlayTilesTo9470
     ld de, $9470
     ld bc, $0390
     call MemcopyCall
-    ld hl, $6e40
+    ld hl, Bank3HighScoreOverlayTilesTo8800
     ld de, $8800
     ld bc, $0740
     call MemcopyCall
@@ -9007,8 +8385,8 @@ jr_000_3264:
     ld bc, $0168
     ld d, $18
     call DrawCharacter
-    ld a, $01
-    ld [$2100], a
+    ld a, ROM_BANK_MAIN_CODE
+    ld [MBC1_ROM_BANK_REG], a
     call LCDOn
     ld b, $00
     ld a, [LINK_ROLE]
@@ -9202,7 +8580,7 @@ jr_000_33b8:
     ldh [ANIM_SUBFRAME], a
     ld a, $b3
     ldh [TEXT_FADE], a
-    jp $33f7
+    jp WaitLinkStartConfirm
 
 
 jr_000_33de:
@@ -9217,8 +8595,11 @@ jr_000_33de:
     jp MenuInputHandler
 
 
-    db $af, $e0, $8a, $cd, $c5, $4b, $fa, $26, $c0
-
+WaitLinkStartConfirm::
+    xor a
+    ldh [ANIM_FRAME], a
+    call WaitVBlank
+    ld a, [SOUND_CH_ACTIVE_ID]
     cp $5e
     jr z, jr_000_340d
 
@@ -9279,8 +8660,8 @@ jr_000_344f:
 
 
 MenuInputHandler::
-    call $4bc5
-    ld a, [$c026]
+    call WaitVBlank
+    ld a, [SOUND_CH_ACTIVE_ID]
     cp $62
     jr z, jr_000_3464
 
@@ -9314,7 +8695,7 @@ jr_000_347e:
     jr jr_000_344f
 
 PlayConfirmSound::
-    ld a, $54
+    ld a, SND_CONFIRM
     call PlaySound
     ld b, $55
     ldh a, [ANIM_FRAME]
@@ -9522,11 +8903,11 @@ jr_000_35ab:
     xor a
     ld [GAME_ACTIVE], a
     ld [$c7ce], a
-    ld de, $3839
+    ld de, TitleResultTileData0
     ld hl, $8820
     ld c, $50
     call VRAMCopySetup
-    ld de, $3d39
+    ld de, TitleResultTileData1
     ld hl, $9140
     ld c, $11
     call VRAMCopySetup
@@ -9626,7 +9007,7 @@ ShowRoundComplete::
 jr_000_368c:
     push bc
     push de
-    call $4bc5
+    call WaitVBlank
     call SetupMultiplayer
     call ReadJoypad
     pop de
@@ -9752,9 +9133,9 @@ jr_000_3754:
 jr_000_3756:
     push af
     push hl
-    call $4bc5
+    call WaitVBlank
     call SetupMultiplayer
-    call $42f5
+    call UpdateAnimFrame
     pop hl
     pop af
     dec a
@@ -9855,7 +9236,7 @@ jr_000_37d4:
 
 DrawSpriteAt::
     push bc
-    call $432f
+    call AddScore
     call SetupDrawCharacter
     pop bc
     ld hl, $c498
@@ -9880,7 +9261,7 @@ DrawSpriteAt::
 jr_000_3802:
     push bc
     push de
-    call $4bc5
+    call WaitVBlank
     call SetupMultiplayer
     pop de
     pop bc
@@ -9902,7 +9283,7 @@ SetupDrawCharacter::
 
 
 WaitFrames::
-    call $4bc5
+    call WaitVBlank
     push bc
     call ReadJoypad
     pop bc
@@ -9920,1892 +9301,133 @@ jr_000_3835:
     ret
 
 
-    nop
-    nop
-    inc bc
-    inc bc
-    inc c
-    inc c
-    db $10
-    db $10
-    db $10
-    ld d, $20
-    ld h, $20
-    jr nz, @+$32
-
-    jr nz, jr_000_384a
-
-jr_000_384a:
-    nop
-    ret nz
-
-    ret nz
-
-    jr nc, @+$72
-
-    ld [$0868], sp
-    ld [$0404], sp
-    inc b
-    inc b
-    inc b
-    inc e
-    ld [hl], b
-    ld b, b
-    ld [hl], b
-    ld c, h
-    ld h, b
-    ld e, [hl]
-    ld h, b
-    ld e, [hl]
-    inc sp
-    inc l
-    ccf
-    jr nz, @+$21
-
-    jr jr_000_386f
-
-    rlca
-    ld [bc], a
-    ld a, $02
-    ld a, $06
-    ld a, [de]
-
-jr_000_386f:
-    ld a, $02
-    call z, $cc34
-    inc [hl]
-    ld hl, sp+$18
-    ldh [SERIAL_TEMP], a
-    nop
-    nop
-    inc bc
-    inc bc
-    dec c
-    dec c
-    db $10
-    db $10
-    db $10
-    ld d, $20
-    ld h, $21
-    ld hl, $2131
-    nop
-    nop
-    ret nz
-
-    ret nz
-
-    or b
-    ldh a, [$ff88]
-    add sp, -$78
-    adc b
-    add h
-    add h
-    inc b
-    inc b
-    add h
-    sbc h
-    ld [hl], c
-    ld b, c
-    db $76
-    ld c, [hl]
-    ld h, d
-    ld e, [hl]
-    ld h, b
-    ld e, [hl]
-    inc sp
-    inc l
-    ccf
-    jr nz, jr_000_38c5
-
-    jr jr_000_38af
-
-    rlca
-    add d
-    cp [hl]
-    ld b, d
-    ld a, [hl]
-    ld h, $3a
-
-jr_000_38af:
-    ld a, $02
-    call z, $cc34
-    inc [hl]
-    ld hl, sp+$18
-    ldh [SERIAL_TEMP], a
-    nop
-    nop
-    rlca
-    rlca
-    add hl, de
-    ld e, $33
-    inc l
-    ld a, a
-    ld b, b
-    ld a, h
-    ld b, e
-
-jr_000_38c5:
-    sbc b
-    rst $20
-    sbc b
-    rst $20
-    nop
-    nop
-    ldh [SERIAL_TEMP], a
-    sbc b
-    ld a, b
-    call z, $fe34
-    ld [bc], a
-    ld a, $c2
-    add hl, de
-    rst $20
-    add hl, de
-    rst $20
-    sbc b
-    rst $20
-    cp h
-    jp $4f7f
-
-
-    ld [hl-], a
-    ld [hl-], a
-    ld [hl+], a
-    ld [hl+], a
-    jr nz, jr_000_3905
-
-    db $10
-    db $10
-    rrca
-    rrca
-    add hl, de
-    rst $20
-    dec a
-    jp $f2fe
-
-
-    ld c, h
-    ld c, h
-    ld b, h
-    ld b, h
-    inc b
-    inc b
-    ld [$f008], sp
-    ldh a, [rP1]
-    nop
-    ld hl, $5221
-    ld d, d
-    ld c, h
-    ld c, h
-    add b
-    add b
-    adc h
-    adc h
-
-jr_000_3905:
-    sub d
-    sub d
-    add b
-    add b
-    nop
-    nop
-    add h
-    add h
-    ld c, d
-    ld c, d
-    ld [hl-], a
-    ld [hl-], a
-    ld bc, $3101
-    ld sp, $4949
-    ld bc, $4001
-    ld b, b
-    jr c, jr_000_3955
-
-    rlca
-    rlca
-    dec sp
-    ld a, [hl-]
-    ld a, a
-    ld b, [hl]
-    ld a, a
-    ld b, d
-    rst $38
-    add c
-    ld a, a
-    ld a, a
-    ld [bc], a
-    ld [bc], a
-    inc e
-    inc e
-    ldh [SERIAL_TEMP], a
-    call c, $fe5c
-    ld h, d
-    cp $42
-    rst $38
-    add c
-    cp $fe
-    nop
-    nop
-    ld bc, $0301
-    ld [bc], a
-    inc bc
-    ld [bc], a
-    rlca
-    inc b
-    rst $38
-    db $fc
-    rst $38
-    add b
-    ld a, a
-    ld b, d
-    nop
-    nop
-    add b
-    add b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    and b
-    jr nz, @-$3f
-
-    ccf
-
-jr_000_3955:
-    pop bc
-    ld bc, $42fa
-    ccf
-    ld [hl+], a
-    rra
-    db $10
-    ccf
-    jr nz, jr_000_399f
-
-    jr nz, jr_000_39e1
-
-    ld b, c
-    ld a, [hl]
-    ld b, [hl]
-    ld hl, sp-$68
-    ldh [SERIAL_TEMP], a
-    db $f4
-    ld b, h
-    add sp, $08
-    db $f4
-    inc b
-    db $f4
-    inc b
-    ld a, [$7a82]
-    ld h, d
-    dec e
-    add hl, de
-    rlca
-    rlca
-    nop
-    nop
-    rlca
-    rlca
-    jr jr_000_3997
-
-    jr nz, jr_000_39a1
-
-    ld b, b
-    ld b, b
-    ld d, h
-    ld d, h
-    sub h
-    sub h
-    add b
-    add b
-    nop
-    nop
-    ret nz
-
-    ret nz
-
-    jr nc, jr_000_39bf
-
-    ld [$0408], sp
-    inc b
-    inc b
-    inc b
-    ld [hl-], a
-    ld [hl-], a
-
-jr_000_3997:
-    ld c, d
-    ld c, d
-    add b
-    xor d
-    add b
-    cp [hl]
-    add b
-    cp [hl]
-
-jr_000_399f:
-    ld b, b
-    ld e, a
-
-jr_000_39a1:
-    ld b, b
-    ld d, l
-    jr nz, jr_000_39c5
-
-    inc e
-    inc e
-    inc bc
-    inc bc
-    ld a, [bc]
-    ld a, [bc]
-    ld de, $0111
-    ld bc, $0101
-    ld [bc], a
-    ld [bc], a
-    inc c
-    inc c
-    jr nc, @+$32
-
-    ret nz
-
-    ret nz
-
-    jr nc, jr_000_39eb
-
-    rra
-    rra
-    dec e
-    dec e
-
-jr_000_39bf:
-    dec [hl]
-    dec [hl]
-    ld [hl], $36
-    ld a, d
-    ld a, d
-
-jr_000_39c5:
-    ld a, e
-    ld a, e
-    ld a, a
-    ld a, a
-    nop
-    nop
-    add b
-    add b
-    ldh [SERIAL_TEMP], a
-    ldh a, [$fff0]
-    ldh a, [$fff0]
-    ld hl, sp-$08
-    ld hl, sp-$08
-    cp $fe
-    ld a, a
-    ld a, a
-    ccf
-    ccf
-    ccf
-    ccf
-    rra
-    rra
-
-jr_000_39e1:
-    add hl, bc
-    add hl, bc
-    db $10
-    db $10
-    ld [$0708], sp
-    rlca
-    ldh a, [c]
-    ldh a, [c]
-
-jr_000_39eb:
-    ldh [c], a
-    ldh [c], a
-    ldh [c], a
-    ldh [c], a
-    db $e4
-    db $e4
-    ret c
-
-    ret c
-
-    add b
-    add b
-    add b
-    add b
-    add b
-    add b
-    ld bc, $6d01
-    ld bc, $01ff
-    rst $38
-    ld bc, $29fe
-    cp $01
-    ld l, h
-    inc bc
-    ld [hl], c
-    ld [hl], b
-    ret nz
-
-    ret nz
-
-    ldh a, [$ff30]
-    ld hl, sp+$08
-    ld hl, sp-$78
-    ld a, h
-    ld h, h
-    ld a, h
-    sub h
-    ld a, [hl]
-    adc [hl]
-    rst $30
-    ld [hl], l
-    adc b
-    adc b
-    db $e4
-    db $e4
-    sub h
-    sub h
-    ld l, h
-    ld l, h
-    jr nc, jr_000_3a53
-
-    inc c
-    inc c
-    inc bc
-    inc bc
-    nop
-    nop
-    adc a
-    adc l
-    rla
-    dec e
-    rst $20
-    db $fd
-    ld a, e
-    dec bc
-    jr nc, @+$12
-
-    jr nc, jr_000_3a65
-
-    ld hl, sp-$38
-    ld a, b
-    ld a, b
-    nop
-    nop
-    ld b, $06
-    dec c
-    add hl, bc
-    ld a, [bc]
-    ld a, [bc]
-    ccf
-    jr nc, jr_000_3aa3
-
-    ld b, b
-    rst $38
-    sub h
-    rst $38
-    add b
-    nop
-    nop
-    ldh [SERIAL_TEMP], a
-    ld [hl], b
-    db $10
-    sub b
-    sub b
-    sbc b
-    adc b
-
-jr_000_3a53:
-    ret z
-
-    ld [StartGame], sp
-    db $fc
-    inc b
-    rst $38
-    add b
-    ld a, a
-    ld b, b
-    ccf
-    ld sp, $0e0e
-    db $10
-    db $10
-    db $10
-    db $10
-
-jr_000_3a65:
-    ld [$1f08], sp
-    rra
-    db $fc
-    ld b, h
-    ld hl, sp+$68
-    cp b
-    adc b
-    inc a
-    inc b
-    ld e, $02
-    ld a, [hl]
-    ld h, d
-    cp h
-    or h
-    ld hl, sp-$08
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc bc
-    inc bc
-    ld b, $04
-    ld c, $0e
-    inc sp
-    inc sp
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ret nz
-
-    ret nz
-
-    ldh [rNR41], a
-    and b
-    and b
-    or b
-    sub b
-    ld e, h
-    ld b, b
-    ld a, a
-    ld h, h
-    cp a
-    add b
-    cp a
-    add b
-    ld a, a
-    ld b, b
-
-jr_000_3aa3:
-    ld a, a
-    ld b, b
-    ccf
-    ld sp, $0e0e
-    sub b
-    sub b
-    ldh a, [rNR10]
-    ld hl, sp+$08
-    db $fc
-    inc b
-    db $fc
-    ld b, h
-    ld hl, sp+$48
-    or b
-    or b
-    jr nz, jr_000_3ad9
-
-    ld [bc], a
-    ld [bc], a
-    inc c
-    inc c
-    inc e
-    inc d
-    inc e
-    inc d
-    inc c
-    inc c
-    ld [bc], a
-    ld [bc], a
-    rlca
-    rlca
-    rlca
-    rlca
-    ld h, b
-    jr nz, jr_000_3b3c
-
-    ld d, b
-    ld hl, sp-$78
-    cp $96
-    ld a, a
-    ld h, c
-    dec a
-    dec a
-    ld e, [hl]
-    ld e, [hl]
-    db $fc
-    db $fc
-
-jr_000_3ad9:
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld bc, $0101
-    ld bc, $0202
-    nop
-    nop
-    dec c
-    dec c
-    rla
-    ld [de], a
-    dec a
-    dec a
-    jp $7cc3
-
-
-    nop
-    ld a, a
-    nop
-    rst $38
-    adc b
-    nop
-    nop
-    ret nz
-
-    ret nz
-
-    ldh [rNR41], a
-    and b
-    and b
-    or b
-    sub b
-    sub b
-    sub b
-    ldh a, [rSVBK]
-    ldh a, [rNR10]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    ld [bc], a
-    ld bc, $0101
-    ld bc, $0000
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    pop bc
-    ld a, $3e
-    ld [bc], a
-    ld [bc], a
-    inc c
-    inc c
-    ei
-    dec bc
-    db $fc
-
-jr_000_3b3c:
-    inc b
-    cp h
-    add h
-    cp b
-    adc b
-    ld sp, $fe31
-    ldh [$ff78], a
-    jr nz, jr_000_3bc1
-
-    ld hl, $0000
-    add b
-    add b
-    add b
-    add b
-    add b
-    add b
-    ld b, b
-    ld b, b
-    ld b, b
-    ld b, b
-    add b
-    add b
-    ld b, b
-    ld b, b
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    inc a
-    inc [hl]
-    ld a, b
-    ld c, b
-    ld a, b
-    ld c, b
-    jr c, @+$3a
-
-    inc b
-    inc b
-    inc b
-    inc b
-    dec bc
-    dec bc
-    rrca
-    rrca
-    ld a, [hl]
-    ld d, b
-    rst $38
-    adc c
-    cp $8e
-    ld a, [hl]
-    db $76
-    rra
-    ld bc, $3d3f
-    ld e, [hl]
-    ld e, [hl]
-    db $fc
-    db $fc
-    ld b, b
-    ld b, b
-    add b
-    add b
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld bc, $0101
-    ld bc, $0303
-    inc c
-    inc c
-    inc de
-    stop
-    nop
-    nop
-    nop
-    xor $ee
-    rst $38
-    ld de, $292b
-    jp hl
-
-
-jr_000_3bb4:
-    add sp, $39
-    jr c, jr_000_3bb4
-
-    inc b
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-
-jr_000_3bc1:
-    ld bc, $8101
-    add c
-    cp [hl]
-    cp [hl]
-    and b
-    and b
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ret nz
-
-    ret nz
-
-    jr nz, jr_000_3bf3
-
-    jr nz, jr_000_3bf5
-
-    rra
-    rra
-    ld bc, $2f01
-    jr nz, jr_000_3c0b
-
-    jr z, @+$61
-
-    ld b, b
-    ld e, a
-    ld b, b
-    ld e, a
-    ld b, b
-    ld e, a
-    ld b, b
-    ld e, a
-    ld b, b
-    ccf
-
-jr_000_3be8:
-    jr nz, jr_000_3be8
-
-    ld [bc], a
-    rst $38
-    add c
-    rst $38
-    nop
-    rst $38
-    nop
-    rst $38
-    nop
-
-jr_000_3bf3:
-    rst $38
-    ld [bc], a
-
-jr_000_3bf5:
-    rst $38
-    ld bc, $01ff
-    sub b
-    sub b
-    adc b
-    adc b
-    call nz, $c444
-    ld b, h
-    add sp, $28
-    add sp, $28
-    di
-    inc sp
-    db $ec
-    inc l
-    ld [bc], a
-    ld [bc], a
-
-jr_000_3c0b:
-    inc b
-    inc b
-    ld [$0808], sp
-    ld [$0404], sp
-    call nz, $32c4
-    ld [hl-], a
-    inc c
-    inc c
-    ccf
-    jr nz, jr_000_3c3b
-
-    jr jr_000_3c25
-
-    rlca
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-
-jr_000_3c25:
-    nop
-    nop
-    ld bc, $fe01
-    ld b, $f8
-    jr @-$1d
-
-    ldh [$ff39], a
-    jr c, jr_000_3c73
-
-    ld b, b
-    ld b, e
-    ld b, b
-    add e
-    add b
-    add e
-    add c
-    ldh [$ff60], a
-
-jr_000_3c3b:
-    sub b
-    ldh a, [$ff90]
-    ldh a, [JOYPAD_RAW]
-    ldh [$ffd8], a
-    ld e, b
-    and $2e
-    pop hl
-    rst $28
-    ldh [$ff2f], a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add b
-    add b
-    inc bc
-    ld [bc], a
-    inc bc
-    ld [bc], a
-    inc bc
-    ld [bc], a
-    ld bc, $0001
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add e
-    add d
-    add e
-    add d
-    add c
-    add c
-    ret nz
-
-    ret nz
-
-    ld b, b
-    ld b, b
-
-jr_000_3c73:
-    ld [hl], b
-    ld [hl], b
-    sbc h
-    cp h
-    rst $38
-    rst $38
-    ldh a, [rNR10]
-    rst $38
-    rra
-    rst $38
-    jr nz, @+$01
-
-    ret nz
-
-    ccf
-    ld a, $4f
-    ld e, a
-    ld a, a
-    ld a, a
-    rst $38
-    rst $38
-    ret nz
-
-    ret nz
-
-    ld hl, sp+$38
-    db $fc
-    inc b
-    db $f4
-    inc b
-    ret z
-
-    ld [$3030], sp
-    ret nz
-
-    ret nz
-
-    nop
-    nop
-    nop
-    nop
-    rlca
-    rlca
-    inc b
-    inc b
-    inc b
-    inc b
-    rlca
-    rlca
-    ld bc, $0101
-    ld bc, $0707
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    rla
-    rla
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    dec d
-    rla
-    rla
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld [hl], a
-    ld [hl], a
-    dec d
-    dec d
-    dec d
-    dec d
-    ld [hl], l
-    ld [hl], l
-    ld b, l
-    ld b, l
-    ld b, l
-    ld b, l
-    ld [hl], a
-    ld [hl], a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld [hl], a
-    ld [hl], a
-    ld b, l
-    ld b, l
-    ld b, l
-    ld b, l
-    ld [hl], l
-    ld [hl], l
-    dec d
-    dec d
-    dec d
-    dec d
-    ld [hl], a
-    ld [hl], a
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld [hl], b
-    ld [hl], b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld d, b
-    ld [hl], b
-    ld [hl], b
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add $c6
-    add $c6
-    xor $ee
-    ld a, h
-    ld a, h
-    jr c, jr_000_3d81
-
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    cp $fe
-    ret nz
-
-    ret nz
-
-    db $fc
-    db $fc
-    ret nz
-
-    ret nz
-
-    cp $fe
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    db $fc
-    add $c6
-    adc $ce
-    ld hl, sp-$08
-    adc $ce
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld h, [hl]
-    ld h, [hl]
-    ld h, [hl]
-    ld h, [hl]
-    inc a
-    inc a
-    jr jr_000_3d8f
-
-    jr jr_000_3d91
-
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld a, [hl]
-    ld a, [hl]
-
-jr_000_3d81:
-    ldh [SERIAL_TEMP], a
-    adc $ce
-    and $e6
-    ld a, [hl]
-    ld a, [hl]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-
-jr_000_3d8f:
-    ld a, h
-    ld a, h
-
-jr_000_3d91:
-    add $c6
-    add $c6
-    add $c6
-    ld a, h
-    ld a, h
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld hl, sp-$08
-    call z, $c6cc
-    add $cc
-    call z, $f8f8
-    nop
-    nop
-    nop
-    nop
-    jr c, jr_000_3de7
-
-    jr c, jr_000_3de9
-
-    jr c, jr_000_3deb
-
-    db $10
-    stop
-    nop
-    db $10
-    stop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add $c6
-    ld l, h
-    ld l, h
-    jr c, jr_000_3dfd
-
-    ld l, h
-    ld l, h
-    add $c6
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld h, b
-    ld h, b
-    ld h, b
-    ld h, b
-    ld h, b
-    ld h, b
-    ld h, b
-    ld h, b
-    ld a, [hl]
-    ld a, [hl]
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    add $c6
-    or $f6
-    cp $fe
-    sbc $de
-
-jr_000_3de7:
-    add $c6
-
-jr_000_3de9:
-    nop
-    nop
-
-jr_000_3deb:
-    nop
-    nop
-    nop
-    nop
-    ld a, [hl]
-    ld a, [hl]
-    jr jr_000_3e0b
-
-    jr jr_000_3e0d
-
-    jr jr_000_3e0f
-
-    jr jr_000_3e11
-
-    nop
-    nop
-    nop
-    nop
-
-jr_000_3dfd:
-    nop
-    nop
-    ld a, [hl]
-    ld a, [hl]
-    ldh [SERIAL_TEMP], a
-    ld a, h
-    ld a, h
-    ld c, $0e
-    db $fc
-    db $fc
-    nop
-    nop
-
-jr_000_3e0b:
-    nop
-    nop
-
-jr_000_3e0d:
-    nop
-    nop
-
-jr_000_3e0f:
-    add $c6
-
-jr_000_3e11:
-    add $c6
-    add $c6
-    add $c6
-    ld a, h
-    ld a, h
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    db $fc
-    db $fc
-    add $c6
-    add $c6
-    db $fc
-    db $fc
-    ret nz
-
-    ret nz
-
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld a, h
-    ld a, h
-    add $c6
-    add $c6
-    cp $fe
-    add $c6
-    nop
-    nop
-    nop
-    nop
-    nop
-    nop
-    ld a, h
-    ld a, h
-    add $c6
-    ret nz
-
-    ret nz
-
-    add $c6
-    ld a, h
-    ld a, h
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    nop
-    add hl, sp
-    sbc h
-    rst $18
-    nop
-    add hl, sp
-    db $db
-    ld b, l
-    nop
-    add hl, sp
-    sub l
-    cp $00
-    add hl, sp
-    db $fd
-    rst $20
-    nop
-    add hl, sp
-    xor l
-    and a
-    nop
-    add hl, sp
-    ld [bc], a
-    db $fc
-    nop
-    add hl, sp
-    inc l
-    cp e
-    nop
-    add hl, sp
-    sub e
-    nop
+TitleResultTileData0::
+    db $00, $00, $03, $03, $0c, $0c, $10, $10, $10, $16, $20, $26, $20, $20, $30, $20
+    db $00, $00, $c0, $c0, $30, $70, $08, $68, $08, $08, $04, $04, $04, $04, $04, $1c
+    db $70, $40, $70, $4c, $60, $5e, $60, $5e, $33, $2c, $3f, $20, $1f, $18, $07, $07
+    db $02, $3e, $02, $3e, $06, $1a, $3e, $02, $cc, $34, $cc, $34, $f8, $18, $e0, $e0
+    db $00, $00, $03, $03, $0d, $0d, $10, $10, $10, $16, $20, $26, $21, $21, $31, $21
+    db $00, $00, $c0, $c0, $b0, $f0, $88, $e8, $88, $88, $84, $84, $04, $04, $84, $9c
+    db $71, $41, $76, $4e, $62, $5e, $60, $5e, $33, $2c, $3f, $20, $1f, $18, $07, $07
+    db $82, $be, $42, $7e, $26, $3a, $3e, $02, $cc, $34, $cc, $34, $f8, $18, $e0, $e0
+    db $00, $00, $07, $07, $19, $1e, $33, $2c, $7f, $40, $7c, $43, $98, $e7, $98, $e7
+    db $00, $00, $e0, $e0, $98, $78, $cc, $34, $fe, $02, $3e, $c2, $19, $e7, $19, $e7
+    db $98, $e7, $bc, $c3, $7f, $4f, $32, $32, $22, $22, $20, $20, $10, $10, $0f, $0f
+    db $19, $e7, $3d, $c3, $fe, $f2, $4c, $4c, $44, $44, $04, $04, $08, $08, $f0, $f0
+    db $00, $00, $21, $21, $52, $52, $4c, $4c, $80, $80, $8c, $8c, $92, $92, $80, $80
+    db $00, $00, $84, $84, $4a, $4a, $32, $32, $01, $01, $31, $31, $49, $49, $01, $01
+    db $40, $40, $38, $38, $07, $07, $3b, $3a, $7f, $46, $7f, $42, $ff, $81, $7f, $7f
+    db $02, $02, $1c, $1c, $e0, $e0, $dc, $5c, $fe, $62, $fe, $42, $ff, $81, $fe, $fe
+    db $00, $00, $01, $01, $03, $02, $03, $02, $07, $04, $ff, $fc, $ff, $80, $7f, $42
+    db $00, $00, $80, $80, $40, $40, $40, $40, $a0, $20, $bf, $3f, $c1, $01, $fa, $42
+    db $3f, $22, $1f, $10, $3f, $20, $3f, $20, $7f, $41, $7e, $46, $f8, $98, $e0, $e0
+    db $f4, $44, $e8, $08, $f4, $04, $f4, $04, $fa, $82, $7a, $62, $1d, $19, $07, $07
+    db $00, $00, $07, $07, $18, $18, $20, $20, $40, $40, $54, $54, $94, $94, $80, $80
+    db $00, $00, $c0, $c0, $30, $30, $08, $08, $04, $04, $04, $04, $32, $32, $4a, $4a
+    db $80, $aa, $80, $be, $80, $be, $40, $5f, $40, $55, $20, $20, $1c, $1c, $03, $03
+    db $0a, $0a, $11, $11, $01, $01, $01, $01, $02, $02, $0c, $0c, $30, $30, $c0, $c0
+    db $30, $30, $1f, $1f, $1d, $1d, $35, $35, $36, $36, $7a, $7a, $7b, $7b, $7f, $7f
+    db $00, $00, $80, $80, $e0, $e0, $f0, $f0, $f0, $f0, $f8, $f8, $f8, $f8, $fe, $fe
+    db $7f, $7f, $3f, $3f, $3f, $3f, $1f, $1f, $09, $09, $10, $10, $08, $08, $07, $07
+    db $f2, $f2, $e2, $e2, $e2, $e2, $e4, $e4, $d8, $d8, $80, $80, $80, $80, $80, $80
+    db $01, $01, $6d, $01, $ff, $01, $ff, $01, $fe, $29, $fe, $01, $6c, $03, $71, $70
+    db $c0, $c0, $f0, $30, $f8, $08, $f8, $88, $7c, $64, $7c, $94, $7e, $8e, $f7, $75
+    db $88, $88, $e4, $e4, $94, $94, $6c, $6c, $30, $30, $0c, $0c, $03, $03, $00, $00
+    db $8f, $8d, $17, $1d, $e7, $fd, $7b, $0b, $30, $10, $30, $30, $f8, $c8, $78, $78
+    db $00, $00, $06, $06, $0d, $09, $0a, $0a, $3f, $30, $5f, $40, $ff, $94, $ff, $80
+    db $00, $00, $e0, $e0, $70, $10, $90, $90, $98, $88, $c8, $08, $fc, $04, $fc, $04
+    db $ff, $80, $7f, $40, $3f, $31, $0e, $0e, $10, $10, $10, $10, $08, $08, $1f, $1f
+    db $fc, $44, $f8, $68, $b8, $88, $3c, $04, $1e, $02, $7e, $62, $bc, $b4, $f8, $f8
+    db $00, $00, $00, $00, $00, $00, $00, $00, $03, $03, $06, $04, $0e, $0e, $33, $33
+    db $00, $00, $00, $00, $00, $00, $00, $00, $c0, $c0, $e0, $20, $a0, $a0, $b0, $90
+    db $5c, $40, $7f, $64, $bf, $80, $bf, $80, $7f, $40, $7f, $40, $3f, $31, $0e, $0e
+    db $90, $90, $f0, $10, $f8, $08, $fc, $04, $fc, $44, $f8, $48, $b0, $b0, $20, $20
+    db $02, $02, $0c, $0c, $1c, $14, $1c, $14, $0c, $0c, $02, $02, $07, $07, $07, $07
+    db $60, $20, $70, $50, $f8, $88, $fe, $96, $7f, $61, $3d, $3d, $5e, $5e, $fc, $fc
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $02, $02
+    db $00, $00, $0d, $0d, $17, $12, $3d, $3d, $c3, $c3, $7c, $00, $7f, $00, $ff, $88
+    db $00, $00, $c0, $c0, $e0, $20, $a0, $a0, $b0, $90, $90, $90, $f0, $70, $f0, $10
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $02, $02, $02, $02, $01, $01, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00
+    db $ff, $00, $ff, $00, $ff, $00, $ff, $00, $ff, $c1, $3e, $3e, $02, $02, $0c, $0c
+    db $fb, $0b, $fc, $04, $bc, $84, $b8, $88, $31, $31, $fe, $e0, $78, $20, $79, $21
+    db $00, $00, $80, $80, $80, $80, $80, $80, $40, $40, $40, $40, $80, $80, $40, $40
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $3c, $34, $78, $48, $78, $48, $38, $38, $04, $04, $04, $04, $0b, $0b, $0f, $0f
+    db $7e, $50, $ff, $89, $fe, $8e, $7e, $76, $1f, $01, $3f, $3d, $5e, $5e, $fc, $fc
+    db $40, $40, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $00, $00, $00, $00, $01, $01, $01, $01, $03, $03, $0c, $0c, $13, $10
+    db $00, $00, $00, $00, $ee, $ee, $ff, $11, $2b, $29, $e9, $e8, $39, $38, $fc, $04
+    db $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $81, $81, $be, $be, $a0, $a0
+    db $00, $00, $00, $00, $00, $00, $c0, $c0, $20, $20, $20, $20, $1f, $1f, $01, $01
+    db $2f, $20, $2f, $28, $5f, $40, $5f, $40, $5f, $40, $5f, $40, $5f, $40, $3f, $20
+    db $fe, $02, $ff, $81, $ff, $00, $ff, $00, $ff, $00, $ff, $02, $ff, $01, $ff, $01
+    db $90, $90, $88, $88, $c4, $44, $c4, $44, $e8, $28, $e8, $28, $f3, $33, $ec, $2c
+    db $02, $02, $04, $04, $08, $08, $08, $08, $04, $04, $c4, $c4, $32, $32, $0c, $0c
+    db $3f, $20, $1f, $18, $07, $07, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01
+    db $fe, $06, $f8, $18, $e1, $e0, $39, $38, $41, $40, $43, $40, $83, $80, $83, $81
+    db $e0, $60, $90, $f0, $90, $f0, $a0, $e0, $d8, $58, $e6, $2e, $e1, $ef, $e0, $2f
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $80
+    db $03, $02, $03, $02, $03, $02, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00
+    db $83, $82, $83, $82, $81, $81, $c0, $c0, $40, $40, $70, $70, $9c, $bc, $ff, $ff
+    db $f0, $10, $ff, $1f, $ff, $20, $ff, $c0, $3f, $3e, $4f, $5f, $7f, $7f, $ff, $ff
+    db $c0, $c0, $f8, $38, $fc, $04, $f4, $04, $c8, $08, $30, $30, $c0, $c0, $00, $00
+    db $00, $00, $07, $07, $04, $04, $04, $04, $07, $07, $01, $01, $01, $01, $07, $07
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $17, $17, $15, $15, $15, $15, $15, $15, $15, $15, $15, $15, $17, $17
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $77, $77, $15, $15, $15, $15, $75, $75, $45, $45, $45, $45, $77, $77
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $77, $77, $45, $45, $45, $45, $75, $75, $15, $15, $15, $15, $77, $77
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    db $00, $00, $70, $70, $50, $50, $50, $50, $50, $50, $50, $50, $50, $50, $70, $70
+    db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+TitleResultTileData1::
+    db $00, $00, $00, $00, $00, $00, $c6, $c6, $c6, $c6, $ee, $ee, $7c, $7c, $38, $38
+    db $00, $00, $00, $00, $00, $00, $fe, $fe, $c0, $c0, $fc, $fc, $c0, $c0, $fe, $fe
+    db $00, $00, $00, $00, $00, $00, $fc, $fc, $c6, $c6, $ce, $ce, $f8, $f8, $ce, $ce
+    db $00, $00, $00, $00, $00, $00, $66, $66, $66, $66, $3c, $3c, $18, $18, $18, $18
+    db $00, $00, $00, $00, $00, $00, $7e, $7e, $e0, $e0, $ce, $ce, $e6, $e6, $7e, $7e
+    db $00, $00, $00, $00, $00, $00, $7c, $7c, $c6, $c6, $c6, $c6, $c6, $c6, $7c, $7c
+    db $00, $00, $00, $00, $00, $00, $f8, $f8, $cc, $cc, $c6, $c6, $cc, $cc, $f8, $f8
+    db $00, $00, $00, $00, $38, $38, $38, $38, $38, $38, $10, $10, $00, $00, $10, $10
+    db $00, $00, $00, $00, $00, $00, $c6, $c6, $6c, $6c, $38, $38, $6c, $6c, $c6, $c6
+    db $00, $00, $00, $00, $00, $00, $60, $60, $60, $60, $60, $60, $60, $60, $7e, $7e
+    db $00, $00, $00, $00, $00, $00, $c6, $c6, $f6, $f6, $fe, $fe, $de, $de, $c6, $c6
+    db $00, $00, $00, $00, $00, $00, $7e, $7e, $18, $18, $18, $18, $18, $18, $18, $18
+    db $00, $00, $00, $00, $00, $00, $7e, $7e, $e0, $e0, $7c, $7c, $0e, $0e, $fc, $fc
+    db $00, $00, $00, $00, $00, $00, $c6, $c6, $c6, $c6, $c6, $c6, $c6, $c6, $7c, $7c
+    db $00, $00, $00, $00, $00, $00, $fc, $fc, $c6, $c6, $c6, $c6, $fc, $fc, $c0, $c0
+    db $00, $00, $00, $00, $00, $00, $7c, $7c, $c6, $c6, $c6, $c6, $fe, $fe, $c6, $c6
+    db $00, $00, $00, $00, $00, $00, $7c, $7c, $c6, $c6, $c0, $c0, $c6, $c6, $7c, $7c
+
+Bank0TailGraphicsData::
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39, $00
+    db $39, $00, $39, $00, $39, $00, $39, $00, $39, $9c, $df, $00, $39, $db, $45, $00
+    db $39, $95, $fe, $00, $39, $fd, $e7, $00, $39, $ad, $a7, $00, $39, $02, $fc, $00
+    db $39, $2c, $bb, $00, $39, $93, $00

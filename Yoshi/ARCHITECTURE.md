@@ -16,7 +16,7 @@ Game Boy puzzle game. ROM: 64KB (4 banks × 16KB). CPU: SM83 (Sharp LR35902).
 ### Entry & Interrupts ($0000-$0100)
 
 - RST vectors ($00-$38): Unused (rst $38)
-- VBlank ($0040): `jp $4b59` → Bank 1 VBlankHandler
+- VBlank ($0040): `jp VBlankHandler` → Bank 1 VBlankHandler
 - STAT ($0048): `reti`
 - Timer ($0050): `reti`
 - Serial ($0058): `jp SerialHandler` → 2P通信
@@ -38,13 +38,11 @@ Game Boy puzzle game. ROM: 64KB (4 banks × 16KB). CPU: SM83 (Sharp LR35902).
 
 ### State Machine ($026B-$035C)
 
-`$FFC7` レジスタで6つの状態を管理:
+`$FFC7` レジスタで7つの状態を管理:
 
 ```text
-State 0 → State 1 → State 2 → State 3 → State 4 → (loop)
-  │                              │                    │
-  └──────────────────────────────┘     State 5 ←──────┘
-                                       State 6 → State 3
+Title flow:   State 0 → State 1 → State 6 → State 5 → State 2 → State 3
+Round flow:                                      State 3 → State 4 → State 3/0
 ```
 
 | State | Function | Description |
@@ -80,11 +78,13 @@ State 0 → State 1 → State 2 → State 3 → State 4 → (loop)
 - DropPiece/HandleDrop: 高速落下
 - GenerateNextPiece/GetRandomPiece: 次ピース生成
 
-### Drawing ($1203-$12FF, $2562-$26FF)
+### Drawing ($1203-$12FF, $2147, $2562-$2EB2)
 
-- DrawNumber/DrawDigit/DrawString/DrawCharacter: テキスト描画
+- DrawNumber/DrawDigit/DrawString/DrawStringToGrid/DrawCharacter: テキスト描画
 - DrawBox/FillRect: UI矩形描画
 - DisplayScore/DisplayLevel/DisplayLines: ステータス表示
+- Score/result text tables: `$25C3-$2663`, `$2734-$2853`, `$2CBC-$2EB2`
+- Countdown digit pattern table: `$2FFB-$304A`
 
 ### 2-Player ($17C5-$18B5, $21C5-$22A8)
 
@@ -92,9 +92,10 @@ State 0 → State 1 → State 2 → State 3 → State 4 → (loop)
 - SetupMultiplayer/SetupLinkCable: リンクケーブル初期化
 - SerialHandler ($2092): シリアル割り込み
 
-### Settings & Save ($1E26-$1E92)
+### Options UI & Settings ($1C4F-$203B)
 
-- LoadSettings/SaveSettings/ApplySettings/ResetSettings
+- DrawOptionTextLabels/DrawOptionMarkers/DrawTileTripletList/ApplySettings/ResetSettings
+- Option text/tile tables: `$1D84-$1DBE`, `$1E3D-$1E4F`, `$1F4C-$1F4F`, `$2026-$203A`
 - 保存データ署名: $C757-$C75A = ($C7,$8A,$29,$36)
 
 ## Bank 1: VBlank, Sprites, Sound
@@ -104,6 +105,12 @@ State 0 → State 1 → State 2 → State 3 → State 4 → (loop)
 - **UpdateSprites**: $C200オブジェクトテーブル→$C400 OAMバッファ展開
 - **InitSpriteBuffer**: バッファクリア
 - SpriteAnimTable/AnimFrameData: アニメーションテーブル
+
+### Sound Engine ($5187-$5699)
+
+- MusicDataInit/LoadMusicTrack/ParseMusicCommand/ProcessNote/UpdateChannel
+- SoundEngine/SoundLookupIndex/StartSoundSequence/StopAllSoundHW/StopAllSound
+- Sound support tables: `$5669-$5699`
 
 ### VBlank Handler ($4B59)
 
@@ -136,12 +143,15 @@ SoundEngine → MusicDataInit → ParseMusicCommand → ProcessNote → UpdateCh
                                               LoadWavePattern (Wave RAM)
 ```
 
-4チャンネル対応 (Square1, Square2, Wave, Noise)。
-$C000-$C09E: サウンドワークRAM。
+4ハードウェアチャンネル対応 (Square1, Square2, Wave, Noise)。
+$C000-$C0ED: サウンドワークRAM。
 
 ### Sound Data ($55E2-$7FFF)
 
-音楽シーケンスデータ。コードとデータが混在する領域あり (約10,750バイト)。
+音源開始コード、サポートテーブル、音楽/効果音シーケンス、波形データが続く領域。
+`$55E2-$5668` は `StartSoundSequence` コード、`$5669-$5699` はサウンド補助テーブル、
+`$569A-$7C01` は音楽/効果音シーケンス、`$7C02-$7C07` は短い補助コード、
+`$7C2C-$7FFF` はサウンドインデックス、波形、末尾シーケンスデータ。
 
 #### Sound Engine Architecture
 
@@ -154,18 +164,22 @@ SoundEngine ($53C9)
   → UpdateChannel ($521F): チャンネル状態更新
 ```
 
-#### Sound Work RAM ($C000-$C09E)
+#### Sound Work RAM ($C000-$C0ED)
 
 | Offset | Size | Description |
 |--------|------|-------------|
-| $C000 | 2 | サウンドステータス |
-| $C002 | 1 | ビジーフラグ (bit 7=優先中) |
-| $C026-$C02D | 8 | チャンネルアクティブフラグ (8ch) |
-| $C02E-$C035 | 8 | チャンネル制御ビット |
-| $C04E-$C055 | 8 | ノート長カウンタ |
-| $C056-$C05D | 8 | テンポカウンタ |
-| $C05E-$C065 | 8 | エンベロープ状態 (上位=周期, 下位=カウンタ) |
-| $C0B6-$C0BD | 8 | シーケンス位置カウンタ |
+| $C000 | 1 | `SOUND_STATUS`; reset state, no confirmed reader yet |
+| $C001 | 1 | `SOUND_COMMAND_ID`; current sound command/index |
+| $C002 | 1 | `SOUND_PAUSE_FLAG`; pause gate, bit 7 marks applied mute |
+| $C003-$C005 | 3 | Deferred/nested sound ID, channel output mask, `rNR50` backup |
+| $C006-$C015 | 16 | `SOUND_CH_SEQUENCE_PTRS`; 8 current sequence pointers |
+| $C016-$C025 | 16 | `SOUND_CH_RETURN_PTRS`; 8 `$FD` return pointers |
+| $C026-$C02D | 8 | `SOUND_CH_ACTIVE_ID`; active sound/priority ID |
+| $C02E-$C075 | 72 | Per-channel flags, duty, delay, vibrato, and frequency-low state |
+| $C076-$C0B5 | 64 | Pitch slide current/target/step state |
+| $C0B6-$C0C5 | 16 | Note length and `$FE` loop counters |
+| $C0C6-$C0E5 | 32 | Length scale, tempo accumulator, octave, and envelope state |
+| $C0E6-$C0ED | 8 | Wave pattern, main/SFX tempo, and temporary sound-index pointer |
 
 #### Music Data Format
 
@@ -206,7 +220,27 @@ WAVE_UPDATE フラグ ($FF9B) が立っている場合 VBlank 中に転送。
 
 ### Bank 3 ($4000-$7FFF)
 
-追加タイルグラフィックス (16KB全域データ)。
+追加タイルグラフィックス (16KB全域データ)。現在はロード先ごとの開始ラベルを追加済み。
+
+| Address | Label | Observed use |
+|---------|-------|--------------|
+| $4000 | Bank3MatchingTilesTo9000 | `ProcessMatching` → VRAM `$9000` |
+| $4800 | Bank3MatchingTilesTo8800 | `ProcessMatching` → VRAM `$8800` |
+| $4E40 | Bank3MatchingTilesTo8000 | `ProcessMatching` → VRAM `$8000` |
+| $5400 | Bank3ResultTilesTo9000 | Result/round setup → VRAM `$9000` |
+| $5C00 | Bank3ResultTilesTo8800 | Result/round setup → VRAM `$8800` |
+| $5DD0 | Bank3HighScoreTilesTo9000 | High-score/result path → VRAM `$9000` |
+| $65D0 | Bank3HighScoreTilesTo8800 | High-score/result path → VRAM `$8800` |
+| $6AB0 | Bank3HighScoreOverlayTilesTo9470 | Conditional high-score overlay → VRAM `$9470` |
+| $6E40 | Bank3HighScoreOverlayTilesTo8800 | Conditional high-score overlay → VRAM `$8800` |
+
+### Graphics Load Map
+
+Bank 2/3 は通常の実行コードではなく、画面遷移中に一時的に選択される素材バンク。
+`MBC1_ROM_BANK_REG` (`$2100`) に `ROM_BANK_GRAPHICS_0` / `ROM_BANK_GRAPHICS_1`
+を書き込んで VRAM にコピーし、その後 `ROM_BANK_MAIN_CODE` に戻す。
+
+詳細な転送表はリポジトリルートの `docs/source_recovery/graphics_loads.md` を参照。
 
 ## Memory Map
 
@@ -214,7 +248,7 @@ WAVE_UPDATE フラグ ($FF9B) が立っている場合 VBlank 中に転送。
 
 | Range | Usage |
 |-------|-------|
-| $C000-$C09E | サウンドワークRAM |
+| $C000-$C0ED | サウンドワークRAM |
 | $C200-$C3FF | スプライトオブジェクトテーブル (4 objects × $10 bytes) |
 | $C400-$C4FF | OAMシャドウバッファ (40 sprites × 4 bytes) |
 | $C61C | LCD再描画フラグ |
@@ -306,10 +340,10 @@ ProcessGameTurn (GameTurnTable参照)
 
 ## Bank Switching
 
-Bank 0 は常駐。Bank 1-3 は $2100 レジスタで切り替え:
+Bank 0 は常駐。Bank 1-3 は `MBC1_ROM_BANK_REG` (`$2100`) で切り替え:
 
-- MainLoop: Bank 2 (グラフィックスロード) → Bank 1 (ゲーム処理)
-- VBlankHandler: Bank 1 に固定 (割り込み中)
+- MainLoop: Bank 2/3 (グラフィックスロード) → Bank 1 (ゲーム処理)
+- VBlankHandler: Bank 1 に戻してから `UpdateSprites`
 - PlaySound: Bank 0 → Bank 1 SoundEngine → 復帰
 
 ## Build
@@ -327,5 +361,5 @@ Requires RGBDS toolchain (rgbasm, rgblink, rgbfix).
 - Bank 0: ~290 labels (system, game logic, UI) + data tables
 - Bank 1: ~80 labels (sprites, sound, VBlank)
 - Bank 2: 7 labeled tile sets
-- Bank 3: 1 data block
+- Bank 3: 1 graphics block with 9 transfer-start labels
 - Constants: 35+ named HRAM/WRAM/sound definitions
