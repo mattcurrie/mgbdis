@@ -1384,18 +1384,18 @@ jr_000_0742:
 
 
 AnimateDropping::
-    ld a, [$c75d]
+    ld a, [DROP_ANIM_ACTIVE]
     and a
     ret z
 
-    ld hl, $c75e
+    ld hl, DROP_ANIM_FRAME_TIMER
     dec [hl]
     ret nz
 
-    ld [hl], $02
-    ld hl, $c764
+    ld [hl], DROP_ANIM_FRAME_PERIOD
+    ld hl, DROP_ANIM_DOWN_STATES
     ld de, $c637
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     inc a
     swap a
     add e
@@ -1405,7 +1405,7 @@ AnimateDropping::
     inc d
 
 jr_000_0767:
-    ld b, $07
+    ld b, DROP_ANIM_STATE_COUNT
 
 Jump_000_0769:
     ld a, [hl]
@@ -1421,22 +1421,22 @@ Jump_000_0769:
     pop de
     inc [hl]
     ld a, [hl]
-    cp $03
+    cp DROP_ANIM_STATE_TRIGGER_NEXT
     jr nz, jr_000_078a
 
     ld a, b
-    cp $02
+    cp DROP_ANIM_STATE_STRIDE
     jr c, jr_000_0790
 
     inc hl
     inc hl
-    ld [hl], $01
+    ld [hl], DROP_ANIM_STATE_START
     dec hl
     dec hl
     jr jr_000_0790
 
 jr_000_078a:
-    cp $05
+    cp DROP_ANIM_STATE_END
     jr nz, jr_000_0790
 
     ld [hl], $00
@@ -1450,9 +1450,9 @@ jr_000_0790:
     dec b
     jp nz, Jump_000_0769
 
-    ld hl, $c774
+    ld hl, DROP_ANIM_UP_STATES
     ld de, $c637
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     swap a
     add e
     ld e, a
@@ -1461,7 +1461,7 @@ jr_000_0790:
     inc d
 
 jr_000_07a8:
-    ld b, $07
+    ld b, DROP_ANIM_STATE_COUNT
 
 Jump_000_07aa:
     ld a, [hl]
@@ -1477,22 +1477,22 @@ Jump_000_07aa:
     pop de
     inc [hl]
     ld a, [hl]
-    cp $03
+    cp DROP_ANIM_STATE_TRIGGER_NEXT
     jr nz, jr_000_07cb
 
     ld a, b
-    cp $02
+    cp DROP_ANIM_STATE_STRIDE
     jr c, jr_000_07d5
 
     inc hl
     inc hl
-    ld [hl], $01
+    ld [hl], DROP_ANIM_STATE_START
     dec hl
     dec hl
     jr jr_000_07d5
 
 jr_000_07cb:
-    cp $05
+    cp DROP_ANIM_STATE_END
     jr nz, jr_000_07d5
 
     ld [hl], $00
@@ -1523,7 +1523,7 @@ jr_000_07de:
     inc h
 
 jr_000_07e9:
-    ld b, $07
+    ld b, DROP_ANIM_STATE_COUNT
 
 jr_000_07eb:
     ld c, [hl]
@@ -1539,7 +1539,7 @@ jr_000_07eb:
     jr nz, jr_000_07eb
 
     ld hl, $c66a
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     add l
     ld l, a
     jr nc, jr_000_0802
@@ -1552,13 +1552,13 @@ jr_000_0802:
     ld [hl-], a
     ld [hl], b
     xor a
-    ld [$c75d], a
+    ld [DROP_ANIM_ACTIVE], a
     ret
 
 
 CheckCollisionDown::
     dec bc
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     inc a
     call CheckCollisionCore
     ret nc
@@ -1573,7 +1573,7 @@ CheckCollisionDown::
 
 CheckCollisionUp::
     inc bc
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     call CheckCollisionCore
     ret nc
 
@@ -1676,9 +1676,9 @@ jr_000_0877:
 CalcGridPosition::
     ld a, b
     sla a
-    ld [$c762], a
+    ld [DROP_ANIM_GRID_ROW_TMP], a
     ld h, a
-    ld a, [$c761]
+    ld a, [DROP_ANIM_COLUMN]
     ld l, a
     sla l
     sla l
@@ -1929,7 +1929,7 @@ jr_000_0994:
 
 
 ClearAnimState::
-    ld hl, $c75d
+    ld hl, DROP_ANIM_ACTIVE
     ld b, $47
     xor a
 
@@ -1944,21 +1944,21 @@ jr_000_099f:
 StartDropAnim::
     push bc
     ld b, a
-    ld a, [$c75d]
+    ld a, [DROP_ANIM_ACTIVE]
     and a
     jr nz, jr_000_09c6
 
     push hl
     ld a, b
-    ld [$c761], a
-    ld hl, $c764
-    ld a, $01
+    ld [DROP_ANIM_COLUMN], a
+    ld hl, DROP_ANIM_DOWN_STATES
+    ld a, DROP_ANIM_STATE_START
     ld [hl], a
-    ld hl, $c774
+    ld hl, DROP_ANIM_UP_STATES
     ld [hl], a
-    ld [$c75e], a
-    ld a, $ff
-    ld [$c75d], a
+    ld [DROP_ANIM_FRAME_TIMER], a
+    ld a, DROP_ANIM_ACTIVE_VALUE
+    ld [DROP_ANIM_ACTIVE], a
     ld a, $06
     pop hl
 
@@ -2852,7 +2852,7 @@ DisplayScore::
 
     ld a, [$c66f]
     ld b, a
-    ld a, [$c75d]
+    ld a, [DROP_ANIM_ACTIVE]
     or b
     ret z
 
@@ -2961,7 +2961,7 @@ jr_000_1317:
     and $03
     jr z, jr_000_1341
 
-    ld a, [$c75d]
+    ld a, [DROP_ANIM_ACTIVE]
     and a
     jr nz, jr_000_1341
 

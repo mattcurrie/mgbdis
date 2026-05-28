@@ -56,6 +56,7 @@ Phases 2-4
 - [x] Convert Bank 0 round-complete tables at `$18CB` and `$18D2`
 - [x] Convert Bank 0 field delta tables at `$22CC` and `$230F`
 - [x] Name field animation cursors, active flags, and column timers at `$C6C3-$C6CE`
+- [x] Name drop-input animation active/timer/column/cascade state at `$C75D-$C774`
 - [x] Name egg counter digits and sprite animation tick divider at `$C6D1-$C6D5`
 - [x] Name 2P selected settings, peer settings, and link send queue at `$C6EB-$C700`
 - [x] Name column blink state and result rank position at `$C7A4-$C7AD`
@@ -82,6 +83,7 @@ Phases 2-4
 
 ### Phase 5: Gameplay Algorithm Recovery
 - [ ] Recover board layout and piece representation
+- [x] Recover first-pass drop-input column swap animation state
 - [x] Name the high-confidence score addition/display routine at Bank 1 `$432F`
 - [x] Name the next-round and egg-animation helpers at Bank 1 `$445C` and `$4681`
 - [x] Name high-confidence field timer, sprite animation, OAM DMA HRAM, and link-start wait helpers

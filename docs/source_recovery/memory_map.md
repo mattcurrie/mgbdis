@@ -92,6 +92,11 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6FE` | `LINK_SEND_QUEUE_INDEX` | High | Alternates between 0 and 1 to select the next link send queue slot. |
 | `$C6FF-$C700` | `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` | High | `UpdateGameField` unpacks peer level/speed nibbles from `LINK_RECV`; preview/result paths read these values for peer display. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
+| `$C75D` | `DROP_ANIM_ACTIVE` | High | `StartDropAnim` sets it to `$FF`, `AnimateDropping` and `CheckMatch` gate on it, and the cascade completion path clears it. |
+| `$C75E` | `DROP_ANIM_FRAME_TIMER` | High | Decremented by `AnimateDropping` and reloaded before advancing drop cascade states. |
+| `$C761` | `DROP_ANIM_COLUMN` | High | Stores the selected column index for collision checks, grid-position calculation, and final `$C66A` column-state swap. |
+| `$C762` | `DROP_ANIM_GRID_ROW_TMP` | Low | Written by `CalcGridPosition` as local scratch; no independent direct read has been confirmed. |
+| `$C764/$C774` | `DROP_ANIM_DOWN_STATES` / `DROP_ANIM_UP_STATES` | High | Two seven-entry, two-byte-stride cascade state arrays advanced by `AnimateDropDown` and `AnimateDropUp`. |
 | `$C7A4` | `COLUMN_BLINK_GLOBAL_TIMER` | High | `UpdateColumnBlinkState` increments this timer and wraps it at `$30` before scanning the four column blink slots. |
 | `$C7A5-$C7A8` | `COLUMN_BLINK_SLOT_TIMERS` | High | Four per-slot blink counters walked in parallel with `COLUMN_BLINK_SLOT_FLAGS`; a nonzero counter increments until `$10`, then toggles the slot frame. |
 | `$C7A9-$C7AC` | `COLUMN_BLINK_SLOT_FLAGS` | High | Four active/frame bytes. `InitBlinkState` sets them to 1, title init clears them, and `UpdateColumnBlinkState` toggles active bytes between 1 and 2 before calling `DrawColumnSprite`. |
