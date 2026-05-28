@@ -171,6 +171,7 @@ DEF PIECE_ROTATION    EQU $c691 ; ピース回転状態
 DEF PIECE_FALL_TIMER  EQU $c696 ; current countdown before the falling piece updates
 DEF PIECE_DISPLAY_COUNT EQU $c698 ; argument reused by DisplayResults
 DEF COLUMN_TOP_ROW_SEED EQU $c699 ; value copied into COLUMN_TOP_ROWS on setup
+DEF ROUND_COMPLETE_PARAM_INDEX EQU $c6a2 ; indexes RoundCompleteDelayParamTable
 DEF PIECE_DISPLAY_STATES EQU $c6a3 ; four piece display states built by DisplayResults
 DEF PIECE_DISPLAY_STATE_COUNT EQU $04
 DEF PIECE_FALL_DELAY  EQU $c6a7 ; reload value for PIECE_FALL_TIMER

@@ -3649,11 +3649,11 @@ ScanBoard::
     jr nz, jr_000_16c7
 
     xor a
-    ld [$c6a2], a
+    ld [ROUND_COMPLETE_PARAM_INDEX], a
     jr jr_000_16cb
 
 jr_000_16c7:
-    ld hl, $c6a2
+    ld hl, ROUND_COMPLETE_PARAM_INDEX
     ld [hl], b
 
 jr_000_16cb:
@@ -3807,7 +3807,7 @@ UpdateTimer::
     pop bc
     pop af
     ldh a, [SCREEN_STATE]
-    ld [$c6a2], a
+    ld [ROUND_COMPLETE_PARAM_INDEX], a
     inc h
     inc h
     ld b, h
@@ -3933,7 +3933,7 @@ jr_000_184b:
     call Send2PData
     ld a, [LINK_FIELD_EVENT_PAYLOAD]
     ld [LINK_SEND_QUEUE_0], a
-    ld a, [$c6a2]
+    ld a, [ROUND_COMPLETE_PARAM_INDEX]
     sla a
     ld hl, RoundCompleteDelayParamTable
     call GetArrayElement
