@@ -2583,7 +2583,7 @@ jr_000_10f8:
 
 UpdateLevel::
     ld a, $c8
-    ld hl, $c5d1
+    ld hl, RESULT_SCORE_LABEL_TOP_LEFT
     ld bc, HeaderLogo
     call FillRect
     ld hl, RESULT_SCORE_VALUE_TOP_LEFT

@@ -107,6 +107,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name repeated result main panel tilemap origin `$C546`
 - [x] Name result main panel right-edge tilemap origin `$C54C`
 - [x] Name result score value tilemap origin `$C5D6`
+- [x] Name result score label tilemap origin `$C5D1`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending
@@ -144,6 +145,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 | Planning files were initially created one directory above `mgbdis` | 1 | Moved the plan files into `mgbdis/` and removed misplaced parent copies. |
 | First VRAM transfer rename shifted two assembled HRAM operands | 1 | Binary diff isolated offsets `$4B45/$4B48`; corrected `VRAMCopyDMA` to store updated destination low/high at `$FFB1/$FFB2`, restoring byte-identical output. |
 | Two Bank 3 transfer labels were initially inserted at repeated-looking `db` rows instead of exact source offsets | 1 | Address-counted `bank_003.asm` by 16-byte tile rows, moved the labels to `$5C00` and `$6AB0`, and restored byte-identical output. |
+| Initial `$C5D1` label patch used stale `task_plan.md` context | 1 | Re-read the live plan section and reapplied the edit with the current surrounding lines. |
 
 ## Notes
 - User testimony: the user programmed the GB version with Yuji Shinkai; source was lost in an accident.
