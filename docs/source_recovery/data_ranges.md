@@ -13,6 +13,7 @@ Notes:
 
 - The pointer table starts at `01:$40A0`.
 - Some pointers intentionally point back into the table area, for example `01:$40AE`; this is preserved by placing labels inside the table.
+- `docs/source_recovery/sprite_oam.md` records the recovered format: `SpriteUpdatePointerTable` maps object types to frame tables, each frame entry is `dw tile_id_list, layout_list`, and layout lists contain repeated `y_delta, x_delta, attr` triples terminated by attribute bit 0.
 - Earlier compatibility `DEF` symbols for fake sprite-data labels were removed after the downstream music streams were converted and no longer referenced them.
 - The conversion is behavior-preserving: after rebuilding, `Yoshi/game.gb` remains byte-identical to `Yoshi/yoshi.gb`.
 

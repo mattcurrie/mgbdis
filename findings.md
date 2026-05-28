@@ -63,6 +63,14 @@
 - The active gameplay copies `$C6B7-$C6B8` are now named `ACTIVE_LEVEL` and `ACTIVE_SPEED`.
 - `docs/source_recovery/options_variables.md` records the current evidence for these settings variables.
 - Bank 1 range `01:$40A0-$42F4` is sprite update data, not executable code. It is now represented as `SpriteUpdatePointerTable` plus `SpriteUpdateData_*` `dw`/`db` blocks.
+- `UpdateSprites` expands 16 logical sprite object slots at `$C200-$C2FF` into the `$C400-$C49F` shadow OAM buffer.
+- The recovered sprite update format is:
+  - object slot `+$00`: active object type; zero skips the slot.
+  - object slot `+$02`: frame index; `$FF` skips the slot.
+  - object slot `+$04/+$06`: base Y/X, with hardware OAM biases `$10/$08`.
+  - frame table entry: `dw tile_id_list, layout_list`.
+  - layout list: repeated `y_delta, x_delta, attr`; attr bit 0 ends the list.
+- `docs/source_recovery/sprite_oam.md` records the current OAM/object evidence and open questions.
 - The temporary compatibility `DEF` symbols that were needed for later fake-code references have been removed; after the music stream conversion, no references to those fake labels remain.
 - `docs/source_recovery/data_ranges.md` records converted and remaining high-priority data ranges.
 - Bank 1 range `01:$55E2-$5668` is executable sound setup code. It is now represented as `StartSoundSequence`, because both `SoundEngine` and `SoundLookupIndex` jump to it and it expands a selected sound entry into channel state arrays before returning.

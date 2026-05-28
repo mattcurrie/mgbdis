@@ -313,8 +313,8 @@ LCDOn::
 
 ClearOAM::
     xor a
-    ld hl, $c400
-    ld b, $a0
+    ld hl, SHADOW_OAM
+    ld b, SHADOW_OAM_SIZE
 
 jr_000_01f6:
     ld [hl+], a
@@ -325,10 +325,10 @@ jr_000_01f6:
 
 
 HideAllSprites::
-    ld a, $a0
-    ld hl, $c400
-    ld de, $0004
-    ld b, $28
+    ld a, OAM_HIDDEN_Y
+    ld hl, SHADOW_OAM
+    ld de, OAM_ENTRY_SIZE
+    ld b, OAM_SPRITE_COUNT
 
 jr_000_0205:
     ld [hl], a
@@ -662,7 +662,7 @@ jr_000_03da:
 
 DrawPauseOverlay::
     ld hl, PauseSpriteData
-    ld de, $c400
+    ld de, SHADOW_OAM
     ld bc, $0020
     call MemcopyCall
     ret

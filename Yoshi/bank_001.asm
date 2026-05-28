@@ -18,21 +18,21 @@ UpdateSprites::
 
 
 jr_001_400f:
-    ldh [$ff8f], a
+    ldh [SHADOW_OAM_WRITE_OFFSET], a
 
 jr_001_4011:
-    ldh [$ff8e], a
-    ld d, $c2
+    ldh [SPRITE_SCAN_SLOT_OFFSET], a
+    ld d, SPRITE_OBJECTS_HI
     ld e, a
     ld a, [de]
     and a
     jr z, jr_001_407b
 
-    and $80
-    ldh [$ff92], a
+    and SPRITE_OBJECT_ATTR_MASK
+    ldh [SPRITE_OBJECT_ATTR_TMP], a
     ld a, [de]
     dec a
-    ld hl, $40a0
+    ld hl, SpriteUpdatePointerTable
     sla a
     add l
     ld l, a
@@ -68,24 +68,24 @@ jr_001_4036:
     inc e
     inc e
     ld a, [de]
-    ldh [$ff91], a
+    ldh [SPRITE_BASE_Y_TMP], a
     inc e
     inc e
     ld a, [de]
-    ldh [$ff90], a
-    ldh a, [$ff8f]
+    ldh [SPRITE_BASE_X_TMP], a
+    ldh a, [SHADOW_OAM_WRITE_OFFSET]
     ld e, a
-    ld d, $c4
+    ld d, SHADOW_OAM_HI
 
 jr_001_4052:
-    ldh a, [$ff91]
-    add $10
+    ldh a, [SPRITE_BASE_Y_TMP]
+    add OAM_Y_BIAS
     add [hl]
     ld [de], a
     inc hl
     inc e
-    ldh a, [$ff90]
-    add $08
+    ldh a, [SPRITE_BASE_X_TMP]
+    add OAM_X_BIAS
     add [hl]
     ld [de], a
     inc hl
@@ -95,52 +95,52 @@ jr_001_4052:
     ld [de], a
     inc e
     ld a, [hl]
-    bit 1, a
+    bit SPRITE_ATTR_INHERIT_BIT, a
     jr z, jr_001_406e
 
-    ldh a, [$ff92]
+    ldh a, [SPRITE_OBJECT_ATTR_TMP]
     or [hl]
 
 jr_001_406e:
     inc hl
     ld [de], a
     inc e
-    bit 0, a
+    bit SPRITE_ATTR_END_BIT, a
     jr z, jr_001_4052
 
     ld a, e
-    ldh [$ff8f], a
-    cp $a0
+    ldh [SHADOW_OAM_WRITE_OFFSET], a
+    cp SHADOW_OAM_SIZE
     ret z
 
 jr_001_407b:
-    ldh a, [$ff8e]
-    add $10
+    ldh a, [SPRITE_SCAN_SLOT_OFFSET]
+    add SPRITE_OBJECT_SLOT_SIZE
     cp $00
     jr nz, jr_001_4011
 
-    ldh a, [$ff8f]
+    ldh a, [SHADOW_OAM_WRITE_OFFSET]
     ld l, a
-    ld h, $c4
-    ld de, $0004
-    ld a, $98
+    ld h, SHADOW_OAM_HI
+    ld de, OAM_ENTRY_SIZE
+    ld a, SHADOW_OAM_HIDE_LIMIT
 
 jr_001_408d:
     cp l
     ret z
 
-    ld [hl], $a0
+    ld [hl], OAM_HIDDEN_Y
     add hl, de
     jr jr_001_408d
 
 InitSpriteBuffer::
-    ld hl, $c200
+    ld hl, SPRITE_OBJECTS
 
 jr_001_4097:
     xor a
     ld [hl], a
     ld a, l
-    add $10
+    add SPRITE_OBJECT_SLOT_SIZE
     ld l, a
     jr nc, jr_001_4097
 

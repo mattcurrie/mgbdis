@@ -14,6 +14,11 @@ DEF ANIM_FRAME        EQU $ff8a ; アニメーションフレームカウンタ
 DEF STATE_TRANSITION  EQU $ff8b ; 状態遷移フラグ
 DEF ANIM_SUBFRAME     EQU $ff8c ; アニメーションサブフレーム
 DEF TEXT_FADE         EQU $ff8d ; テキストフェードタイマー
+DEF SPRITE_SCAN_SLOT_OFFSET EQU $ff8e ; UpdateSprites中の$C200スロット走査オフセット
+DEF SHADOW_OAM_WRITE_OFFSET EQU $ff8f ; UpdateSprites中の$C400書き込みオフセット
+DEF SPRITE_BASE_X_TMP EQU $ff90 ; UpdateSprites中のスプライト基準X
+DEF SPRITE_BASE_Y_TMP EQU $ff91 ; UpdateSprites中のスプライト基準Y
+DEF SPRITE_OBJECT_ATTR_TMP EQU $ff92 ; UpdateSprites中のobject属性OR値
 DEF SCREEN_STATE      EQU $ff93 ; 画面状態フラグ
 DEF WAVE_UPDATE       EQU $ff9b ; Wave RAMアップデートフラグ
 DEF SCX_SHADOW        EQU $ff9c ; SCXシャドウ
@@ -86,6 +91,30 @@ DEF SOUND_SFX_TEMPO_HI       EQU $c0ea
 DEF SOUND_SFX_TEMPO_LO       EQU $c0eb
 DEF SOUND_INDEX_PTR_HI       EQU $c0ec
 DEF SOUND_INDEX_PTR_LO       EQU $c0ed
+
+; Sprite/object work areas. `$C200` stores 16-byte logical sprite object slots;
+; `UpdateSprites` expands active slots into the `$C400` shadow OAM buffer.
+DEF SPRITE_OBJECTS           EQU $c200
+DEF SPRITE_OBJECTS_HI        EQU $c2
+DEF SPRITE_OBJECT_SLOT_SIZE  EQU $10
+DEF SPRITE_OBJECT_COUNT      EQU $10
+DEF SPRITE_OBJECT_TYPE       EQU $00
+DEF SPRITE_OBJECT_FRAME      EQU $02
+DEF SPRITE_OBJECT_BASE_Y     EQU $04
+DEF SPRITE_OBJECT_BASE_X     EQU $06
+DEF SPRITE_OBJECT_ATTR_MASK  EQU $80
+DEF SPRITE_FRAME_ENTRY_SIZE  EQU $04
+DEF SPRITE_ATTR_END_BIT      EQU 0
+DEF SPRITE_ATTR_INHERIT_BIT  EQU 1
+DEF OAM_ENTRY_SIZE           EQU $04
+DEF OAM_Y_BIAS               EQU $10
+DEF OAM_X_BIAS               EQU $08
+DEF OAM_SPRITE_COUNT         EQU $28
+DEF OAM_HIDDEN_Y             EQU $a0
+DEF SHADOW_OAM               EQU $c400
+DEF SHADOW_OAM_HI            EQU $c4
+DEF SHADOW_OAM_SIZE          EQU $a0
+DEF SHADOW_OAM_HIDE_LIMIT    EQU $98
 
 DEF LCD_REDRAW        EQU $c61c ; LCD再描画フラグ
 DEF SCORE_BCD_LOW     EQU $c61d ; スコアBCD下位2桁

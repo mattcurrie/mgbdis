@@ -84,8 +84,9 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | Address/Range | Evidence | Initial hypothesis |
 |---------------|----------|--------------------|
 | `$C000-$C0ED` | Many references from Bank 1 sound routines and tables; now named as `SOUND_*` constants. | Sound engine state, channel sequence pointers, timers, pitch slide state, tempo, and wave selectors. Continue refining medium-confidence field names. |
-| `$C200-$C3FF` | Used by sprite/field logic, but many `$C3xx`/`$C2xx` hits occur in suspicious instruction streams. | Mixed: real sprite/object buffers plus mis-disassembled data operands. |
-| `$C400-$C49F` | `ClearOAM` clears from `$C400`; OAM DMA routine copies `$C400` to hardware OAM. | Shadow OAM buffer, 160 bytes. |
+| `$C200-$C2FF` | `SPRITE_OBJECTS`; 16 logical sprite object slots, `$10` bytes each. | `UpdateSprites` scans this page in `$10`-byte steps and expands active slots into shadow OAM. |
+| `$C300-$C3FF` | Sprite/field-adjacent work area, not yet fully mapped. | Some references may still be from real field/UI state or from older data artifacts; needs separate trace. |
+| `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
 | `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
 | `$C6C3-$C6CE` | Field drawing routines use these as animation indexes, redraw flags, and timers. | Field redraw animation state. Consider naming once all producers are traced. |
 | `$C6EB-$C6EC` | Used by 2P initialization as sources for `ACTIVE_LEVEL`/`ACTIVE_SPEED`. | Link/2P selected level and speed staging bytes. |
