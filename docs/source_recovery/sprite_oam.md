@@ -59,15 +59,15 @@ Confirmed slot groups:
 |------------|------------------|
 | Slot 0 (`$C200`) | `ProcessColumn` initializes `SPRITE_OBJECT_TYPE_PLAYER_CURSOR`, frame `$00`, base Y `$80`, and base X `$20`. `InitGameState2` advances its frame, and left/right input adjusts base X by `$20`. |
 | Slots 1-4 (`$C210-$C24F`) | `DrawBox` calls `UpdateSpriteObject` four times. Collision/drop code scans these four slots and uses `SPRITE_OBJECT_GRID_COLUMN`, `SPRITE_OBJECT_PHASE`, and still-unresolved `+$0F` for gameplay state. |
-| Slots 5-8 (`$C250-$C28F`) | Menu/title helpers clear or scan this range; individual byte meanings still need trace. |
-| Slots 9-13 (`$C290-$C2DF`) | Options cursors, round-complete animations, countdown digits, and 2P field transition objects use these slots. |
+| Slots 5-8 (`$C250-$C28F`) | `GameOverSequence` writes `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` into these slots from `PIECE_DISPLAY_STATES`, using the state byte as the frame and deriving base X from the reverse display index. |
+| Slots 9-13 (`$C290-$C2DF`) | Options cursors, round-complete animations, countdown digits, and 2P field transition objects use these slots. `ResetTimers` clears a selected slot in this range through the shared `SPRITE_OBJECTS_HI` page. |
 
 Confirmed object types:
 
 | Type | Constant | Evidence |
 |------|----------|----------|
 | `$01` | `SPRITE_OBJECT_TYPE_PLAYER_CURSOR` | Slot 0 setup and left/right input path. |
-| `$02` | `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` | Written by `AnimateGameOver` into slots selected from `PIECE_DISPLAY_STATES`; despite the current name, this object type is the piece-display builder used by the game-over/display-results path. |
+| `$02` | `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` | Written by `AnimateGameOver` into slots 1-4 and by `GameOverSequence` into slots 5-8 from `PIECE_DISPLAY_STATES`; despite the current name, this object type is the piece-display builder used by the game-over/display-results path. |
 | `$03` | `SPRITE_OBJECT_TYPE_ROUND_TRANSITION` | Written to slot 9 during the round-complete / 2P transition path. |
 | `$04` | `SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE` | Written to slots 10-13 by `ProcessRoundComplete` and the 2P round-complete path. |
 | `$05` | `SPRITE_OBJECT_TYPE_SETTINGS_CURSOR` | Used by `SettingsCursorSpriteInit0` through `SettingsCursorSpriteInit2`. |

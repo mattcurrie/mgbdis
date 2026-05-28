@@ -4185,7 +4185,7 @@ jr_000_1999:
 
     ld c, a
     push hl
-    ld h, $c2
+    ld h, SPRITE_OBJECTS_HI
     ld a, b
     add $04
     swap a
@@ -5894,7 +5894,7 @@ ResetTimers::
     add FIELD_COLUMN_TIMER_RELOAD
     swap a
     ld l, a
-    ld h, $c2
+    ld h, SPRITE_OBJECTS_HI
     call UpdateTimerDisplay
     pop hl
     pop bc

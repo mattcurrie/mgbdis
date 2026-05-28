@@ -4931,7 +4931,7 @@ CheckGameStateUpdate::
     add $09
     swap a
     ld l, a
-    ld h, $c2
+    ld h, SPRITE_OBJECTS_HI
     inc l
     inc l
     inc l

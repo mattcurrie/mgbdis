@@ -41,6 +41,9 @@ This note records the four-byte piece display state array used by the
 - `AnimateGameOver` writes sprite object type `$02` into slots 1-4, sets the
   frame from the state byte, sets base X from the array index, sets base Y to
   `$28`, and copies the state byte into the slot's `SPRITE_OBJECT_TILE_ID`.
+- `GameOverSequence` scans the same state array in reverse and writes sprite
+  object type `$02` into slots 5-8. It uses the state byte as the frame and
+  derives base X from the reverse display index.
 - `PIECE_DISPLAY_BLINK_TIMER` drives the visible display-piece blink by toggling
   bit `$10` in the sprite frame field for active type `$02` objects. Frames
   `$07` and `$08` are left unchanged.
