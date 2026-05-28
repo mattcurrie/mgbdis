@@ -135,7 +135,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - **Status:** pending
 
 ### Phase 7: Documentation & Handoff
-- [ ] Write a source recovery overview
+- [x] Write a source recovery overview
 - [ ] Summarize confidence levels and unresolved questions
 - [ ] Provide a next-work checklist
 - **Status:** pending
