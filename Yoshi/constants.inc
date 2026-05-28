@@ -216,10 +216,16 @@ DEF EGG_COUNT_RESERVED EQU $c6d2 ; cleared with egg count; no direct read confir
 DEF EGG_COUNT_ONES EQU $c6d3
 DEF EGG_COUNT_TENS EQU $c6d4
 DEF EGG_COUNT_HUNDREDS EQU $c6d5
+DEF ROUND_TIMER_DIGITS EQU $c6d6 ; four elapsed-time digits displayed on the playfield
+DEF ROUND_TIMER_FRAME_COUNTER EQU $c6da ; 60-frame divider for ROUND_TIMER_DIGITS
+DEF TOTAL_TIMER_DIGITS EQU $c6db ; four elapsed-time digits copied to B-type result records
+DEF TOTAL_TIMER_FRAME_COUNTER EQU $c6df ; 60-frame divider for TOTAL_TIMER_DIGITS
 DEF EGG_COUNT_DIGIT_LIMIT EQU $0a
 DEF EGG_COUNT_MAX_DIGIT EQU $09
 DEF EGG_COUNT_TILE_BASE EQU $40
 DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス
+DEF ROUND_TIMER_STOPPED EQU $c6e4 ; nonzero stops ROUND_TIMER_DIGITS updates
+DEF TOTAL_TIMER_STOPPED EQU $c6e5 ; nonzero stops TOTAL_TIMER_DIGITS updates
 DEF LINK_FIELD_EVENT_PAYLOAD EQU $c6e6 ; staged bit-6 field event copied into send queue
 DEF LINK_SEND_DROP_INPUT_LOCK EQU $c6e7 ; suppresses drop-start input during Send2PData inner updates
 DEF LINK_2P_SELECTED_LEVEL EQU $c6eb

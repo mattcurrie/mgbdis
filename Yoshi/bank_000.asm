@@ -2622,7 +2622,7 @@ jr_000_111b:
     ld bc, $0103
     call FillRect
     ld hl, $c5ea
-    ld de, $c6d6
+    ld de, ROUND_TIMER_DIGITS
     ld a, [de]
     inc de
     and $0f
@@ -2819,8 +2819,8 @@ jr_000_126e:
     jr nz, jr_000_126e
 
     ld a, $01
-    ld [$c6e4], a
-    ld [$c6e5], a
+    ld [ROUND_TIMER_STOPPED], a
+    ld [TOTAL_TIMER_STOPPED], a
     ld [$c703], a
     push af
     ld a, [TWO_PLAYER_FLAG]
@@ -4361,11 +4361,11 @@ jr_000_1a8d:
     and a
     jr z, jr_000_1ae2
 
-    ld a, [$c6d6]
+    ld a, [ROUND_TIMER_DIGITS]
     and a
     jr nz, jr_000_1aa0
 
-    ld a, [$c6d7]
+    ld a, [ROUND_TIMER_DIGITS + 1]
     cp $03
     jr c, jr_000_1ae2
 
@@ -6651,7 +6651,7 @@ jr_000_28cc:
     jr jr_000_28e0
 
 jr_000_28d4:
-    ld hl, $c6db
+    ld hl, TOTAL_TIMER_DIGITS
     ld de, $c752
     ld bc, $0004
     call Memcopy
@@ -8057,8 +8057,8 @@ jr_000_315a:
     jr nz, jr_000_315a
 
     ld a, $01
-    ld [$c6e4], a
-    ld [$c6e5], a
+    ld [ROUND_TIMER_STOPPED], a
+    ld [TOTAL_TIMER_STOPPED], a
     pop hl
     pop bc
     pop af

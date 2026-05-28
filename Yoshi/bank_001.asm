@@ -729,8 +729,8 @@ jr_001_449e:
     call CalcDifficulty
     call FieldUpdate15
     xor a
-    ld [$c6e4], a
-    ld [$c6e5], a
+    ld [ROUND_TIMER_STOPPED], a
+    ld [TOTAL_TIMER_STOPPED], a
     ret
 
 
@@ -823,8 +823,8 @@ InitPlayfield::
     call FieldUpdate15
     call InitEggSystem
     xor a
-    ld [$c6e4], a
-    ld [$c6e5], a
+    ld [ROUND_TIMER_STOPPED], a
+    ld [TOTAL_TIMER_STOPPED], a
     ret
 
 
@@ -1644,7 +1644,7 @@ FieldUpdate14::
     ret nz
 
     call CalcOAMAddress
-    ld de, $c6d6
+    ld de, ROUND_TIMER_DIGITS
     ld a, [de]
     add $40
     inc de
@@ -1665,24 +1665,24 @@ FieldUpdate14::
 
 
 FieldUpdate15::
-    ld hl, $c6d6
+    ld hl, ROUND_TIMER_DIGITS
     xor a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
-    ld [$c6e4], a
+    ld [ROUND_TIMER_STOPPED], a
     ret
 
 
 FieldUpdate16::
-    ld hl, $c6db
+    ld hl, TOTAL_TIMER_DIGITS
     xor a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
-    ld [$c6e5], a
+    ld [TOTAL_TIMER_STOPPED], a
     ret
 
 
@@ -1989,7 +1989,7 @@ jr_001_4b88:
 jr_001_4b90:
     call UpdateLinkState
     call UpdateCountdownTimer
-    call ProcessLinkData
+    call UpdateElapsedTimers
     ld a, [WAVE_UPDATE]
     and a
     jr z, jr_001_4ba2
@@ -2137,26 +2137,26 @@ jr_001_4c3d:
     ret
 
 
-ProcessLinkData::
+UpdateElapsedTimers::
     ld a, [SOUND_PAUSE_FLAG]
     and a
     ret nz
 
-    ld a, [$c6e4]
+    ld a, [ROUND_TIMER_STOPPED]
     and a
     jr nz, jr_001_4c59
 
-    ld hl, $c6da
-    call SendLinkByte
+    ld hl, ROUND_TIMER_FRAME_COUNTER
+    call TickElapsedTimerDigits
 
 jr_001_4c59:
-    ld a, [$c6e5]
+    ld a, [TOTAL_TIMER_STOPPED]
     and a
     ret nz
 
-    ld hl, $c6df
+    ld hl, TOTAL_TIMER_FRAME_COUNTER
 
-SendLinkByte::
+TickElapsedTimerDigits::
     inc [hl]
     ld a, [hl]
     cp $3c
