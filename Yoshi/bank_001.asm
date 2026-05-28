@@ -626,7 +626,7 @@ jr_001_43f1:
 
 
 SetupGameBG::
-    ld hl, $c6ab
+    ld hl, RESULT_FLOW_ACTIVE
     ld a, [hl]
     and a
     ret nz

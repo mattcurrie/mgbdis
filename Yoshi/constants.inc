@@ -179,6 +179,7 @@ DEF PIECE_FALL_ACCEL_TIMER EQU $c6b0 ; divider before PIECE_FALL_DELAY decreases
 DEF PIECE_FALL_ACCEL_PERIOD EQU $0a
 DEF GAME_TURN_TABLE_INDEX EQU $c6a9 ; index into GameTurnParamTable
 DEF GAME_TURN_STEP_TIMER EQU $c6aa ; per-record countdown before advancing the turn table
+DEF RESULT_FLOW_ACTIVE EQU $c6ab ; result/high-score flow suppresses normal field BG setup
 DEF GAME_TURN_DELAY EQU $c6ac ; fall/update delay loaded from GameTurnParamTable
 DEF MENU_CURSOR       EQU $c6b1 ; メニューカーソル位置
 DEF OPTION_GAME_TYPE  EQU $c6b2 ; オプション: ゲーム種別

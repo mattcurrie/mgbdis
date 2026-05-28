@@ -3477,7 +3477,7 @@ jr_000_1593:
 
 DropPiece::
     xor a
-    ld [$c6ab], a
+    ld [RESULT_FLOW_ACTIVE], a
     ld [$c69d], a
     ld [$c6ae], a
     ld [$c6ad], a
@@ -8005,7 +8005,7 @@ jr_000_3107:
 jr_000_310f:
     ld a, GAME_STATE_TITLE_INIT
     ld [GAME_STATE], a
-    ld hl, $c6ab
+    ld hl, RESULT_FLOW_ACTIVE
     ld [hl], $00
     ret
 
@@ -8062,7 +8062,7 @@ jr_000_315a:
     pop hl
     pop bc
     pop af
-    ld hl, $c6ab
+    ld hl, RESULT_FLOW_ACTIVE
     ld [hl], $01
     ld a, [TWO_PLAYER_FLAG]
     and a
@@ -8141,7 +8141,7 @@ FormatRankEntry::
     ld [$c706], a
     ld a, $01
     ld [$c705], a
-    ld [$c6ab], a
+    ld [RESULT_FLOW_ACTIVE], a
     ret
 
 

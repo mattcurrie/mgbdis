@@ -33,3 +33,4 @@ dispatcher is in `Yoshi/bank_000.asm` at `MainLoop`.
 - State `$01` is a live title-menu loop, not a one-shot initializer. `RunTitleMenu` clears per-menu scratch bytes each frame, updates the 1P/2P selection, and watches for the Start/link path into pre-play init.
 - State `$05` and `$06` are pre-play states. In 1P they cover the option/settings menu; in 2P state `$05` dispatches through `Run2PPreplayLoop`, which edits the two link settings and waits until the master sends or the peer receives `$55` before entering play setup.
 - State `$04` is broader than a simple "round end": it includes high-score/result display timing and can return to title or resume play depending on result and input.
+- `RESULT_FLOW_ACTIVE` (`$C6AB`) is raised by the high-score/result setup paths and prevents Bank 1 `SetupGameBG` from redrawing the normal playfield background until the flow is cleared.
