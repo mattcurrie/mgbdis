@@ -109,8 +109,9 @@
 - Bank 1 `01:$432F` is now labeled `AddScore`. It adds an `HL` packed-BCD score delta into `$C61D-$C61F`, caps at `99999`, and writes five unpacked display digits at `$C621-$C625`.
 - Bank 1 `01:$442C-$445B` is `FieldColumnTilePatternTable`, six 16-byte tile patterns selected by `LoadGameBGTiles`; `01:$445C` is real code and is now labeled `StartNextRound`.
 - Bank 1 `01:$4681` is now labeled `AdvanceEggAnimation`; it advances the `$C6D3-$C6D5` egg animation counters and is called from the round-complete score/result path.
-- Bank 0 `00:$22CC-$230E` and `00:$230F-$234B` are field redraw delta tables. `DrawField2`, `DrawField4`, and `DrawFieldRow` index them until terminator `$10`; the real code entry at `00:$234C` is now `UpdateFieldTimers`.
-- `UpdateFieldTimers` is called from both Bank 1 `GameMainUpdate` and Bank 0 `Send2PData`, decrementing four bytes at `$C6CB-$C6CE` and clearing related C2xx display rows when each timer expires.
+- Bank 0 `00:$22CC-$230E` and `00:$230F-$234B` are field animation delta tables. `StepFieldAnimSlot11SideDelta` / `StepFieldAnimSlot10SideDelta` index `FieldSideDeltaTable`, while `StepFieldAnimSlot13RowDelta` / `StepFieldAnimSlot12RowDelta` index `FieldRowDeltaTable`; both tables terminate with `$10`.
+- WRAM `$C6C3-$C6C6` now names the per-slot field animation cursors for logical sprite object slots 11, 10, 13, and 12. `$C6C7-$C6CA` now names the matching active flags, in slot order 12, 11, 10, and 13.
+- `UpdateFieldTimers` is called from both Bank 1 `GameMainUpdate` and Bank 0 `Send2PData`, decrementing `FIELD_COLUMN_TIMERS` at `$C6CB-$C6CE` and clearing logical sprite object slots 10-13 when each timer expires.
 - Bank 1 `01:$4570` is now labeled `AdvanceSpriteAnimFrame`; title/input code calls it before `SpriteAnimTable` to advance the shared sprite animation frame/state.
 - HRAM `$FF80` is now named `OAM_DMA_HRAM`; `SetupOAMDMA` copies the DMA routine there and `VBlankHandler` calls it.
 - Bank 0 `00:$33F7` is a real link-start confirmation loop, now labeled `WaitLinkStartConfirm`. It had been hidden behind a short `db` escape.

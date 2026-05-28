@@ -3757,9 +3757,9 @@ UpdateBoard::
     sla a
     ld [de], a
     ld a, [PIECE_ROTATION]
-    ld hl, $c6cb
+    ld hl, FIELD_COLUMN_TIMERS
     call GetArrayElement
-    ld [hl], $0a
+    ld [hl], FIELD_COLUMN_TIMER_RELOAD
     ret
 
 
@@ -4028,10 +4028,10 @@ jr_000_17d6:
     jr nz, jr_000_17d6
 
     ld a, $01
-    ld [$c6c8], a
-    ld [$c6c9], a
-    ld [$c6ca], a
-    ld [$c6c7], a
+    ld [FIELD_ANIM_SLOT_11_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_10_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_13_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_12_ACTIVE], a
     ld a, SND_ROUND_COMPLETE
     call PlaySound
     ld hl, SPRITE_OBJECT_SLOT_9
@@ -5780,23 +5780,23 @@ jr_000_21bb:
 
 
 SetupMultiplayer::
-    call Setup2PField
-    call DrawField1
-    call DrawField3
-    call DrawFieldBorder
+    call UpdateFieldAnimSlot11
+    call UpdateFieldAnimSlot10
+    call UpdateFieldAnimSlot13
+    call UpdateFieldAnimSlot12
     ret
 
 
-Setup2PField::
-    ld hl, $c6c8
+UpdateFieldAnimSlot11::
+    ld hl, FIELD_ANIM_SLOT_11_ACTIVE
     xor a
     cp [hl]
     ret z
 
     ld hl, SPRITE_OBJECT_SLOT_11 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
-    call SetupLinkCable
-    cp $10
+    call StepFieldAnimSlot11SideDelta
+    cp FIELD_ANIM_END_SENTINEL
     ret z
 
     ld [hl], a
@@ -5805,22 +5805,22 @@ Setup2PField::
 Jump_000_21e4:
     dec l
     ld a, [hl]
-    call SetupLinkCable
+    call StepFieldAnimSlot11SideDelta
     ld [hl], a
     ret
 
 
-SetupLinkCable::
+StepFieldAnimSlot11SideDelta::
     push hl
     ld b, a
-    ld a, [$c6c3]
+    ld a, [FIELD_ANIM_SLOT_11_CURSOR]
     ld hl, FieldSideDeltaTable
     call GetArrayElement
-    cp $10
+    cp FIELD_ANIM_END_SENTINEL
     jr z, jr_000_2201
 
     add b
-    ld hl, $c6c3
+    ld hl, FIELD_ANIM_SLOT_11_CURSOR
     inc [hl]
     pop hl
     ret
@@ -5828,24 +5828,24 @@ SetupLinkCable::
 
 jr_000_2201:
     xor a
-    ld [$c6c8], a
-    ld [$c6c3], a
+    ld [FIELD_ANIM_SLOT_11_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_11_CURSOR], a
     ld [SPRITE_OBJECT_SLOT_11], a
-    ld a, $10
+    ld a, FIELD_ANIM_END_SENTINEL
     pop hl
     ret
 
 
-DrawField1::
-    ld hl, $c6c9
+UpdateFieldAnimSlot10::
+    ld hl, FIELD_ANIM_SLOT_10_ACTIVE
     xor a
     cp [hl]
     ret z
 
     ld hl, SPRITE_OBJECT_SLOT_10 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
-    call DrawField2
-    cp $10
+    call StepFieldAnimSlot10SideDelta
+    cp FIELD_ANIM_END_SENTINEL
     ret z
 
     cpl
@@ -5855,22 +5855,22 @@ DrawField1::
     dec l
     dec l
     ld a, [hl]
-    call DrawField2
+    call StepFieldAnimSlot10SideDelta
     add b
     ld [hl], a
     ret
 
 
-DrawField2::
+StepFieldAnimSlot10SideDelta::
     push hl
     ld b, a
-    ld a, [$c6c4]
+    ld a, [FIELD_ANIM_SLOT_10_CURSOR]
     ld hl, FieldSideDeltaTable
     call GetArrayElement
-    cp $10
+    cp FIELD_ANIM_END_SENTINEL
     jr z, jr_000_2241
 
-    ld hl, $c6c4
+    ld hl, FIELD_ANIM_SLOT_10_CURSOR
     inc [hl]
     pop hl
     ret
@@ -5878,46 +5878,46 @@ DrawField2::
 
 jr_000_2241:
     xor a
-    ld [$c6c9], a
-    ld [$c6c4], a
+    ld [FIELD_ANIM_SLOT_10_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_10_CURSOR], a
     ld [SPRITE_OBJECT_SLOT_10], a
-    ld a, $10
+    ld a, FIELD_ANIM_END_SENTINEL
     pop hl
     ret
 
 
-DrawField3::
-    ld hl, $c6ca
+UpdateFieldAnimSlot13::
+    ld hl, FIELD_ANIM_SLOT_13_ACTIVE
     xor a
     cp [hl]
     ret z
 
     ld hl, SPRITE_OBJECT_SLOT_13 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
-    call DrawField4
-    cp $10
+    call StepFieldAnimSlot13RowDelta
+    cp FIELD_ANIM_END_SENTINEL
     ret z
 
     ld [hl], a
     dec l
     dec l
     ld a, [hl]
-    call DrawField4
+    call StepFieldAnimSlot13RowDelta
     ld [hl], a
     ret
 
 
-DrawField4::
+StepFieldAnimSlot13RowDelta::
     push hl
     ld b, a
-    ld a, [$c6c5]
+    ld a, [FIELD_ANIM_SLOT_13_CURSOR]
     ld hl, FieldRowDeltaTable
     call GetArrayElement
-    cp $10
+    cp FIELD_ANIM_END_SENTINEL
     jr z, jr_000_227e
 
     add b
-    ld hl, $c6c5
+    ld hl, FIELD_ANIM_SLOT_13_CURSOR
     inc [hl]
     pop hl
     ret
@@ -5925,24 +5925,24 @@ DrawField4::
 
 jr_000_227e:
     xor a
-    ld [$c6ca], a
-    ld [$c6c5], a
+    ld [FIELD_ANIM_SLOT_13_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_13_CURSOR], a
     ld [SPRITE_OBJECT_SLOT_13], a
-    ld a, $10
+    ld a, FIELD_ANIM_END_SENTINEL
     pop hl
     ret
 
 
-DrawFieldBorder::
-    ld hl, $c6c7
+UpdateFieldAnimSlot12::
+    ld hl, FIELD_ANIM_SLOT_12_ACTIVE
     xor a
     cp [hl]
     ret z
 
     ld hl, SPRITE_OBJECT_SLOT_12 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
-    call DrawFieldRow
-    cp $10
+    call StepFieldAnimSlot12RowDelta
+    cp FIELD_ANIM_END_SENTINEL
     ret z
 
     cpl
@@ -5952,24 +5952,24 @@ DrawFieldBorder::
     dec l
     dec l
     ld a, [hl]
-    call DrawFieldRow
+    call StepFieldAnimSlot12RowDelta
 
-DrawFieldTile::
+StoreFieldAnimCoordinate::
     add b
     ld [hl], a
     ret
 
 
-DrawFieldRow::
+StepFieldAnimSlot12RowDelta::
     push hl
     ld b, a
-    ld a, [$c6c6]
+    ld a, [FIELD_ANIM_SLOT_12_CURSOR]
     ld hl, FieldRowDeltaTable
     call GetArrayElement
-    cp $10
+    cp FIELD_ANIM_END_SENTINEL
     jr z, jr_000_22be
 
-    ld hl, $c6c6
+    ld hl, FIELD_ANIM_SLOT_12_CURSOR
     inc [hl]
     pop hl
     ret
@@ -5977,10 +5977,10 @@ DrawFieldRow::
 
 jr_000_22be:
     xor a
-    ld [$c6c7], a
-    ld [$c6c6], a
+    ld [FIELD_ANIM_SLOT_12_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_12_CURSOR], a
     ld [SPRITE_OBJECT_SLOT_12], a
-    ld a, $10
+    ld a, FIELD_ANIM_END_SENTINEL
     pop hl
     ret
 
@@ -6006,7 +6006,7 @@ FieldRowDeltaTable::
     db $00, $01, $00, $01, $10
 
 UpdateFieldTimers::
-    ld hl, $c6cb
+    ld hl, FIELD_COLUMN_TIMERS
     ld b, $00
 
 jr_000_2351:
@@ -6020,7 +6020,7 @@ jr_000_2351:
 jr_000_2359:
     inc hl
     inc b
-    ld a, $04
+    ld a, FIELD_COLUMN_TIMER_COUNT
     cp b
     jr nz, jr_000_2351
 
@@ -6031,7 +6031,7 @@ ResetTimers::
     push bc
     push hl
     ld a, b
-    add $0a
+    add FIELD_COLUMN_TIMER_RELOAD
     swap a
     ld l, a
     ld h, $c2
@@ -8032,10 +8032,10 @@ jr_000_306a:
     jr nz, jr_000_3053
 
     ld a, $01
-    ld [$c6c8], a
-    ld [$c6c9], a
-    ld [$c6ca], a
-    ld [$c6c7], a
+    ld [FIELD_ANIM_SLOT_11_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_10_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_13_ACTIVE], a
+    ld [FIELD_ANIM_SLOT_12_ACTIVE], a
     ld a, SND_ROUND_COMPLETE
     call PlaySound
     ret

@@ -89,7 +89,7 @@ Round flow:                                      State 3 → State 4 → State 3
 ### 2-Player ($17C5-$18B5, $21C5-$22A8)
 
 - Process2Player/Send2PData: 2P通信ロジック
-- SetupMultiplayer/SetupLinkCable: リンクケーブル初期化
+- SetupMultiplayer/UpdateFieldAnimSlot10-13: フィールド演出用スプライトスロット更新
 - SerialHandler ($2092): シリアル割り込み
 
 ### Options UI & Settings ($1C4F-$203B)

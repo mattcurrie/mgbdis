@@ -166,6 +166,18 @@ DEF TITLE_PLAYER_MARKER_TIMER EQU $c6bc ; タイトル1P/2P選択マーカー点
 DEF TITLE_PLAYER_MARKER_PHASE EQU $c6be ; タイトル1P/2P選択マーカー点滅フェーズ
 DEF BGM_PREVIEW_TIMER EQU $c6c1 ; BGMプレビュー用カウントダウン
 DEF BGM_PREVIEW_PERIOD EQU $c6c2 ; BGMプレビュー用初期値候補
+DEF FIELD_ANIM_SLOT_11_CURSOR EQU $c6c3 ; FieldSideDeltaTable cursor for sprite object slot 11
+DEF FIELD_ANIM_SLOT_10_CURSOR EQU $c6c4 ; FieldSideDeltaTable cursor for sprite object slot 10
+DEF FIELD_ANIM_SLOT_13_CURSOR EQU $c6c5 ; FieldRowDeltaTable cursor for sprite object slot 13
+DEF FIELD_ANIM_SLOT_12_CURSOR EQU $c6c6 ; FieldRowDeltaTable cursor for sprite object slot 12
+DEF FIELD_ANIM_SLOT_12_ACTIVE EQU $c6c7 ; nonzero while slot 12 field animation is active
+DEF FIELD_ANIM_SLOT_11_ACTIVE EQU $c6c8 ; nonzero while slot 11 field animation is active
+DEF FIELD_ANIM_SLOT_10_ACTIVE EQU $c6c9 ; nonzero while slot 10 field animation is active
+DEF FIELD_ANIM_SLOT_13_ACTIVE EQU $c6ca ; nonzero while slot 13 field animation is active
+DEF FIELD_COLUMN_TIMERS EQU $c6cb ; four column timers cleared through UpdateTimerDisplay
+DEF FIELD_COLUMN_TIMER_COUNT EQU $04
+DEF FIELD_COLUMN_TIMER_RELOAD EQU $0a
+DEF FIELD_ANIM_END_SENTINEL EQU $10
 DEF SPRITE_ANIM_FRAME EQU $c6cf ; スプライトアニメフレーム
 DEF SPRITE_ANIM_STATE EQU $c6d0 ; スプライトアニメ状態
 DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス

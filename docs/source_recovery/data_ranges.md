@@ -79,8 +79,8 @@ Notes:
 | `00:$15FE-$1611` | `LevelFallDelayTable` | Converted to `db` | `ProcessFalling` loads this address, caps active level to `$13`, and calls `GetArrayElement`; the result seeds the fall timer at `$C6A7`, halved when `ACTIVE_SPEED` is nonzero. |
 | `00:$18CB-$18D1` | `RoundCompleteStateRemapTable` | Converted to `db` | `UpdateTimer` indexes this table with `SCREEN_STATE` and writes the result back to `SCREEN_STATE` before building the 2P/OAM state packet. |
 | `00:$18D2-$18E3` | `RoundCompleteDelayParamTable` | Converted to `db` big-endian word pairs | The round-complete path indexes this table with the saved pre-remap state at `$C6A2 * 2`, loads the first byte into `H` and second byte into `L`, then calls `$432F`. `CalcResults` starts immediately after at `00:$18E4`. |
-| `00:$22CC-$230E` | `FieldSideDeltaTable` | Converted to `db` | `DrawField2` and its paired side-field routine index this table with `$C6C3/$C6C4` to step field-side tile values until terminator `$10`. |
-| `00:$230F-$234B` | `FieldRowDeltaTable` | Converted to `db` | `DrawField4` and `DrawFieldRow` index this table with `$C6C5/$C6C6`; the next byte at `00:$234C` is the restored `UpdateFieldTimers` code entry. |
+| `00:$22CC-$230E` | `FieldSideDeltaTable` | Converted to `db` | `StepFieldAnimSlot11SideDelta` and `StepFieldAnimSlot10SideDelta` index this table with `FIELD_ANIM_SLOT_11_CURSOR` / `FIELD_ANIM_SLOT_10_CURSOR` to step object slots 11 and 10 until terminator `$10`. |
+| `00:$230F-$234B` | `FieldRowDeltaTable` | Converted to `db` | `StepFieldAnimSlot13RowDelta` and `StepFieldAnimSlot12RowDelta` index this table with `FIELD_ANIM_SLOT_13_CURSOR` / `FIELD_ANIM_SLOT_12_CURSOR`; the next byte at `00:$234C` is the restored `UpdateFieldTimers` code entry. |
 
 Notes:
 

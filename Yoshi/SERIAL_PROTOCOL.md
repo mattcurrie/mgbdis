@@ -57,10 +57,10 @@ SerialHandler:
 ### Master vs Slave
 
 - **Master** (LINK_ROLE=$01): 内部クロックを使用。`rSC = $81` で転送を開始する側。
-  ゲームループ側 (`SetupLinkCable`) で転送を開始。
+  ゲームループ側の送信処理で転送を開始。
 - **Slave** (LINK_ROLE=$02): 外部クロック待ち。`rSC = $80` をセットして Master からの転送を待つ。
 
-## Handshake - SetupLinkCable ($21EB)
+## Handshake - WaitLinkStartConfirm ($33F7)
 
 接続確立時のハンドシェイク:
 

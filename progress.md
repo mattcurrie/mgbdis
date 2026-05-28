@@ -145,11 +145,14 @@
   - Named confirmed sprite object types `$01-$05` and their corresponding frame tables where call-site evidence was strong.
   - Converted Bank 1 `AnimateSprite` and `DrawTitleLabels` inline tile strings from bogus instructions to `db` rows.
   - Named the title 1P/2P selection marker blink timer/phase at `$C6BC/$C6BE`.
+  - Named field animation cursors, active flags, and column timers at `$C6C3-$C6CE`, tying them to logical sprite object slots 10-13 and the `FieldSideDeltaTable` / `FieldRowDeltaTable` consumers.
+  - Created `docs/source_recovery/field_animation_state.md` to document the recovered slot/timer mapping.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
   - `docs/source_recovery/graphics_loads.md`
   - `docs/source_recovery/sprite_oam.md`
+  - `docs/source_recovery/field_animation_state.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -196,6 +199,7 @@
 | Sprite object type naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Bank 1 tile string conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Title marker WRAM naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Field animation state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

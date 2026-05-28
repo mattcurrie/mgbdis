@@ -69,9 +69,9 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6BE` | `TITLE_PLAYER_MARKER_PHASE` | High | Selects whether `DisplayNextPiece` draws the top or bottom title selection marker tiles. |
 | `$C6C1` | `BGM_PREVIEW_TIMER` | Medium | Set during BGM option changes and decremented by `TickBgmPreviewTimer`. |
 | `$C6C2` | `BGM_PREVIEW_PERIOD` | Low | Stores BGM-specific values during preview setup; direct consumer still needs confirmation. |
-| `$C6C3-$C6C6` | field delta cursors | Medium | `DrawField2`, `DrawField4`, and `DrawFieldRow` use these as indexes into `FieldSideDeltaTable` / `FieldRowDeltaTable`; exact variable names are still pending. |
-| `$C6C7-$C6CA` | field redraw flags | Medium | `DrawField1`, `DrawField3`, and `DrawFieldBorder` test these flags before animating field edge/row updates, then clear them at table terminators. |
-| `$C6CB-$C6CE` | field redraw timers | Medium | `UpdateFieldTimers` decrements four bytes and clears corresponding C2xx display rows through `ResetTimers` when a timer reaches zero. |
+| `$C6C3-$C6C6` | `FIELD_ANIM_SLOT_*_CURSOR` | High | Four table cursors for sprite object slots 11, 10, 13, and 12. `StepFieldAnimSlot*` routines index `FieldSideDeltaTable` / `FieldRowDeltaTable` until sentinel `$10`, then reset the matching cursor. |
+| `$C6C7-$C6CA` | `FIELD_ANIM_SLOT_*_ACTIVE` | High | Active flags for sprite object slots 12, 11, 10, and 13. Round-complete paths set all four flags; each slot update routine tests its flag and clears it when its delta table terminates. |
+| `$C6CB-$C6CE` | `FIELD_COLUMN_TIMERS` | High | Four timers tied to logical sprite object slots 10-13. `UpdateBoard` reloads one timer by `PIECE_ROTATION`; `UpdateFieldTimers` decrements them and clears the matching `$C2xx` slot when a timer reaches zero. |
 | `$C6CF` | `SPRITE_ANIM_FRAME` | Medium | Used by init/update animation paths; exact scope needs validation. |
 | `$C6D0` | `SPRITE_ANIM_STATE` | Medium | Used with `SPRITE_ANIM_FRAME`. |
 | `$C6E1` | `BGM_INDEX` | Medium | Used when selecting BGM/sound. |
@@ -90,7 +90,6 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | `$C300-$C3FF` | Sprite/field-adjacent work area, not yet fully mapped. | Some references may still be from real field/UI state or from older data artifacts; needs separate trace. |
 | `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
 | `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
-| `$C6C3-$C6CE` | Field drawing routines use these as animation indexes, redraw flags, and timers. | Field redraw animation state. Consider naming once all producers are traced. |
 | `$C6EB-$C6EC` | Used by 2P initialization as sources for `ACTIVE_LEVEL`/`ACTIVE_SPEED`. | Link/2P selected level and speed staging bytes. |
 | `$C6D2-$C6D5` | Cleared/initialized with sprite animation state; used by playfield/egg logic. | Per-player or per-side animation/playfield state. |
 | `$C6FA-$C6FE` | 2P/link code uses these with `LINK_SEND`/`LINK_RECV`. | Link protocol staging bytes / last exchanged settings. |

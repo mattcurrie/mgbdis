@@ -50,6 +50,7 @@ Phases 2-4
 - [x] Convert Bank 0 level fall-delay table at `$15FE` and restore the `$1612` code boundary
 - [x] Convert Bank 0 round-complete tables at `$18CB` and `$18D2`
 - [x] Convert Bank 0 field delta tables at `$22CC` and `$230F`
+- [x] Name field animation cursors, active flags, and column timers at `$C6C3-$C6CE`
 - [x] Convert Bank 0 tail graphics data at `$3839-$3FFF`
 - [x] Convert Bank 1 field-column tile pattern table at `$442C` and restore the `$445C` code boundary
 - [x] Reclassify Bank 1 `$55E2` sound setup entry as code and split immediate sound support tables
