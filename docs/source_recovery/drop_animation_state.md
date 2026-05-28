@@ -24,7 +24,7 @@ This note documents the recovered WRAM state used by `StartDropAnim` and
   frames. State `3` seeds the next entry two bytes later when more rows remain;
   state `5` clears the current entry.
 - When the second cascade finishes its last entry, the routine swaps the two
-  selected bytes in the `$C66A` column-state array and clears
+  selected bytes in the `COLUMN_TOP_ROWS` column-state array and clears
   `DROP_ANIM_ACTIVE`.
 
 The names are high confidence for `$C75D/$C75E/$C761/$C764/$C774`. `$C762` is

@@ -172,6 +172,8 @@
   - Labeled the following unreferenced but coherent code island at `00:$11F0-$1202` as `UnusedDrawNumberPairUnlessFF`.
   - Named the drop-input animation state at `$C75D/$C75E/$C761/$C764/$C774`, including the two seven-entry cascade arrays used by `AnimateDropDown` and `AnimateDropUp`.
   - Created `docs/source_recovery/drop_animation_state.md` to document the recovered drop animation flow and confidence levels.
+  - Named `COLUMN_TOP_ROWS` at `$C66A-$C66D` and the drop cursor frame animation bytes at `$C66F-$C670`.
+  - Created `docs/source_recovery/column_state.md` to document the first-pass column top-row and drop cursor animation evidence.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -244,6 +246,7 @@
 | Game-turn parameter table conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Matching/result table conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Drop animation state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Column state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

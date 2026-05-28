@@ -1182,7 +1182,7 @@ DrawColumnSprite::
     ld l, a
     sla l
     sla l
-    ld de, $c66a
+    ld de, COLUMN_TOP_ROWS
     add e
     ld e, a
     jr nc, jr_000_0680
@@ -1538,7 +1538,7 @@ jr_000_07eb:
     dec b
     jr nz, jr_000_07eb
 
-    ld hl, $c66a
+    ld hl, COLUMN_TOP_ROWS
     ld a, [DROP_ANIM_COLUMN]
     add l
     ld l, a
@@ -1682,7 +1682,7 @@ CalcGridPosition::
     ld l, a
     sla l
     sla l
-    ld bc, $c66a
+    ld bc, COLUMN_TOP_ROWS
     add c
     ld c, a
     ret nc
@@ -2155,15 +2155,15 @@ jr_000_0b33:
 
 
 InitGameState2::
-    ld a, [$c66f]
+    ld a, [DROP_CURSOR_ANIM_ACTIVE]
     and a
     ret z
 
-    ld hl, $c670
+    ld hl, DROP_CURSOR_FRAME_TIMER
     dec [hl]
     ret nz
 
-    ld [hl], $02
+    ld [hl], DROP_CURSOR_FRAME_PERIOD
     ld hl, SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_FRAME
     ld a, [hl]
     cp $04
@@ -2191,15 +2191,15 @@ jr_000_0b6d:
 
 jr_000_0b75:
     xor a
-    ld [$c66f], a
+    ld [DROP_CURSOR_ANIM_ACTIVE], a
     ret
 
 
 InitGameBoard::
-    ld hl, $c66f
+    ld hl, DROP_CURSOR_ANIM_ACTIVE
     ld [hl], $00
     inc hl
-    ld [hl], $02
+    ld [hl], DROP_CURSOR_FRAME_PERIOD
     ret
 
 
@@ -2807,8 +2807,8 @@ jr_000_124d:
     and a
     ret z
 
-    ld hl, $c66a
-    ld b, $04
+    ld hl, COLUMN_TOP_ROWS
+    ld b, COLUMN_COUNT
 
 jr_000_126e:
     ld a, [hl+]
@@ -2850,7 +2850,7 @@ DisplayScore::
     dec [hl]
     ret nz
 
-    ld a, [$c66f]
+    ld a, [DROP_CURSOR_ANIM_ACTIVE]
     ld b, a
     ld a, [DROP_ANIM_ACTIVE]
     or b
@@ -2970,7 +2970,7 @@ jr_000_1317:
     jr nz, jr_000_1341
 
     ld a, $01
-    ld [$c66f], a
+    ld [DROP_CURSOR_ANIM_ACTIVE], a
     ld a, [SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_BASE_X]
     swap a
     srl a
@@ -3227,7 +3227,7 @@ jr_000_1472:
 
 MovePieceUp::
     ld a, [PIECE_ROTATION]
-    ld hl, $c66a
+    ld hl, COLUMN_TOP_ROWS
     add l
     jr nc, jr_000_1481
 
@@ -3356,8 +3356,8 @@ jr_000_150d:
 
 
 GetRandomPiece::
-    ld b, $04
-    ld hl, $c66a
+    ld b, COLUMN_COUNT
+    ld hl, COLUMN_TOP_ROWS
     ld a, [$c699]
 
 jr_000_151b:

@@ -51,6 +51,9 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C61D-$C61F` | `SCORE_BCD_LOW` / `SCORE_BCD_MID` / `SCORE_BCD_HIGH` | High | Bank 1 `AddScore` adds an `HL` BCD score delta with `daa`, caps overflow at `99999`, and stores the packed BCD accumulator here. |
 | `$C621-$C625` | `SCORE_DIGITS` | High | `AddScore` unpacks the BCD score into five low-nibble display digits; Bank 0 `UpdateLevel` reads five bytes from this range when drawing the score. |
 | `$C62A` | `BOARD_DATA` | Low | Existing constant, but direct scan did not see the symbol; board may be addressed via nearby pointers/indexed offsets. |
+| `$C66A-$C66D` | `COLUMN_TOP_ROWS` | High | Four per-column row/fall-target bytes. Seeded from level setup, indexed by `PIECE_ROTATION`, used by drawing and fall logic, and swapped by `AnimateDropping`. |
+| `$C66F` | `DROP_CURSOR_ANIM_ACTIVE` | High | Set when `CheckMatch` accepts a drop input, drives `InitGameState2` cursor-frame animation, and gates `DisplayScore` timing. |
+| `$C670` | `DROP_CURSOR_FRAME_TIMER` | High | Decremented and reloaded by `InitGameState2` before advancing `SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_FRAME`. |
 | `$C671` | `GAME_TYPE` | High | Set from `OPTION_GAME_TYPE` in 1P and forced to 1 in 2P; selects A/B-style gameplay/layout/result behavior, not 1P/2P. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
