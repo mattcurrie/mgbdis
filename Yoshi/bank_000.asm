@@ -733,23 +733,23 @@ Init::
     ld a, $d0
     ldh [rOBP1], a
     ld sp, $dfff
-    ld hl, $c757
+    ld hl, WRAM_PERSIST_MAGIC
     ld a, [hl+]
-    cp $c7
+    cp WRAM_PERSIST_MAGIC_BYTE_0
     jr nz, jr_000_048e
 
     ld a, [hl+]
-    cp $8a
+    cp WRAM_PERSIST_MAGIC_BYTE_1
 
 Jump_000_047e:
     jr nz, jr_000_048e
 
     ld a, [hl+]
-    cp $29
+    cp WRAM_PERSIST_MAGIC_BYTE_2
     jr nz, jr_000_048e
 
     ld a, [hl+]
-    cp $36
+    cp WRAM_PERSIST_MAGIC_BYTE_3
     jr nz, jr_000_048e
 
     ld d, $00
@@ -767,15 +767,15 @@ jr_000_0497:
     cp d
     jr nz, jr_000_04a7
 
-    ld a, $c7
+    ld a, RESULT_RECORDS_PERSIST_START_HI
     cp h
     jr nz, jr_000_04a7
 
-    ld a, $09
+    ld a, RESULT_RECORDS_PERSIST_START_LO
     cp l
     jr nz, jr_000_04a7
 
-    ld hl, $c75b
+    ld hl, ROUND_END_WAIT_TIMER
 
 jr_000_04a7:
     xor a
@@ -786,14 +786,14 @@ jr_000_04a7:
     dec b
     jr nz, jr_000_0497
 
-    ld hl, $c757
-    ld a, $c7
+    ld hl, WRAM_PERSIST_MAGIC
+    ld a, WRAM_PERSIST_MAGIC_BYTE_0
     ld [hl+], a
-    ld a, $8a
+    ld a, WRAM_PERSIST_MAGIC_BYTE_1
     ld [hl+], a
-    ld a, $29
+    ld a, WRAM_PERSIST_MAGIC_BYTE_2
     ld [hl+], a
-    ld a, $36
+    ld a, WRAM_PERSIST_MAGIC_BYTE_3
     ld [hl], a
     xor a
     ld hl, $8000
@@ -6600,44 +6600,44 @@ jr_000_286c:
 
 
 RefreshField::
-    ld a, [$c756]
+    ld a, [RESULT_RECORDS_INIT_FLAG]
     and a
     ret nz
 
     ld a, $ff
 
 jr_000_2890:
-    ld [$c709], a
+    ld [A_TYPE_RESULT_RECORD_0], a
 
 jr_000_2893:
-    ld [$c714], a
+    ld [A_TYPE_RESULT_RECORD_1], a
 
 jr_000_2896:
-    ld [$c71f], a
+    ld [A_TYPE_RESULT_RECORD_2], a
 
 jr_000_2899:
-    ld [$c72a], a
-    ld [$c735], a
-    ld [$c740], a
-    ld [$c756], a
+    ld [B_TYPE_RESULT_RECORD_0], a
+    ld [B_TYPE_RESULT_RECORD_1], a
+    ld [B_TYPE_RESULT_RECORD_2], a
+    ld [RESULT_RECORDS_INIT_FLAG], a
     ret
 
 
 ClearField::
-    ld hl, $c621
-    ld de, $c74b
+    ld hl, SCORE_DIGITS
+    ld de, CURRENT_RESULT_RECORD
     ld bc, $0005
     call Memcopy
     ld a, [SPRITE_ANIM_FRAME]
-    ld [$c751], a
+    ld [CURRENT_RESULT_SPRITE_ANIM_FRAME], a
     ld a, [SPRITE_ANIM_STATE]
-    ld [$c750], a
+    ld [CURRENT_RESULT_SPRITE_ANIM_STATE], a
     ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_28d4
 
     ld hl, EGG_COUNT_HUNDREDS
-    ld de, $c752
+    ld de, CURRENT_RESULT_DETAIL_DIGITS
     ld a, [hl-]
     ld [de], a
 
@@ -6652,13 +6652,13 @@ jr_000_28cc:
 
 jr_000_28d4:
     ld hl, TOTAL_TIMER_DIGITS
-    ld de, $c752
+    ld de, CURRENT_RESULT_DETAIL_DIGITS
     ld bc, $0004
     call Memcopy
 
 jr_000_28e0:
-    ld hl, $c74b
-    ld c, $0b
+    ld hl, CURRENT_RESULT_RECORD
+    ld c, RESULT_RECORD_SIZE
 
 jr_000_28e5:
     ld a, [hl]
@@ -6669,12 +6669,12 @@ jr_000_28e5:
 
     xor a
     ldh [ANIM_FRAME], a
-    ld hl, $c709
+    ld hl, A_TYPE_RESULT_RECORDS
     ld a, [GAME_TYPE]
     and a
     jr z, jr_000_28fb
 
-    ld hl, $c72a
+    ld hl, B_TYPE_RESULT_RECORDS
 
 jr_000_28fb:
     ld c, $03
@@ -6687,7 +6687,7 @@ jr_000_28ff:
     inc a
     jr z, jr_000_294a
 
-    ld de, $c74b
+    ld de, CURRENT_RESULT_RECORD
     ld c, $05
     call InitRound
     jr c, jr_000_294a
@@ -6696,7 +6696,7 @@ jr_000_28ff:
 
     ld de, $0005
     add hl, de
-    ld de, $c750
+    ld de, CURRENT_RESULT_SPRITE_ANIM_STATE
     ld c, $02
     call InitRound
     jr c, jr_000_294a
@@ -6705,7 +6705,7 @@ jr_000_28ff:
 
     inc hl
     inc hl
-    ld de, $c752
+    ld de, CURRENT_RESULT_DETAIL_DIGITS
     ld a, [GAME_TYPE]
     and a
     jr nz, jr_000_2937
@@ -6745,38 +6745,38 @@ jr_000_294a:
     and a
     jr nz, jr_000_2978
 
-    ld hl, $c714
-    ld de, $c71f
-    ld bc, $000b
+    ld hl, A_TYPE_RESULT_RECORD_1
+    ld de, A_TYPE_RESULT_RECORD_2
+    ld bc, RESULT_RECORD_SIZE
     call Memcopy
     ldh a, [ANIM_FRAME]
     cp $01
     jr nz, jr_000_2996
 
-    ld hl, $c709
-    ld de, $c714
-    ld bc, $000b
+    ld hl, A_TYPE_RESULT_RECORD_0
+    ld de, A_TYPE_RESULT_RECORD_1
+    ld bc, RESULT_RECORD_SIZE
     call Memcopy
     jr jr_000_2996
 
 jr_000_2978:
-    ld hl, $c735
-    ld de, $c740
-    ld bc, $000b
+    ld hl, B_TYPE_RESULT_RECORD_1
+    ld de, B_TYPE_RESULT_RECORD_2
+    ld bc, RESULT_RECORD_SIZE
     call Memcopy
     ldh a, [ANIM_FRAME]
     cp $01
     jr nz, jr_000_2996
 
-    ld hl, $c72a
-    ld de, $c735
-    ld bc, $000b
+    ld hl, B_TYPE_RESULT_RECORD_0
+    ld de, B_TYPE_RESULT_RECORD_1
+    ld bc, RESULT_RECORD_SIZE
     call Memcopy
 
 jr_000_2996:
     pop de
-    ld hl, $c74b
-    ld bc, $000b
+    ld hl, CURRENT_RESULT_RECORD
+    ld bc, RESULT_RECORD_SIZE
     call Memcopy
 
 jr_000_29a0:
@@ -6882,13 +6882,13 @@ jr_000_2a91:
     and a
     jr nz, jr_000_2aa0
 
-    ld de, $c709
+    ld de, A_TYPE_RESULT_RECORDS
     call SetupRound
     jp ApplyRoundSpeed
 
 
 jr_000_2aa0:
-    ld de, $c72a
+    ld de, B_TYPE_RESULT_RECORDS
     call SetupRound
 
 ApplyRoundSpeed::
@@ -7903,7 +7903,7 @@ jr_000_308d:
     jr z, jr_000_3081
 
     call DrawScoreRanking
-    ld hl, $c75b
+    ld hl, ROUND_END_WAIT_TIMER
     ld c, [hl]
     inc hl
     ld b, [hl]
@@ -8104,7 +8104,7 @@ jr_000_31a1:
     call PlaySound
 
 jr_000_31ab:
-    ld hl, $c75b
+    ld hl, ROUND_END_WAIT_TIMER
     ld a, $3c
     ld [hl+], a
     ld [hl], $00

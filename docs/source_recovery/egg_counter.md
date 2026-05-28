@@ -16,8 +16,9 @@ Each digit rolls over at `EGG_COUNT_DIGIT_LIMIT` (`10`), and the counter
 saturates at `999` through `EGG_COUNT_MAX_DIGIT`.
 
 `DrawEggCount` writes the ones and tens digits into the gameplay display. Result
-setup copies the digits in hundreds/tens/ones order into the record buffer at
-`$C752-$C754`, which is later compared with previous result records.
+setup copies the digits in hundreds/tens/ones order into
+`CURRENT_RESULT_DETAIL_DIGITS`, which is later compared with previous result
+records.
 
 When the ones digit wraps, `StartEggTextPulse` starts a short `AnimateSprite`
 frame 1/2 pulse. When the tens digit wraps, `EnableEggTextAltAnimation` enables

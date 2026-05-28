@@ -94,7 +94,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6D0` | `SPRITE_ANIM_STATE` | Medium | Used with `SPRITE_ANIM_FRAME`; copied into result/history records. |
 | `$C6D1` | `SPRITE_ANIM_TICK_COUNTER` | High | `TitleInputHandler` increments this divider and advances `SPRITE_ANIM_FRAME` / `SPRITE_ANIM_STATE` every 10 ticks; setup paths clear it through `ClearSpriteAnimTickCounter`. |
 | `$C6D2` | `EGG_COUNT_RESERVED` | Low | Cleared together with the egg counter in init/reset paths, but no direct read has been confirmed. |
-| `$C6D3-$C6D5` | `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` | High | `IncrementEggCounter` updates these as decimal digits capped at 999; `DrawEggCount` renders ones/tens as tile `$40+digit`, and result setup copies hundreds/tens/ones into `$C752-$C754`. |
+| `$C6D3-$C6D5` | `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` | High | `IncrementEggCounter` updates these as decimal digits capped at 999; `DrawEggCount` renders ones/tens as tile `$40+digit`, and result setup copies hundreds/tens/ones into `CURRENT_RESULT_DETAIL_DIGITS`. |
 | `$C6D6-$C6DA` | `ROUND_TIMER_DIGITS` / `ROUND_TIMER_FRAME_COUNTER` | High | `UpdateElapsedTimers` calls `TickElapsedTimerDigits` to tick this four-digit elapsed timer through a 60-frame divider; `FieldUpdate14` draws it on the playfield, `FieldUpdate15` clears it for a new round, and B-type title/result logic reads the leading digits. |
 | `$C6DB-$C6DF` | `TOTAL_TIMER_DIGITS` / `TOTAL_TIMER_FRAME_COUNTER` | High | `UpdateElapsedTimers` calls `TickElapsedTimerDigits` to tick this second four-digit elapsed timer through its own 60-frame divider; `FieldUpdate16` clears it at playfield init and B-type result setup copies the four digits into the result record. |
 | `$C6E0` | `FIELD_COLUMN_TILE_PATTERN_INDEX` | High | Initialized to `1` with the player cursor, decremented/incremented as left/right input moves the cursor, and shifted by `LoadGameBGTiles` to select a 16-byte `FieldColumnTilePatternTable` record. |
@@ -122,6 +122,12 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C706` | `ROUND_RESULT_CODE` | High | `QueueRoundResult` stores the argument that Bank 1 later passes to `ProcessNewHighScore`; title/start-next-round setup clears it with `ROUND_RESULT_PENDING`. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
 | `$C708` | `LINK_PEER_RESULT_CODE` | High | `UpdateDifficulty` receives the peer's bit-7 result packet, clears bit 7, and stores the peer result code here; `CalcRankPosition` compares it with the local result code during 2P result resolution. |
+| `$C709-$C729` | `A_TYPE_RESULT_RECORDS` | High | Three 11-byte score/egg records. `RefreshField` initializes their heads to `$FF`, `ClearField` compares/inserts the staged `CURRENT_RESULT_RECORD`, and result setup renders this table for A-type. |
+| `$C72A-$C74A` | `B_TYPE_RESULT_RECORDS` | High | Three 11-byte score/time records with the same insertion/rendering path selected when `GAME_TYPE` is nonzero. |
+| `$C74B-$C755` | `CURRENT_RESULT_RECORD` | High | Staged result record built from `SCORE_DIGITS`, sprite animation state/frame, and either egg digits or `TOTAL_TIMER_DIGITS` before being inserted into the A/B record table. |
+| `$C756` | `RESULT_RECORDS_INIT_FLAG` | High | Prevents repeated `$FF` seeding of the result record heads. |
+| `$C757-$C75A` | `WRAM_PERSIST_MAGIC` | High | Startup magic `$C7,$8A,$29,$36`; when valid, the WRAM clear loop skips `$C709-$C75A` so result records survive reset. |
+| `$C75B-$C75C` | `ROUND_END_WAIT_TIMER` | High | Seeded with `$003C` by `ProcessNewHighScore`; decremented by the 2P round-end path before continuing. |
 | `$C75D` | `DROP_ANIM_ACTIVE` | High | `StartDropAnim` sets it to `$FF`, `AnimateDropping` and `CheckMatch` gate on it, and the cascade completion path clears it. |
 | `$C75E` | `DROP_ANIM_FRAME_TIMER` | High | Decremented by `AnimateDropping` and reloaded before advancing drop cascade states. |
 | `$C761` | `DROP_ANIM_COLUMN` | High | Stores the selected column index for collision checks, grid-position calculation, and final `$C66A` column-state swap. |
