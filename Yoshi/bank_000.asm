@@ -2812,7 +2812,7 @@ jr_000_124d:
 
 jr_000_126e:
     ld a, [hl+]
-    cp $0f
+    cp BOARD_FALL_END_ROW
     ret nz
 
     dec b
@@ -3499,7 +3499,7 @@ HandleDrop::
     jr nz, jr_000_15d0
 
     call SetArrayElement
-    ld a, $0f
+    ld a, BOARD_FALL_END_ROW
     ld [COLUMN_TOP_ROW_SEED], a
     call SeedColumnTopRows
     jr jr_000_15e8
@@ -3742,7 +3742,7 @@ jr_000_1708:
 
 UpdateFallTimer::
     ld a, [PIECE_FALL_POS]
-    cp $0f
+    cp BOARD_FALL_END_ROW
     jr z, jr_000_1754
 
     ld h, a
@@ -3757,7 +3757,7 @@ jr_000_1746:
     inc h
     inc h
     ld a, h
-    cp $0f
+    cp BOARD_FALL_END_ROW
     jr nz, jr_000_1746
 
 jr_000_1754:

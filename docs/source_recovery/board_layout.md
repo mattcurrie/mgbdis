@@ -11,10 +11,15 @@ This note tracks the first recovered structure of `BOARD_DATA` at `$C62A`.
 | `BOARD_DATA_SIZE` | `$40` | `GenerateNextPiece` clears `$40` bytes starting at `BOARD_DATA`; this matches `COLUMN_COUNT * BOARD_COLUMN_STRIDE`. |
 | `BOARD_CELL_STRIDE` | `$02` | `DrawAllColumns` advances the source pointer by two bytes for each visible row. `GetFallSpeed` also indexes by raw row offset after selecting a 16-byte column block. |
 | `BOARD_VISIBLE_ROW_COUNT` | `$07` | `DrawAllColumns` draws seven visible entries per column. |
+| `BOARD_FALL_END_ROW` | `$0F` | A-type setup seeds `COLUMN_TOP_ROWS` with this value, B-type clear detection requires all four column rows to reach it, and `UpdateFallTimer` stops scanning when `PIECE_FALL_POS` or the scan row reaches it. |
 
 The board is currently best described as four 16-byte column blocks. Column
 selection uses `PIECE_ROTATION * $10` in `MovePieceLeft` and `GetFallSpeed`;
 row selection then adds the current row/fall position within that block.
+
+`BOARD_FALL_END_ROW` is a row boundary for falling/scanning rather than a
+confirmed piece value. A column with top-row state `$0F` is treated as clear by
+the B-type completion check.
 
 `DrawAllColumns` reads from `BOARD_DATA + 1`, draws seven entries per column,
 advances by two bytes per row, then skips two bytes before the next column.

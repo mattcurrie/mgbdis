@@ -11,7 +11,7 @@ Evidence:
 
 - `SeedColumnTopRows` seeds all four entries from `COLUMN_TOP_ROW_SEED`
   (`$C699`), which is loaded from `LevelCountTable` in the B-game setup path or
-  forced to `$0F` in the A-game path.
+  forced to `BOARD_FALL_END_ROW` (`$0F`) in the A-game path.
 - `MovePieceUp` indexes the array by `PIECE_ROTATION` and returns the selected
   column's current row/fall target.
 - `DrawColumnSprite` indexes the same array while drawing the column blink
@@ -19,7 +19,7 @@ Evidence:
 - `AnimateDropping` swaps two adjacent `COLUMN_TOP_ROWS` entries after the drop
   cascade finishes, matching the selected-column swap behavior.
 - The B-game completion check scans all four entries and finishes when they all
-  reach `$0F`.
+  reach `BOARD_FALL_END_ROW`.
 
 The exact board coordinate convention still needs more work, so the current
 name intentionally says "top rows" rather than "height" or "empty row".
