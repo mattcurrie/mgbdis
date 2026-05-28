@@ -845,7 +845,7 @@ AdvanceSpriteAnimFrame::
     and a
     ret nz
 
-    ld hl, $c6e2
+    ld hl, PROGRESSION_LEVEL
     inc [hl]
     ld a, [SPRITE_ANIM_STATE]
     cp $09
@@ -874,7 +874,7 @@ jr_001_4595:
 
 
 AnimFrameData::
-    ld hl, $c6e2
+    ld hl, PROGRESSION_LEVEL
     inc [hl]
     ld a, [SPRITE_ANIM_STATE]
     cp $09

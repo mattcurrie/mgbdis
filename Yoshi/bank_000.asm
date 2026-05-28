@@ -2129,7 +2129,7 @@ InitGameState::
 jr_000_0b1b:
     ld a, [OPTION_LEVEL]
     ld [ACTIVE_LEVEL], a
-    ld [$c6e2], a
+    ld [PROGRESSION_LEVEL], a
     inc a
     ld [SPRITE_ANIM_FRAME], a
     xor a
@@ -2144,7 +2144,7 @@ jr_000_0b33:
     ld [GAME_TYPE], a
     ld a, [LINK_2P_SELECTED_LEVEL]
     ld [ACTIVE_LEVEL], a
-    ld [$c6e2], a
+    ld [PROGRESSION_LEVEL], a
     inc a
     ld [SPRITE_ANIM_FRAME], a
     xor a
@@ -3522,7 +3522,7 @@ jr_000_15e8:
 
 ProcessFalling::
     ld hl, LevelFallDelayTable
-    ld a, [$c6e2]
+    ld a, [PROGRESSION_LEVEL]
     cp $14
     jr c, jr_000_15fa
 
@@ -7980,7 +7980,7 @@ jr_000_30eb:
     and a
     jr z, jr_000_3100
 
-    ld a, [$c6e2]
+    ld a, [PROGRESSION_LEVEL]
     call ProcessMatching
     call StartNextRound
     ld a, GAME_STATE_PLAYING

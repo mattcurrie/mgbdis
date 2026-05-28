@@ -9,13 +9,14 @@ This document tracks the recovered meaning of the option/settings variables arou
 |---------|----------|------------|---------|----------|
 | `$C6B1` | `MENU_CURSOR` | High | Current row in the settings/start-wait menu. | Incremented/decremented in `Run1PPreplayLoop`; range is 0-3. Used to select which option byte at `$C6B2-$C6B5` changes. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type, likely A/B type. | `InitGameState` copies it to `GAME_TYPE`; result/menu drawing branches on it. |
-| `$C6B3` | `OPTION_LEVEL` | High | Selected starting level. | `InitGameState` copies it to `ACTIVE_LEVEL` and `$C6E2`; option drawing displays five level choices. |
+| `$C6B3` | `OPTION_LEVEL` | High | Selected starting level. | `InitGameState` copies it to `ACTIVE_LEVEL` and `PROGRESSION_LEVEL`; option drawing displays five level choices. |
 | `$C6B4` | `OPTION_SPEED` | High | Selected drop speed. | `InitGameState` copies it to `ACTIVE_SPEED`; gameplay timing/display code halves or adjusts values when nonzero. |
 | `$C6B5` | `OPTION_BGM` | High | Selected BGM option. | `ApplyGameSettings` maps values 0, 1, 2 to BGM commands and value 3 to stop/off. |
 | `$C6B6` | `TWO_PLAYER_FLAG` | High | 1P/2P mode flag. | Title input toggles this value; many paths use it separately from `GAME_TYPE`. |
 | `$C6B7` | `ACTIVE_LEVEL` | High | Active in-game level copied from options or link settings. | Used by level thresholds, difficulty/scoring setup, and high-score/result paths. |
 | `$C6B8` | `ACTIVE_SPEED` | High | Active in-game drop speed copied from options or link settings. | Used by speed display, fall timing, and result text selection. |
 | `$C671` | `GAME_TYPE` | High | Active A/B-style game type, not 1P/2P. | Set from `OPTION_GAME_TYPE` in 1P; forced to 1 in 2P. `TWO_PLAYER_FLAG` independently handles 1P/2P. |
+| `$C6E2` | `PROGRESSION_LEVEL` | High | Internal level/difficulty that can advance beyond the displayed active level. | Initialized from `OPTION_LEVEL` or `LINK_2P_SELECTED_LEVEL`, incremented by `AdvanceSpriteAnimFrame` / `AnimFrameData`, capped at `$13` for `LevelFallDelayTable`, and passed to `ProcessMatching` in the B-type continuation path. |
 | `$C6BC` | `TITLE_PLAYER_MARKER_TIMER` | High | Title 1P/2P selection marker blink timer. | `DisplayNextPiece` decrements it and reloads `$0A` or `$D0` when toggling the marker tiles. |
 | `$C6BE` | `TITLE_PLAYER_MARKER_PHASE` | High | Title 1P/2P selection marker blink phase. | `DisplayNextPiece` toggles it between `$00` and `$01` before drawing `DrawNextBottom` or `DrawNextTop`. |
 | `$C6C1` | `BGM_PREVIEW_TIMER` | Medium | Countdown touched during option/result BGM preview handling. | `ApplyGameSettings` sets it to `1` after starting a BGM preview sound; `TickBgmPreviewTimer` decrements it from Bank 1. |

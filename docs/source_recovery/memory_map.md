@@ -73,7 +73,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type; copied into `GAME_TYPE` by `InitGameState`. |
-| `$C6B3` | `OPTION_LEVEL` | High | Selected starting level; copied into `ACTIVE_LEVEL`. |
+| `$C6B3` | `OPTION_LEVEL` | High | Selected starting level; copied into `ACTIVE_LEVEL` and `PROGRESSION_LEVEL`. |
 | `$C6B4` | `OPTION_SPEED` | High | Selected drop speed; copied into `ACTIVE_SPEED`. |
 | `$C6B5` | `OPTION_BGM` | High | Selected BGM; mapped to sound commands by `ApplyGameSettings`. |
 | `$C6B6` | `TWO_PLAYER_FLAG` | High | Highest-frequency named WRAM flag; used across title, options, gameplay, link, and drawing paths. |
@@ -98,6 +98,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6DB-$C6DF` | `TOTAL_TIMER_DIGITS` / `TOTAL_TIMER_FRAME_COUNTER` | High | `UpdateElapsedTimers` calls `TickElapsedTimerDigits` to tick this second four-digit elapsed timer through its own 60-frame divider; `FieldUpdate16` clears it at playfield init and B-type result setup copies the four digits into the result record. |
 | `$C6E0` | `FIELD_COLUMN_TILE_PATTERN_INDEX` | High | Initialized to `1` with the player cursor, decremented/incremented as left/right input moves the cursor, and shifted by `LoadGameBGTiles` to select a 16-byte `FieldColumnTilePatternTable` record. |
 | `$C6E1` | `BGM_INDEX` | Medium | Used when selecting BGM/sound. |
+| `$C6E2` | `PROGRESSION_LEVEL` | High | Initialized from option/link level, incremented by `AdvanceSpriteAnimFrame` / `AnimFrameData`, capped at `$13` for `LevelFallDelayTable`, and passed to `ProcessMatching` in the B-type continuation path. |
 | `$C6E4-$C6E5` | `ROUND_TIMER_STOPPED` / `TOTAL_TIMER_STOPPED` | High | Completion and result setup set both flags to stop elapsed-time updates; next-round setup clears only the round timer, while new playfield setup clears both timers and both stop flags. |
 | `$C6E6` | `LINK_FIELD_EVENT_PAYLOAD` | Medium | Falling-piece code builds a bit-6 field-event payload here, then the round-complete path copies it into `LINK_SEND_QUEUE_0`. |
 | `$C6E7` | `LINK_SEND_DROP_INPUT_LOCK` | High | `Send2PData` sets this while calling `CheckMatch` inside its link-send wait loop; `CheckMatch` uses it to suppress starting a new drop while still allowing movement/input polling. |

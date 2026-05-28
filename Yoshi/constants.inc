@@ -227,6 +227,7 @@ DEF EGG_COUNT_MAX_DIGIT EQU $09
 DEF EGG_COUNT_TILE_BASE EQU $40
 DEF FIELD_COLUMN_TILE_PATTERN_INDEX EQU $c6e0 ; cursor-position index into FieldColumnTilePatternTable
 DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス
+DEF PROGRESSION_LEVEL EQU $c6e2 ; internal level/difficulty advanced between rounds
 DEF ROUND_TIMER_STOPPED EQU $c6e4 ; nonzero stops ROUND_TIMER_DIGITS updates
 DEF TOTAL_TIMER_STOPPED EQU $c6e5 ; nonzero stops TOTAL_TIMER_DIGITS updates
 DEF LINK_FIELD_EVENT_PAYLOAD EQU $c6e6 ; staged bit-6 field event copied into send queue
