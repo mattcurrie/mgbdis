@@ -5060,6 +5060,7 @@ SoundIndexEntry_23::
 SoundIndexEntry_24::
     db $04
     dw SoundSequenceData_7e72
+SoundIndexEntry_BoardScanStepBase::
 SoundIndexEntry_25::
     db $04
     dw SoundSequenceData_7e67
