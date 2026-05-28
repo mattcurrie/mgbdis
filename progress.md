@@ -153,6 +153,8 @@
   - Created `docs/source_recovery/link_state.md` to document the recovered 2P option packing, link send queue, and incoming bit-6 field-event accumulator.
   - Named the countdown digit staging buffers at `$C7AE-$C7CD` and the blit timer/phase bytes at `$C7CE-$C7CF`.
   - Created `docs/source_recovery/countdown_digit_buffers.md` to document how the score BCD digits expand into staging buffers and then blit to VRAM.
+  - Named the column blink timers/flags at `$C7A4-$C7AC` and result rank position at `$C7AD`.
+  - Created `docs/source_recovery/column_blink_state.md` to document the recovered blink slot arrays and result rank state.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -162,6 +164,7 @@
   - `docs/source_recovery/egg_counter.md`
   - `docs/source_recovery/link_state.md`
   - `docs/source_recovery/countdown_digit_buffers.md`
+  - `docs/source_recovery/column_blink_state.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -212,6 +215,7 @@
 | Egg counter state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Link state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Countdown digit buffer naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Column blink/rank state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

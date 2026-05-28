@@ -53,6 +53,7 @@ Phases 2-4
 - [x] Name field animation cursors, active flags, and column timers at `$C6C3-$C6CE`
 - [x] Name egg counter digits and sprite animation tick divider at `$C6D1-$C6D5`
 - [x] Name 2P selected settings, peer settings, and link send queue at `$C6EB-$C700`
+- [x] Name column blink state and result rank position at `$C7A4-$C7AD`
 - [x] Name countdown digit buffers and blit state at `$C7AE-$C7CF`
 - [x] Convert Bank 0 tail graphics data at `$3839-$3FFF`
 - [x] Convert Bank 1 field-column tile pattern table at `$442C` and restore the `$445C` code boundary

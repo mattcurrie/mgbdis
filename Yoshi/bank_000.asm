@@ -459,7 +459,7 @@ MainLoop::
     ld a, ROM_BANK_MAIN_CODE
     ld [MBC1_ROM_BANK_REG], a
     call LCDOn
-    ld hl, $c7a9
+    ld hl, COLUMN_BLINK_SLOT_FLAGS
     xor a
     ld [hl+], a
     ld [hl+], a
@@ -2012,19 +2012,20 @@ jr_000_09e5:
     ret
 
 
-    ld a, [$c7a4]
+UpdateColumnBlinkState::
+    ld a, [COLUMN_BLINK_GLOBAL_TIMER]
     inc a
-    ld [$c7a4], a
-    cp $30
+    ld [COLUMN_BLINK_GLOBAL_TIMER], a
+    cp COLUMN_BLINK_GLOBAL_PERIOD
     jr c, jr_000_0a03
 
     xor a
-    ld [$c7a4], a
+    ld [COLUMN_BLINK_GLOBAL_TIMER], a
 
 jr_000_0a03:
-    ld hl, $c7a9
-    ld de, $c7a5
-    ld b, $04
+    ld hl, COLUMN_BLINK_SLOT_FLAGS
+    ld de, COLUMN_BLINK_SLOT_TIMERS
+    ld b, COLUMN_BLINK_SLOT_COUNT
 
 jr_000_0a0b:
     ld a, [hl]
@@ -2035,7 +2036,7 @@ jr_000_0a0b:
     and a
     jr nz, jr_000_0a1b
 
-    ld a, [$c7a4]
+    ld a, [COLUMN_BLINK_GLOBAL_TIMER]
     and a
     jr z, jr_000_0a21
 
@@ -2044,21 +2045,21 @@ jr_000_0a0b:
 jr_000_0a1b:
     inc a
     ld [de], a
-    cp $10
+    cp COLUMN_BLINK_SLOT_PERIOD
     jr c, jr_000_0a38
 
 jr_000_0a21:
     xor a
     ld [de], a
     ld a, [hl]
-    cp $01
+    cp COLUMN_BLINK_FRAME_1
     jr nz, jr_000_0a2c
 
-    ld [hl], $02
+    ld [hl], COLUMN_BLINK_FRAME_2
     jr jr_000_0a2e
 
 jr_000_0a2c:
-    ld [hl], $01
+    ld [hl], COLUMN_BLINK_FRAME_1
 
 jr_000_0a2e:
     push hl
@@ -2080,7 +2081,7 @@ jr_000_0a38:
 
 
 InitBlinkState::
-    ld hl, $c7a4
+    ld hl, COLUMN_BLINK_GLOBAL_TIMER
     xor a
     ld [hl+], a
     ld [hl+], a
@@ -8127,7 +8128,7 @@ Jump_000_30e4:
     jr jr_000_3100
 
 jr_000_30eb:
-    ld a, [$c7ad]
+    ld a, [RESULT_RANK_POSITION]
     and a
     jr z, jr_000_3100
 
@@ -8164,7 +8165,7 @@ jr_000_310f:
 DrawScoreRanking::
     ld hl, $0804
     ld b, $08
-    ld a, [$c7ad]
+    ld a, [RESULT_RANK_POSITION]
     cp $43
     jr nz, jr_000_3128
 
@@ -8176,7 +8177,7 @@ jr_000_3128:
     call DrawRankEntry
     ld hl, $0904
     ld b, $08
-    ld a, [$c7ad]
+    ld a, [RESULT_RANK_POSITION]
     cp $43
     jr nz, jr_000_313d
 
@@ -8220,7 +8221,7 @@ jr_000_315a:
     jr z, jr_000_318a
 
     ldh a, [TEXT_FADE]
-    ld [$c7ad], a
+    ld [RESULT_RANK_POSITION], a
     and a
     jr z, jr_000_3183
 
@@ -8237,7 +8238,7 @@ jr_000_3188:
 
 jr_000_318a:
     ldh a, [TEXT_FADE]
-    ld [$c7ad], a
+    ld [RESULT_RANK_POSITION], a
     and a
     jr z, jr_000_31a1
 
