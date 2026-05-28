@@ -61,6 +61,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C673-$C677` | `PIECE_DISPLAY_CODE_POOL` | High | Five code bytes initialized to `1..5`; the first four are shuffled by `ShufflePieceDisplayCodePool`, and `DisplayResults` indexes this pool before `ProcessMenuSelection`. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
+| `$C69D` | Unresolved landing/reset byte | Low | Cleared by `DropPiece` and again by `UpdateLandingProgress` when the unresolved `$C6BF` counter reaches zero; no consumer has been confirmed. |
 | `$C697` | `PIECE_DISPLAY_REMAINING` | Medium | `ProcessMenuLoop` stores the same value as `PIECE_DISPLAY_COUNT`; `MovePieceLeft` and `ShowResults` decrement it, but no independent read has been confirmed. |
 | `$C698` | `PIECE_DISPLAY_COUNT` | High | Loaded from the second byte of the current `GameTurnParamTable` row or forced to `2` during gameplay setup; callers pass it into `DisplayResults`. |
 | `$C699` | `COLUMN_TOP_ROW_SEED` | High | Loaded from `LevelCountTable` or forced to `$0F`; `SeedColumnTopRows` copies it into all four `COLUMN_TOP_ROWS` entries, and `ProcessInputTitle` uses it to size the initial board-fill loop. |
@@ -73,6 +74,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6AB` | `RESULT_FLOW_ACTIVE` | High | Set by `ProcessNewHighScore` and `QueueRoundResult`, cleared by `DropPiece` and the return-to-title path, and read by Bank 1 `SetupGameBG` to suppress normal field background setup during result/high-score flow. |
 | `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
 | `$C6AD` | `PIECE_DISPLAY_FORCE_ALL_STATES_FLAG` | High | Set by a timer-gated `ProcessMenuSelection` branch; `ApplyAllForcedPieceDisplayStates` rewrites every nonzero display-state entry to `PIECE_DISPLAY_FORCED_STATE`, and `DisplayResults` clears the flag afterward. |
+| `$C6AE` | Unresolved landing/reset byte | Low | Same confirmed write pattern as `$C69D`: cleared by `DropPiece` and again by `UpdateLandingProgress` when `$C6BF` reaches zero; no consumer has been confirmed. |
 | `$C6AF` | `PIECE_DISPLAY_BLINK_TIMER` | High | Decremented each `GameMainUpdate`; when it expires, it reloads to `$20` and toggles bit `$10` in the sprite frame byte for active piece-display sprite objects, except frames `$07/$08`. |
 | `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
@@ -88,6 +90,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6BB` | `LINK_ROLE` | High | Read throughout 2P/link paths; values appear to distinguish no link/master/slave. |
 | `$C6BC` | `TITLE_PLAYER_MARKER_TIMER` | High | `DisplayNextPiece` decrements this timer before toggling the title 1P/2P selection marker. |
 | `$C6BE` | `TITLE_PLAYER_MARKER_PHASE` | High | Selects whether `DisplayNextPiece` draws the top or bottom title selection marker tiles. |
+| `$C6BF` | Unresolved landing/scan counter | Medium | Cleared by `DropPiece`, decremented by `ScanBoard` after `UpdateTimer`, decremented by two by `UpdateLandingProgress` for staged payload `$08`, and used to decide when to clear `$C69D/$C6AE`. |
+| `$C6C0` | Unresolved write-only landing/reset byte | Low | `DropPiece` writes `$14` here; no consumer has been confirmed. |
 | `$C6C1` | `BGM_PREVIEW_TIMER` | Medium | Set during BGM option changes and decremented by `TickBgmPreviewTimer`. |
 | `$C6C2` | `BGM_PREVIEW_PERIOD` | Low | Stores BGM-specific values during preview setup; direct consumer still needs confirmation. |
 | `$C6C3-$C6C6` | `FIELD_ANIM_SLOT_*_CURSOR` | High | Four table cursors for sprite object slots 11, 10, 13, and 12. `StepFieldAnimSlot*` routines index `FieldSideDeltaTable` / `FieldRowDeltaTable` until sentinel `$10`, then reset the matching cursor. |

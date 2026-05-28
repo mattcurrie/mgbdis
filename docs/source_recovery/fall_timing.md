@@ -29,3 +29,19 @@ This note records the recovered timing pair that gates falling-piece updates.
 
 The adjacent `$C697` byte is tracked separately as `PIECE_DISPLAY_REMAINING` in
 `piece_display_state.md`.
+
+## Open Landing/Scan Bytes
+
+These bytes are close to the falling/display state block, but the current
+evidence is not strong enough to assign semantic constants:
+
+| Address | Current classification | Evidence |
+|---------|------------------------|----------|
+| `$C69D` | write-only landing/reset byte | `DropPiece` clears it, and `UpdateLandingProgress` clears it again when the `$C6BF` counter reaches zero. No direct or indirect consumer has been confirmed. |
+| `$C6AE` | write-only landing/reset byte | Same write pattern as `$C69D`: cleared by `DropPiece`, then cleared by `UpdateLandingProgress` when `$C6BF` reaches zero. No direct or indirect consumer has been confirmed. |
+| `$C6BF` | unresolved landing/scan counter | `DropPiece` clears it. `ScanBoard` decrements it by one after `UpdateTimer`; `UpdateLandingProgress` decrements it by two when the staged tile/piece payload is `$08`, and clears `$C69D/$C6AE` only when the result reaches zero. |
+| `$C6C0` | write-only landing/reset byte | `DropPiece` writes `$14` here, but no consumer has been confirmed in the current source. |
+
+The `$C6BF` read/write behavior is real, but its unit is still unclear. It may
+be tied to the scan/landing sequence for special tile payloads `$07/$08`; avoid
+renaming it until the producer/consumer relationship is better proven.
