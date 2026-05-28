@@ -111,6 +111,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name result timer label/value tilemap origins `$C5E5/$C5EA`
 - [x] Correct level display digit labels `$C6CF/$C6D0/$C6D1`
 - [x] Name result level/speed tilemap origins `$C509/$C50F-$C512`
+- [x] Name title player marker row coordinates and tile IDs
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

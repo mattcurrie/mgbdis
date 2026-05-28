@@ -1277,25 +1277,25 @@ jr_001_47db:
 
 
 DrawNextTop::
-    ld hl, $0505
-    ld b, $02
-    ld c, $d2
+    ld hl, TITLE_PLAYER_MARKER_ROW0_COORD
+    ld b, TITLE_PLAYER_MARKER_WIDTH
+    ld c, TITLE_PLAYER_MARKER_TOP_ROW0_TILE
     call DrawColumnData
-    ld hl, $0605
-    ld b, $02
-    ld c, $dc
+    ld hl, TITLE_PLAYER_MARKER_ROW1_COORD
+    ld b, TITLE_PLAYER_MARKER_WIDTH
+    ld c, TITLE_PLAYER_MARKER_TOP_ROW1_TILE
     call DrawColumnData
     ret
 
 
 DrawNextBottom::
-    ld hl, $0505
-    ld b, $02
-    ld c, $48
+    ld hl, TITLE_PLAYER_MARKER_ROW0_COORD
+    ld b, TITLE_PLAYER_MARKER_WIDTH
+    ld c, TITLE_PLAYER_MARKER_BOTTOM_ROW0_TILE
     call DrawColumnData
-    ld hl, $0605
-    ld b, $02
-    ld c, $4a
+    ld hl, TITLE_PLAYER_MARKER_ROW1_COORD
+    ld b, TITLE_PLAYER_MARKER_WIDTH
+    ld c, TITLE_PLAYER_MARKER_BOTTOM_ROW1_TILE
     call DrawColumnData
     ret
 
