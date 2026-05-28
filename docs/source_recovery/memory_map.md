@@ -131,5 +131,5 @@ The reference scan intentionally reports address-like operands even when they oc
 1. Refine medium-confidence `SOUND_CH_*` slide/tempo/envelope names by decoding more sequence examples.
 2. Trace `GAME_STATE` writes and assign concrete state names.
 3. Decode the visual meaning of each Bank 2/3 graphics load range.
-4. Continue refining the shared settings/result cursor drawing routines.
+4. Continue refining the shared settings/pre-play cursor drawing routines.
 5. Continue code/data separation for remaining small fake-code islands.

@@ -160,6 +160,8 @@
   - Replaced raw HRAM operands in `VRAMCopySetup` with the primary `VRAM_*` constants.
   - Confirmed `$FFB3-$FFB7` is not consumed by `VRAMCopyDMA` and named it as an unused secondary VRAM-copy slot.
   - Created `docs/source_recovery/vram_copy.md` to document the primary queue and the unreachable secondary-copy fragment.
+  - Renamed the state `$05` pre-play dispatch and loop labels: `RunPreplayLoop`, `Run1PPreplayLoop`, `Run2PPreplayLoop`, `InitPreplayBlinkTimer`, `Init1PPreplayScreen`, and `Draw1PPreplayScreen`.
+  - Updated `docs/source_recovery/state_machine.md` to record the 2P `$55` link-start handshake transition into `GAME_STATE_PLAY_SETUP`.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -225,6 +227,7 @@
 | Column blink/rank state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Settings blink state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | VRAM copy slot naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Pre-play loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

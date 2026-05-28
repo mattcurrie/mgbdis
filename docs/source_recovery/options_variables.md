@@ -7,7 +7,7 @@ This document tracks the recovered meaning of the option/settings variables arou
 
 | Address | Constant | Confidence | Meaning | Evidence |
 |---------|----------|------------|---------|----------|
-| `$C6B1` | `MENU_CURSOR` | High | Current row in the settings/start-wait menu. | Incremented/decremented in `ProcessRoundEndLoop`; range is 0-3. Used to select which option byte at `$C6B2-$C6B5` changes. |
+| `$C6B1` | `MENU_CURSOR` | High | Current row in the settings/start-wait menu. | Incremented/decremented in `Run1PPreplayLoop`; range is 0-3. Used to select which option byte at `$C6B2-$C6B5` changes. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type, likely A/B type. | `InitGameState` copies it to `GAME_TYPE`; result/menu drawing branches on it. |
 | `$C6B3` | `OPTION_LEVEL` | High | Selected starting level. | `InitGameState` copies it to `ACTIVE_LEVEL` and `$C6E2`; option drawing displays five level choices. |
 | `$C6B4` | `OPTION_SPEED` | High | Selected drop speed. | `InitGameState` copies it to `ACTIVE_SPEED`; gameplay timing/display code halves or adjusts values when nonzero. |

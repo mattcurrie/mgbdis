@@ -9,12 +9,12 @@ This note documents the recovered shared cursor blink state at `$C6F0-$C6F2`.
 | `$C6F2` | `SETTINGS_BLINK_TIMER` | Set to `SETTINGS_BLINK_PERIOD` (`$0F`) on setup and input, decremented each frame by `TickSettingsBlink`, then reloaded when the blink phase flips. |
 
 The same blink phase is shared by the 2P pre-play screen and the 1P
-round-end/settings screen:
+pre-play/settings screen:
 
 - In the 2P pre-play path, `LINK_SETTINGS_CURSOR` selects the level or speed
   row. When `SETTINGS_BLINK_PHASE` is nonzero, `CalcBonus` and
   `DrawNextPieceSprite` draw the selected row as blank.
-- In the 1P result/settings path, `MENU_CURSOR` selects one of the four option
+- In the 1P pre-play/settings path, `MENU_CURSOR` selects one of the four option
   rows. `ShowWinScreen`, `WaitForRestart`, `ProcessRestart`, and
   `UpdateContinue` use `SETTINGS_BLINK_PHASE` to blank the currently selected
   row's text or marker.

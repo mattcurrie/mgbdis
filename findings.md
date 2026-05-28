@@ -115,6 +115,7 @@
 - `$C6FC/$C6FD` are a two-byte link send queue selected by `$C6FE`; `TimerTickCore` sends one queued byte per tick and clears the slot afterward.
 - `$C6F0` is the 2P pre-play settings cursor, now named `LINK_SETTINGS_CURSOR`; row `0` selects `LINK_2P_SELECTED_LEVEL` and row `1` selects `LINK_2P_SELECTED_SPEED`.
 - `$C6F1/$C6F2` are the shared settings/result blink phase and timer, now named `SETTINGS_BLINK_PHASE` and `SETTINGS_BLINK_TIMER`. The phase toggles every `$0F` frames and selected rows use it to draw blank text/markers during the blink interval.
+- `GAME_STATE_PREPLAY_LOOP` now calls `RunPreplayLoop`, which dispatches to `Run1PPreplayLoop` for the 1P option/settings path and `Run2PPreplayLoop` for the 2P link-start path.
 - `$C7AE-$C7CD` are four countdown digit bitmap staging buffers. `UpdateCountdownTimer` builds them from `SCORE_BCD_*` and `CountdownDigitPatternTable`; `RandomNext` copies buffer pairs to VRAM `$9020` / `$9120`.
 - `$C7CE/$C7CF` are the countdown digit blit timer/phase bytes. `LoadAnimData` seeds the timer with `2`, `UpdateCountdownTimer` toggles the phase, and `RandomNext` decrements the timer after each blit.
 - `$C7A4-$C7AC` are four-slot column blink state: one global timer, four per-slot timers, and four active/frame flags toggled between `1` and `2` before redrawing through `DrawColumnSprite`.
@@ -191,5 +192,4 @@
 - Which game states correspond to demo/attract behavior, if present?
 - Which data blocks are currently mis-disassembled as instructions?
 - Should the current label `InitGameVars` be renamed to `RunTitleMenu` or a more precise title-loop name after its helper calls are fully traced?
-- Should the current labels `OptionsScreen`, `ProcessRoundEndLoop`, and `InitP2Settings` be renamed after the pre-play/result shared drawing paths are fully separated?
 - Should `$C672/$C628/$C629`, touched by `AddScore` immediately after score digit unpacking, be named as game-type/result display digits after tracing their draw sites?

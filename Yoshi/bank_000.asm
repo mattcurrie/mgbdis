@@ -537,7 +537,7 @@ jr_000_0317:
     jr nz, jr_000_0320
 
     ; GAME_STATE_PREPLAY_LOOP: settings/start-wait loop before the play setup state.
-    call OptionsScreen
+    call RunPreplayLoop
     jp MainLoop
 
 
@@ -5237,12 +5237,12 @@ ResetSettings::
     ret
 
 
-OptionsScreen::
+RunPreplayLoop::
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jp nz, UpdateGameLoop
+    jp nz, Run2PPreplayLoop
 
-    jp ProcessRoundEndLoop
+    jp Run1PPreplayLoop
 
 
     ret
@@ -5747,8 +5747,8 @@ StartGameplay::
     and a
     jr nz, jr_000_21ae
 
-    call InitP1Settings
-    call InitP2Settings
+    call InitPreplayBlinkTimer
+    call Init1PPreplayScreen
     call ApplyGameSettings
     ret
 
@@ -6287,7 +6287,7 @@ jr_000_249d:
     ret
 
 
-UpdateGameLoop::
+Run2PPreplayLoop::
     call UpdateGameField
     call FormatNumber
     call TickSettingsBlink
@@ -7262,13 +7262,13 @@ jr_000_2b91:
     sub b
     db $e4
 
-InitP1Settings::
+InitPreplayBlinkTimer::
     ld a, SETTINGS_BLINK_PERIOD
     ld [SETTINGS_BLINK_TIMER], a
     ret
 
 
-InitP2Settings::
+Init1PPreplayScreen::
     call CheckWinCondition
     call ProcessWinLose
     call AnimateResult
@@ -7287,7 +7287,7 @@ InitP2Settings::
     ret
 
 
-ProcessRoundEnd::
+Draw1PPreplayScreen::
     call AnimateResult
     call DrawWinMessage1
     call DrawResultMessage1
@@ -7299,9 +7299,9 @@ ProcessRoundEnd::
     ret
 
 
-ProcessRoundEndLoop::
+Run1PPreplayLoop::
     call TickBgmPreviewTimer
-    call ProcessRoundEnd
+    call Draw1PPreplayScreen
     call Multiply
     call TickSettingsBlink
     ldh a, [JOYPAD_PRESSED]

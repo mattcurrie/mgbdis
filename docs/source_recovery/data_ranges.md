@@ -113,7 +113,7 @@ Notes:
 | `00:$1E75-$1E89` | `SettingsCursorSpriteInit0..2` | Converted to `db` records | `ApplySettings` copies three fixed 7-byte records to `$C290`, `$C2A0`, and `$C2B0`. |
 | `00:$1F4C-$1F4F` | `OptionMaxValueTable` | Converted to `db` limits | Option increment code indexes this four-byte table with `MENU_CURSOR` before accepting a right-button change. |
 | `00:$2026-$203A` | `SettingsCursorTileData0..2` | Converted to `db` triplet lists | `SaveConfig1..3` pass these addresses to `DrawTileTripletList` to draw the highlighted cursor row. |
-| `00:$2C60-$2C63` | `RoundEndOptionMaxValueTable` | Converted to `db` limits | `ProcessRoundEndLoop` uses the same four option-row limits in the result/start-wait path. |
+| `00:$2C60-$2C63` | `RoundEndOptionMaxValueTable` | Converted to `db` limits | `Run1PPreplayLoop` uses the same four option-row limits in the result/start-wait path. |
 
 Notes:
 
