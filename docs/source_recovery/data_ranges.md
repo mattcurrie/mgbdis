@@ -21,7 +21,7 @@ Notes:
 
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
-| `01:$442C-$445B` | `FieldColumnTilePatternTable` | Converted to `db` | `LoadGameBGTiles` shifts `$C6E0` left four times, indexes this base address through `GetArrayElement`, then copies exactly 16 bytes to the BG/field destination. The next byte at `01:$445C` is a real code entry, now labeled `StartNextRound`. |
+| `01:$442C-$445B` | `FieldColumnTilePatternTable` | Converted to `db` | `LoadGameBGTiles` shifts `FIELD_COLUMN_TILE_PATTERN_INDEX` left four times, indexes this base address through `GetArrayElement`, then copies exactly 16 bytes to the BG/field destination. The next byte at `01:$445C` is a real code entry, now labeled `StartNextRound`. |
 
 Notes:
 

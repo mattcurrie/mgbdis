@@ -646,7 +646,7 @@ jr_001_4401:
 
 
 LoadGameBGTiles::
-    ld a, [$c6e0]
+    ld a, [FIELD_COLUMN_TILE_PATTERN_INDEX]
     sla a
     sla a
     sla a
@@ -736,7 +736,7 @@ jr_001_449e:
 
 ProcessColumn::
     ld a, $01
-    ld [$c6e0], a
+    ld [FIELD_COLUMN_TILE_PATTERN_INDEX], a
     ld hl, SPRITE_OBJECT_SLOT_0
     ld [hl], SPRITE_OBJECT_TYPE_PLAYER_CURSOR
     inc hl

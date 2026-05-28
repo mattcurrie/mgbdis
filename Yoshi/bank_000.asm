@@ -3004,7 +3004,7 @@ jr_000_1355:
     ret z
 
     ld [hl], a
-    ld hl, $c6e0
+    ld hl, FIELD_COLUMN_TILE_PATTERN_INDEX
     inc [hl]
     ret
 
@@ -3016,7 +3016,7 @@ jr_000_1361:
     ret z
 
     ld [hl], a
-    ld hl, $c6e0
+    ld hl, FIELD_COLUMN_TILE_PATTERN_INDEX
     dec [hl]
     ret
 
