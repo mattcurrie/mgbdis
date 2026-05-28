@@ -168,6 +168,8 @@
   - Converted `00:$2B9D-$2BA0` from apparent instructions to `RoundPaletteSequence`.
   - Converted the fake-code head of the Bank 0 game-turn parameter table at `00:$0B8D-$0C3F` to explicit `db` rows and labeled the full `00:$0B8D-$0ED2` table as `GameTurnParamTable`.
   - Named the local game-turn schedule bytes at `$C6A9`, `$C6AA`, and `$C6AC` as `GAME_TURN_TABLE_INDEX`, `GAME_TURN_STEP_TIMER`, and `GAME_TURN_DELAY`.
+  - Converted Bank 0 `00:$117C-$11EF` from apparent instructions to matching/result OAM templates, a score-bonus table, and a tile-base index table.
+  - Labeled the following unreferenced but coherent code island at `00:$11F0-$1202` as `UnusedDrawNumberPairUnlessFF`.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -238,6 +240,7 @@
 | Title menu loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Small Bank 0 data island conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Game-turn parameter table conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Matching/result table conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

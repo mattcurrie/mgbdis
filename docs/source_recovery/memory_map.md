@@ -119,6 +119,7 @@ The reference scan intentionally reports address-like operands even when they oc
 | Area | Evidence | Action |
 |------|----------|--------|
 | `Yoshi/bank_000.asm` `00:$0B8D-$0ED2` | `DrawMenuCursor` and `ProcessMenuLoop` index `$0B8D + GAME_TURN_TABLE_INDEX * 4`; the head was previously decoded as bogus instructions while the tail was already `db`. | Converted the fake-code head to `GameTurnParamTable` rows and named the local index/timer/delay bytes. |
+| `Yoshi/bank_000.asm` `00:$117C-$11EF` | Matching/result code copies `$117C/$1184/$1194` to shadow OAM, indexes `$119C` as `STATE_TRANSITION * 2` score pairs, and indexes `$11D4` as a tile-base table. | Converted to three OAM templates, `MatchingScoreBonusTable`, and `MatchingTileBaseIndexTable`; preserved the real-looking `$11F0` helper as code. |
 | `Yoshi/bank_001.asm` `01:$40A0-$42F4` | `UpdateSprites` indexes `$40A0` as a pointer table; the range before `UpdateAnimFrame` was previously decoded as bogus instructions. | Converted to `SpriteUpdatePointerTable`, object frame tables, tile-id lists, and layout triples in source. |
 | `Yoshi/bank_001.asm` `01:$442C-$445B` | `LoadGameBGTiles` indexes `$442C` as six 16-byte records before real code at `$445C`. | Converted to `FieldColumnTilePatternTable`; `$445C` is now the real `StartNextRound` entry. |
 | `Yoshi/bank_001.asm` `01:$462B-$465C` | `AnimateSprite` selects `$462B`, `$4639`, or `$464B`, then calls `DrawStringToGrid` four times. | Converted to `SpriteAnimTextFrame0..2` tile-string blocks; `$465D` remains the real `DrawEggCount` entry. |

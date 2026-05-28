@@ -2302,12 +2302,12 @@ jr_000_0edb:
     call LCDOn
     ld a, $8b
     ldh [rLCDC], a
-    ld hl, $1184
+    ld hl, MatchingOamTemplateMiddle
     ld de, $c408
     ld bc, $0010
     call Memcopy
     ldh a, [STATE_TRANSITION]
-    ld hl, $11d4
+    ld hl, MatchingTileBaseIndexTable
     ld b, $00
     ld c, a
     add hl, bc
@@ -2434,7 +2434,7 @@ jr_000_0fce:
     call FillRect
     ld c, $0a
     call DrawString
-    ld hl, $117c
+    ld hl, MatchingOamTemplateTop
     ld de, $c400
     ld bc, $0008
     call Memcopy
@@ -2515,12 +2515,12 @@ jr_000_106e:
     call UpdateLevel
     ld a, SND_CONFIRM
     call PlaySound
-    ld hl, $1194
+    ld hl, MatchingOamTemplateFinal
     ld de, $c400
     ld bc, $0008
     call Memcopy
     ld de, $0004
-    ld hl, $11d4
+    ld hl, MatchingTileBaseIndexTable
     ldh a, [STATE_TRANSITION]
     add l
     ld l, a
@@ -2558,7 +2558,7 @@ jr_000_10cc:
 UpdateScore::
     call DrawString
     call ClearOAM
-    ld hl, $119c
+    ld hl, MatchingScoreBonusTable
     ldh a, [STATE_TRANSITION]
     sla a
     ld b, $00
@@ -2647,105 +2647,54 @@ jr_000_111b:
     ret
 
 
-    ld [hl], b
-    ld l, b
-    nop
-    nop
-    ld [hl], b
-    ld [hl], b
-    ld bc, $7000
-    add b
-    ld [bc], a
-    nop
-    ld [hl], b
-    adc b
-    inc bc
-    nop
-    ld a, b
-    add b
-    inc b
-    nop
-    ld a, b
-    adc b
-    dec b
-    nop
-    ld e, b
-    ld e, b
-    ccf
-    nop
-    ld e, b
-    ld h, b
-    ld b, b
-    nop
-    nop
-    ld d, b
-    ld bc, $0100
-    ld d, b
-    ld [bc], a
-    nop
-    ld [bc], a
-    ld d, b
-    inc bc
-    nop
-    inc bc
-    nop
-    inc b
-    nop
-    inc b
-    nop
-    dec b
-    nop
-    dec b
-    nop
-    ld b, $00
-    ld b, $00
-    rlca
-    nop
-    rlca
-    nop
-    ld [$0800], sp
-    nop
-    ld [$0900], sp
-    nop
-    add hl, bc
-    nop
-    add hl, bc
-    nop
-    stop
-    stop
-    stop
-    ld [de], a
-    nop
-    ld [de], a
-    nop
-    ld [de], a
-    nop
-    dec d
-    nop
-    nop
-    ld bc, $0302
-    inc b
-    dec b
-    dec b
-    ld b, $06
-    rlca
-    rlca
-    ld [$0908], sp
-    add hl, bc
-    ld a, [bc]
-    ld a, [bc]
-    ld a, [bc]
-    dec bc
-    dec bc
-    dec bc
-    inc c
-    inc c
-    inc c
-    dec c
-    dec c
-    dec c
-    ld c, $fe
-    rst $38
+MatchingOamTemplateTop::
+    db $70, $68, $00, $00, $70, $70, $01, $00
+
+MatchingOamTemplateMiddle::
+    db $70, $80, $02, $00, $70, $88, $03, $00
+    db $78, $80, $04, $00, $78, $88, $05, $00
+
+MatchingOamTemplateFinal::
+    db $58, $58, $3f, $00, $58, $60, $40, $00
+
+MatchingScoreBonusTable::
+    db $00, $50
+    db $01, $00
+    db $01, $50
+    db $02, $00
+    db $02, $50
+    db $03, $00
+    db $03, $00
+    db $04, $00
+    db $04, $00
+    db $05, $00
+    db $05, $00
+    db $06, $00
+    db $06, $00
+    db $07, $00
+    db $07, $00
+    db $08, $00
+    db $08, $00
+    db $08, $00
+    db $09, $00
+    db $09, $00
+    db $09, $00
+    db $10, $00
+    db $10, $00
+    db $10, $00
+    db $12, $00
+    db $12, $00
+    db $12, $00
+    db $15, $00
+
+MatchingTileBaseIndexTable::
+    db $00, $01, $02, $03, $04, $05, $05, $06
+    db $06, $07, $07, $08, $08, $09, $09, $0a
+    db $0a, $0a, $0b, $0b, $0b, $0c, $0c, $0c
+    db $0d, $0d, $0d, $0e
+
+UnusedDrawNumberPairUnlessFF::
+    cp $ff
     ret z
 
     push hl
