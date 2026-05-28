@@ -2140,14 +2140,14 @@ jr_000_0b1b:
 jr_000_0b33:
     ld a, $01
     ld [GAME_TYPE], a
-    ld a, [$c6eb]
+    ld a, [LINK_2P_SELECTED_LEVEL]
     ld [ACTIVE_LEVEL], a
     ld [$c6e2], a
     inc a
     ld [SPRITE_ANIM_FRAME], a
     xor a
     ld [SPRITE_ANIM_STATE], a
-    ld a, [$c6ec]
+    ld a, [LINK_2P_SELECTED_SPEED]
     ld [ACTIVE_SPEED], a
     ret
 
@@ -3785,11 +3785,11 @@ ScanBoard::
     ldh [SCREEN_STATE], a
     push bc
     push hl
-    ld hl, $c6fc
+    ld hl, LINK_SEND_QUEUE_0
     ld b, [hl]
     add b
     or $40
-    ld [$c6e6], a
+    ld [LINK_FIELD_EVENT_PAYLOAD], a
     pop hl
     pop bc
     inc b
@@ -4080,8 +4080,8 @@ jr_000_1846:
 jr_000_184b:
     ld b, $23
     call Send2PData
-    ld a, [$c6e6]
-    ld [$c6fc], a
+    ld a, [LINK_FIELD_EVENT_PAYLOAD]
+    ld [LINK_SEND_QUEUE_0], a
     ld a, [$c6a2]
     sla a
     ld hl, RoundCompleteDelayParamTable
@@ -4746,7 +4746,7 @@ SelectMenuItem::
 
 
 jr_000_1b9c:
-    ld a, [$c6fa]
+    ld a, [LINK_PENDING_FIELD_RISE]
     and a
     jr nz, jr_000_1ba6
 
@@ -4763,12 +4763,12 @@ jr_000_1ba6:
     ret z
 
     ld b, a
-    ld a, [$c6fa]
+    ld a, [LINK_PENDING_FIELD_RISE]
     cp b
     jr c, jr_000_1bbe
 
     sub b
-    ld [$c6fa], a
+    ld [LINK_PENDING_FIELD_RISE], a
     ld a, $04
     jr jr_000_1bc8
 
@@ -4776,7 +4776,7 @@ jr_000_1bbe:
     ld hl, SCREEN_STATE
     ld b, [hl]
     add b
-    ld hl, $c6fa
+    ld hl, LINK_PENDING_FIELD_RISE
     ld [hl], $00
 
 jr_000_1bc8:
@@ -5728,8 +5728,8 @@ InitGameVars::
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
-    ld [$c6fc], a
-    ld [$c6fa], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_PENDING_FIELD_RISE], a
     ld [$c6f4], a
     ld [$c6f3], a
     ld [$c705], a
@@ -6082,8 +6082,8 @@ TimerTickCore::
 
 
 jr_000_239b:
-    ld a, [$c6fe]
-    ld hl, $c6fc
+    ld a, [LINK_SEND_QUEUE_INDEX]
+    ld hl, LINK_SEND_QUEUE_0
     add l
     ld l, a
     jr nc, jr_000_23a6
@@ -6091,7 +6091,7 @@ jr_000_239b:
     inc h
 
 jr_000_23a6:
-    ld a, [$c6fe]
+    ld a, [LINK_SEND_QUEUE_INDEX]
     inc a
     cp $02
     jr c, jr_000_23af
@@ -6099,7 +6099,7 @@ jr_000_23a6:
     xor a
 
 jr_000_23af:
-    ld [$c6fe], a
+    ld [LINK_SEND_QUEUE_INDEX], a
     ld a, [hl]
     ld [LINK_SEND], a
     xor a
@@ -6145,9 +6145,9 @@ jr_000_23de:
 ProcessBit6::
     res 6, a
     ld b, a
-    ld a, [$c6fa]
+    ld a, [LINK_PENDING_FIELD_RISE]
     add b
-    ld [$c6fa], a
+    ld [LINK_PENDING_FIELD_RISE], a
     ret
 
 
@@ -6237,7 +6237,7 @@ jr_000_2443:
     call SpeedTable
     ldh a, [ANIM_FRAME]
     or $20
-    ld [$c6fd], a
+    ld [LINK_SEND_QUEUE_1], a
     ret
 
 
@@ -6258,8 +6258,8 @@ UpdateDifficulty::
 jr_000_246a:
     ldh a, [ANIM_FRAME]
     ld [LINK_SEND], a
-    ld [$c6fc], a
-    ld [$c6fd], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_SEND_QUEUE_1], a
     ld a, [LINK_RECV]
     bit 7, a
     jr z, jr_000_246a
@@ -6268,13 +6268,13 @@ jr_000_246a:
     ld [$c708], a
     ldh a, [ANIM_FRAME]
     ld [LINK_SEND], a
-    ld [$c6fc], a
-    ld [$c6fd], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_SEND_QUEUE_1], a
     call WaitVBlank
     ldh a, [ANIM_FRAME]
     ld [LINK_SEND], a
-    ld [$c6fc], a
-    ld [$c6fd], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_SEND_QUEUE_1], a
     call WaitVBlank
 
 jr_000_249d:
@@ -6387,7 +6387,7 @@ jr_000_251f:
 jr_000_252f:
     ld a, SND_CURSOR_MOVE
     call PlaySound
-    ld hl, $c6eb
+    ld hl, LINK_2P_SELECTED_LEVEL
     ld a, [MENU_SELECT]
     call GetArrayElement
     inc a
@@ -6411,7 +6411,7 @@ jr_000_2550:
     ld a, SND_CURSOR_MOVE
     call PlaySound
     ld a, [MENU_SELECT]
-    ld hl, $c6eb
+    ld hl, LINK_2P_SELECTED_LEVEL
     call GetArrayElement
     and a
     ret z
@@ -6499,7 +6499,7 @@ CalcBonus::
     jr jr_000_2604
 
 jr_000_25f6:
-    ld a, [$c6ec]
+    ld a, [LINK_2P_SELECTED_SPEED]
     and a
     jr nz, jr_000_2601
 
@@ -6513,7 +6513,7 @@ jr_000_2604:
     call DrawStringToGrid
     call DrawStringToGrid
     ld hl, $0f08
-    ld a, [$c700]
+    ld a, [LINK_RECV_SPEED]
     and a
     jr nz, jr_000_2618
 
@@ -6634,13 +6634,13 @@ DrawNextPiece::
     ld a, $04
     ld [ANIM_FRAME], a
     ld [STATE_TRANSITION], a
-    ld a, [$c6eb]
+    ld a, [LINK_2P_SELECTED_LEVEL]
     call DrawNextPieceSprite
     ld a, $0c
     ld [ANIM_FRAME], a
     ld a, $04
     ld [STATE_TRANSITION], a
-    ld a, [$c6ff]
+    ld a, [LINK_RECV_LEVEL]
     call DrawPreview
     ret
 
@@ -6712,10 +6712,10 @@ PiecePreviewBlankText::
     db $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $28, $7a, $29, $ff
 
 UpdateGameField::
-    ld a, [$c6eb]
+    ld a, [LINK_2P_SELECTED_LEVEL]
     swap a
     ld b, a
-    ld a, [$c6ec]
+    ld a, [LINK_2P_SELECTED_SPEED]
     or b
     ld [LINK_SEND], a
     ld a, [LINK_ROLE]
@@ -6741,10 +6741,10 @@ jr_000_286c:
 
     swap a
     and $0f
-    ld [$c6ff], a
+    ld [LINK_RECV_LEVEL], a
     ld a, b
     and $0f
-    ld [$c700], a
+    ld [LINK_RECV_SPEED], a
     ret
 
 

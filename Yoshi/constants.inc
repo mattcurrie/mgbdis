@@ -190,8 +190,18 @@ DEF EGG_COUNT_DIGIT_LIMIT EQU $0a
 DEF EGG_COUNT_MAX_DIGIT EQU $09
 DEF EGG_COUNT_TILE_BASE EQU $40
 DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス
+DEF LINK_FIELD_EVENT_PAYLOAD EQU $c6e6 ; staged bit-6 field event copied into send queue
+DEF LINK_2P_SELECTED_LEVEL EQU $c6eb
+DEF LINK_2P_SELECTED_SPEED EQU $c6ec
 DEF MENU_SELECT       EQU $c6f0 ; メニュー選択インデックス
 DEF GAME_MODE_FLAG    EQU $c6f1 ; ゲームモードフラグ
+DEF LINK_PENDING_FIELD_RISE EQU $c6fa ; accumulated incoming bit-6 field event value
+DEF LINK_STAGING_BYTE EQU $c6fb ; cleared with link state; direct read still unconfirmed
+DEF LINK_SEND_QUEUE_0 EQU $c6fc
+DEF LINK_SEND_QUEUE_1 EQU $c6fd
+DEF LINK_SEND_QUEUE_INDEX EQU $c6fe
+DEF LINK_RECV_LEVEL EQU $c6ff
+DEF LINK_RECV_SPEED EQU $c700
 DEF PAUSE_FLAG        EQU $c707 ; ポーズフラグ
 
 ; === Sound Commands ===

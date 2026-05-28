@@ -78,8 +78,15 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6D2` | `EGG_COUNT_RESERVED` | Low | Cleared together with the egg counter in init/reset paths, but no direct read has been confirmed. |
 | `$C6D3-$C6D5` | `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` | High | `IncrementEggCounter` updates these as decimal digits capped at 999; `DrawEggCount` renders ones/tens as tile `$40+digit`, and result setup copies hundreds/tens/ones into `$C752-$C754`. |
 | `$C6E1` | `BGM_INDEX` | Medium | Used when selecting BGM/sound. |
+| `$C6E6` | `LINK_FIELD_EVENT_PAYLOAD` | Medium | Falling-piece code builds a bit-6 field-event payload here, then the round-complete path copies it into `LINK_SEND_QUEUE_0`. |
+| `$C6EB-$C6EC` | `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED` | High | The 2P option loop edits these two bytes, `UpdateGameField` packs them into `LINK_SEND`, and 2P setup copies them into `ACTIVE_LEVEL` / `ACTIVE_SPEED`. |
 | `$C6F0` | `MENU_SELECT` | Medium | Used in result/stat/next-piece UI paths; may need a more specific name. |
 | `$C6F1` | `GAME_MODE_FLAG` | Medium | Used in game loop, score/bonus/result drawing; exact semantics need validation. |
+| `$C6FA` | `LINK_PENDING_FIELD_RISE` | Medium | Incoming bit-6 link events add to this byte; `SelectMenuItem` consumes it in chunks while adjusting `SCREEN_STATE`. |
+| `$C6FB` | `LINK_STAGING_BYTE` | Low | Cleared with link state; direct read still unconfirmed. |
+| `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |
+| `$C6FE` | `LINK_SEND_QUEUE_INDEX` | High | Alternates between 0 and 1 to select the next link send queue slot. |
+| `$C6FF-$C700` | `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` | High | `UpdateGameField` unpacks peer level/speed nibbles from `LINK_RECV`; preview/result paths read these values for peer display. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
 
 ## High-Priority Unnamed Regions
@@ -93,8 +100,6 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | `$C300-$C3FF` | Sprite/field-adjacent work area, not yet fully mapped. | Some references may still be from real field/UI state or from older data artifacts; needs separate trace. |
 | `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
 | `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
-| `$C6EB-$C6EC` | Used by 2P initialization as sources for `ACTIVE_LEVEL`/`ACTIVE_SPEED`. | Link/2P selected level and speed staging bytes. |
-| `$C6FA-$C6FE` | 2P/link code uses these with `LINK_SEND`/`LINK_RECV`. | Link protocol staging bytes / last exchanged settings. |
 | `$C7A9-$C7CF` | Title/result/high-score-like code writes here. | UI/result state tables; needs trace. |
 
 ## Code/Data Misclassification Candidates
@@ -118,6 +123,6 @@ The reference scan intentionally reports address-like operands even when they oc
 
 1. Refine medium-confidence `SOUND_CH_*` slide/tempo/envelope names by decoding more sequence examples.
 2. Trace `GAME_STATE` writes and assign concrete state names.
-3. Trace `$C6EB-$C6EC` and adjacent 2P setting staging bytes.
+3. Trace `$C7A9-$C7CF` title/result/high-score-like state records.
 4. Decode the visual meaning of each Bank 2/3 graphics load range.
 5. Confirm the `$FFB3` secondary VRAM count path.

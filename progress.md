@@ -149,6 +149,8 @@
   - Created `docs/source_recovery/field_animation_state.md` to document the recovered slot/timer mapping.
   - Named the title sprite animation tick divider at `$C6D1` and the egg counter digits at `$C6D3-$C6D5`; documented `$C6D2` as a cleared-with-counter reserved byte with no confirmed direct read.
   - Created `docs/source_recovery/egg_counter.md` to document the recovered egg counter and result-copy behavior.
+  - Named the 2P selected level/speed bytes at `$C6EB-$C6EC`, peer received level/speed at `$C6FF-$C700`, and the two-byte link send queue at `$C6FC-$C6FE`.
+  - Created `docs/source_recovery/link_state.md` to document the recovered 2P option packing, link send queue, and incoming bit-6 field-event accumulator.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -156,6 +158,7 @@
   - `docs/source_recovery/sprite_oam.md`
   - `docs/source_recovery/field_animation_state.md`
   - `docs/source_recovery/egg_counter.md`
+  - `docs/source_recovery/link_state.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -204,6 +207,7 @@
 | Title marker WRAM naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Field animation state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Egg counter state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Link state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

@@ -689,9 +689,9 @@ StartNextRound::
     ld [EGG_COUNT_RESERVED], a
     ld [$c703], a
     ld [$c704], a
-    ld [$c6fa], a
-    ld [$c6fc], a
-    ld [$c6e6], a
+    ld [LINK_PENDING_FIELD_RISE], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_FIELD_EVENT_PAYLOAD], a
     ld [$c6f4], a
     ld a, [TWO_PLAYER_FLAG]
     and a
@@ -1083,14 +1083,14 @@ ClearEggCount::
 
 InitEggSystem::
     xor a
-    ld [$c6fe], a
-    ld [$c6fa], a
+    ld [LINK_SEND_QUEUE_INDEX], a
+    ld [LINK_PENDING_FIELD_RISE], a
     ld [LINK_SEND], a
     ld [LINK_RECV], a
-    ld [$c6fb], a
-    ld [$c6fc], a
-    ld [$c6fd], a
-    ld [$c6e6], a
+    ld [LINK_STAGING_BYTE], a
+    ld [LINK_SEND_QUEUE_0], a
+    ld [LINK_SEND_QUEUE_1], a
+    ld [LINK_FIELD_EVENT_PAYLOAD], a
     ret
 
 
