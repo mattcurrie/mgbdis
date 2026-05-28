@@ -5039,27 +5039,35 @@ SoundIndexEntry_1c::
 SoundIndexEntry_1d::
     db $44
     dw SoundSequenceData_7eb4
+SoundIndexEntry_BoardScanStep7::
 SoundIndexEntry_1e::
     db $05
     dw SoundSequenceData_7ec7
+SoundIndexEntry_BoardScanStep6::
 SoundIndexEntry_1f::
     db $04
     dw SoundSequenceData_7ea9
+SoundIndexEntry_BoardScanStep5::
 SoundIndexEntry_20::
     db $04
     dw SoundSequenceData_7e9e
+SoundIndexEntry_BoardScanStep4::
 SoundIndexEntry_21::
     db $04
     dw SoundSequenceData_7e93
+SoundIndexEntry_BoardScanStep3::
 SoundIndexEntry_22::
     db $04
     dw SoundSequenceData_7e88
+SoundIndexEntry_BoardScanStep2::
 SoundIndexEntry_23::
     db $04
     dw SoundSequenceData_7e7d
+SoundIndexEntry_BoardScanStep1::
 SoundIndexEntry_24::
     db $04
     dw SoundSequenceData_7e72
+SoundIndexEntry_BoardScanStep0::
 SoundIndexEntry_BoardScanStepBase::
 SoundIndexEntry_25::
     db $04

@@ -14,7 +14,7 @@ This note tracks the first recovered structure of `BOARD_DATA` at `$C62A`.
 | `BOARD_FALL_END_ROW` | `$0F` | A-type setup seeds `COLUMN_TOP_ROWS` with this value, `ProcessInputTitle` returns immediately when the seed is already this value, B-type clear detection requires all four column rows to reach it, `UpdateMatchState` skips landing-progress handling at this row, and `UpdateFallTimer` stops scanning when `PIECE_FALL_POS` or the scan row reaches it. |
 | `BOARD_SCAN_TRIGGER_PAYLOAD` | `$07` | `UpdateMatchState` calls `ScanBoard` only for this staged payload, and `ScanBoard` redraws this payload while animating the scan. |
 | `BOARD_SCAN_TARGET_PAYLOAD` | `$08` | `GetFallSpeed` scans the selected column for this payload, and `UpdateLandingProgress` applies its unresolved landing-counter adjustment only for this staged payload. |
-| `BOARD_SCAN_STEP_MAX` | `$07` | `ScanBoard` increments its local sound/animation step counter up to this value. |
+| `BOARD_SCAN_STEP_MAX` | `$07` | `ScanBoard` increments its local sound/animation step counter up to this value; the same counter selects scan sounds from `SND_BOARD_SCAN_STEP_BASE` down to `SND_BOARD_SCAN_STEP_MIN`. |
 | `BOARD_SCAN_SEND_FRAMES` | `$07` | Each `ScanBoard` animation step calls `Send2PData` for this many inner frames. |
 
 The board is currently best described as four 16-byte column blocks. Column

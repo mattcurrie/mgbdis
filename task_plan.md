@@ -123,6 +123,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name board scan trigger/target payload constants
 - [x] Name board scan animation/link/sound constants
 - [x] Add board scan sound table alias
+- [x] Alias board scan sound range
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending
