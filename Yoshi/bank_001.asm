@@ -598,7 +598,7 @@ GameMainUpdate::
     call UpdateFieldTimers
     call AnimateDropping
     call LoadGameBGTiles
-    call FieldUpdate18
+    call UpdateEggTextAnimation
     call CheckPause2P
     ld a, [GAME_TYPE]
     and a
@@ -692,7 +692,7 @@ StartNextRound::
     ld [LINK_PENDING_FIELD_RISE], a
     ld [LINK_SEND_QUEUE_0], a
     ld [LINK_FIELD_EVENT_PAYLOAD], a
-    ld [$c6f4], a
+    ld [EGG_TEXT_ALT_ANIM_PHASE], a
     ld a, [TWO_PLAYER_FLAG]
     and a
     jr z, jr_001_448c
@@ -799,7 +799,7 @@ InitPlayfield::
     xor a
     ld [RESULT_CLEAR_FLAG], a
     ld [RESULT_GAME_OVER_FLAG], a
-    ld [$c6f4], a
+    ld [EGG_TEXT_ALT_ANIM_PHASE], a
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
@@ -1046,7 +1046,7 @@ IncrementEggCounter::
 
     xor a
     ld [hl], a
-    call FieldUpdate17
+    call StartEggTextPulse
     ld hl, EGG_COUNT_TENS
     inc [hl]
     ld a, [hl]
@@ -1055,7 +1055,7 @@ IncrementEggCounter::
 
     xor a
     ld [hl], a
-    call ResetFieldState
+    call EnableEggTextAltAnimation
     ld hl, EGG_COUNT_HUNDREDS
     inc [hl]
     ld a, [hl]
@@ -1686,22 +1686,22 @@ FieldUpdate16::
     ret
 
 
-FieldUpdate17::
-    ld a, $01
-    ld [$c6e9], a
-    ld a, $03
-    ld [$c6ea], a
-    ld a, $02
-    ld [$c6e8], a
+StartEggTextPulse::
+    ld a, EGG_TEXT_PULSE_INITIAL_TIMER
+    ld [EGG_TEXT_PULSE_TIMER], a
+    ld a, EGG_TEXT_PULSE_INITIAL_STEPS
+    ld [EGG_TEXT_PULSE_STEPS], a
+    ld a, EGG_TEXT_PULSE_INITIAL_FRAME
+    ld [EGG_TEXT_PULSE_FRAME], a
     ret
 
 
-FieldUpdate18::
-    ld a, [$c6f3]
+UpdateEggTextAnimation::
+    ld a, [EGG_TEXT_ALT_ANIM_ACTIVE]
     and a
     ret nz
 
-    ld hl, $c6e9
+    ld hl, EGG_TEXT_PULSE_TIMER
     ld a, [hl]
     and a
     ret z
@@ -1709,13 +1709,13 @@ FieldUpdate18::
     dec [hl]
     ret nz
 
-    ld hl, $c6ea
+    ld hl, EGG_TEXT_PULSE_STEPS
     dec [hl]
     jr z, jr_001_4a65
 
-    ld a, $28
-    ld [$c6e9], a
-    ld a, [$c6e8]
+    ld a, EGG_TEXT_PULSE_RELOAD
+    ld [EGG_TEXT_PULSE_TIMER], a
+    ld a, [EGG_TEXT_PULSE_FRAME]
     cp $01
     jr z, jr_001_4a57
 
@@ -1728,9 +1728,9 @@ jr_001_4a57:
     call AnimateSprite
 
 jr_001_4a5c:
-    ld a, [$c6e8]
+    ld a, [EGG_TEXT_PULSE_FRAME]
     xor $03
-    ld [$c6e8], a
+    ld [EGG_TEXT_PULSE_FRAME], a
     ret
 
 
@@ -1738,23 +1738,23 @@ jr_001_4a65:
     ret
 
 
-ToggleFieldAnim::
-    ld a, [$c6f4]
+ToggleEggTextAltAnimation::
+    ld a, [EGG_TEXT_ALT_ANIM_PHASE]
     xor $01
-    ld [$c6f4], a
-    ld a, [$c6f3]
+    ld [EGG_TEXT_ALT_ANIM_PHASE], a
+    ld a, [EGG_TEXT_ALT_ANIM_ACTIVE]
     and a
     ret z
 
-    ld a, [$c6f4]
+    ld a, [EGG_TEXT_ALT_ANIM_PHASE]
     inc a
     call AnimateSprite
     ret
 
 
-ResetFieldState::
+EnableEggTextAltAnimation::
     ld a, $01
-    ld [$c6f3], a
+    ld [EGG_TEXT_ALT_ANIM_ACTIVE], a
     ret
 
 
@@ -4925,7 +4925,7 @@ CheckGameStateUpdate::
     ld hl, GAME_STATE
     ld a, [hl]
     cp GAME_STATE_PLAYING
-    jp z, ToggleFieldAnim
+    jp z, ToggleEggTextAltAnimation
 
     ld a, [OPTION_BGM]
     add $09

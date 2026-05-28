@@ -99,10 +99,12 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6E4-$C6E5` | `ROUND_TIMER_STOPPED` / `TOTAL_TIMER_STOPPED` | High | Completion and result setup set both flags to stop elapsed-time updates; next-round setup clears only the round timer, while new playfield setup clears both timers and both stop flags. |
 | `$C6E6` | `LINK_FIELD_EVENT_PAYLOAD` | Medium | Falling-piece code builds a bit-6 field-event payload here, then the round-complete path copies it into `LINK_SEND_QUEUE_0`. |
 | `$C6E7` | `LINK_SEND_DROP_INPUT_LOCK` | High | `Send2PData` sets this while calling `CheckMatch` inside its link-send wait loop; `CheckMatch` uses it to suppress starting a new drop while still allowing movement/input polling. |
+| `$C6E8-$C6EA` | `EGG_TEXT_PULSE_FRAME` / `EGG_TEXT_PULSE_TIMER` / `EGG_TEXT_PULSE_STEPS` | High | Seeded when `IncrementEggCounter` wraps the ones digit; `UpdateEggTextAnimation` uses these bytes to alternate `AnimateSprite` frames 1 and 2 with a `$28` frame delay. |
 | `$C6EB-$C6EC` | `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED` | High | The 2P option loop edits these two bytes, `UpdateGameField` packs them into `LINK_SEND`, and 2P setup copies them into `ACTIVE_LEVEL` / `ACTIVE_SPEED`. |
 | `$C6F0` | `LINK_SETTINGS_CURSOR` | High | 2P pre-play cursor. Up/down clamp it to level row `0` or speed row `1`; left/right index `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED`. |
 | `$C6F1` | `SETTINGS_BLINK_PHASE` | High | `TickSettingsBlink` toggles this bit every `$0F` frames. Selected 2P setting/result-option rows use it to alternate between normal text and blank text. |
 | `$C6F2` | `SETTINGS_BLINK_TIMER` | High | Reloaded with `$0F` on setup/input; decremented by `TickSettingsBlink` before toggling `SETTINGS_BLINK_PHASE`. |
+| `$C6F3-$C6F4` | `EGG_TEXT_ALT_ANIM_ACTIVE` / `EGG_TEXT_ALT_ANIM_PHASE` | High | The tens-digit wrap path enables this continuous `AnimateSprite` frame 1/2 alternation; `RunTitleMenu` clears both bytes, round/playfield setup clears the phase byte, and the playing-state VBlank check toggles the phase. |
 | `$C6FA` | `LINK_PENDING_FIELD_RISE` | Medium | Incoming bit-6 link events add to this byte; `SelectMenuItem` consumes it in chunks while adjusting `SCREEN_STATE`. |
 | `$C6FB` | `LINK_STAGING_BYTE` | Low | Cleared with link state; direct read still unconfirmed. |
 | `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |

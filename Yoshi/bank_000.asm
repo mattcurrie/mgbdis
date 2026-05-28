@@ -5581,8 +5581,8 @@ RunTitleMenu::
     ld [EGG_COUNT_HUNDREDS], a
     ld [LINK_SEND_QUEUE_0], a
     ld [LINK_PENDING_FIELD_RISE], a
-    ld [$c6f4], a
-    ld [$c6f3], a
+    ld [EGG_TEXT_ALT_ANIM_PHASE], a
+    ld [EGG_TEXT_ALT_ANIM_ACTIVE], a
     ld [ROUND_RESULT_PENDING], a
     ld [ROUND_RESULT_CODE], a
     call Multiply
