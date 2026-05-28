@@ -557,7 +557,7 @@ jr_001_449e:
 ProcessColumn::
     ld a, $01
     ld [$c6e0], a
-    ld hl, $c200
+    ld hl, SPRITE_OBJECT_SLOT_0
     ld [hl], $01
     inc hl
     inc hl
@@ -1191,7 +1191,7 @@ jr_001_4850:
 
 
 FieldUpdate1::
-    ld hl, $c200
+    ld hl, SPRITE_OBJECTS
     ld b, $ff
     xor a
 

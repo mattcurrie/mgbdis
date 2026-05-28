@@ -13,6 +13,9 @@ shadow OAM, and Bank 1 sprite update tables.
 | `$FF8F` | `SHADOW_OAM_WRITE_OFFSET` | High | Temporary OAM write offset while `UpdateSprites` appends expanded hardware sprite entries. |
 | `$FF90/$FF91` | `SPRITE_BASE_X_TMP` / `SPRITE_BASE_Y_TMP` | High | Per-object base position loaded from object slot offsets `$06` and `$04`; `UpdateSprites` adds the Game Boy OAM hardware biases `$08/$10`. |
 | `$FF92` | `SPRITE_OBJECT_ATTR_TMP` | Medium | Stores object type bit `$80`, later ORed into per-sprite attributes when the layout attribute byte has bit 1 set. |
+| `$FF96` | `SPRITE_OBJECT_SLOT_OFFSET_TMP` | High | `UpdateSpriteObject` stores the selected `$C2xx` slot offset before copying the staged object back. |
+| `$C68B` | `SPRITE_OBJECT_STAGING_INDEX` | High | `UpdateSpriteObject` saves its input index here; `MovePieceDown` uses it to clear the same gameplay object slot. |
+| `$C68C-$C695` | `SPRITE_OBJECT_STAGING` | High | `UpdateSpriteObject` copies 10 bytes from one `$C2xx` slot into this work area, updates movement/state fields, then copies the 10-byte record back. |
 
 ## Logical Object Slot Format
 
@@ -28,6 +31,25 @@ slot; a zero type disables the object.
 
 The remaining slot bytes are used by producers elsewhere and still need a
 dedicated trace.
+
+## Object Producers
+
+`UpdateSpriteObject` is the first confirmed producer-side bridge for gameplay
+object slots. Its input `A` selects slots `$C210`, `$C220`, `$C230`, and
+`$C240` by computing `(A + 1) * $10`. The routine copies 10 bytes from that
+slot into `SPRITE_OBJECT_STAGING`, updates state through `UpdateMatchState` or
+the slot-local delay at staging offset `+$07`, then copies the same 10-byte
+record back to the selected slot. `MovePieceDown` uses the saved index to clear
+the selected 10-byte record when the object finishes.
+
+Confirmed slot groups:
+
+| Slot/range | Current evidence |
+|------------|------------------|
+| Slot 0 (`$C200`) | `ProcessColumn` initializes object type `$01`, frame `$00`, base Y `$80`, and base X `$20`. `InitGameState2` advances its frame, and left/right input adjusts base X by `$20`. |
+| Slots 1-4 (`$C210-$C24F`) | `DrawBox` calls `UpdateSpriteObject` four times. Collision/drop code scans these four slots and uses additional bytes such as `+$05`, `+$08`, and `+$0F` for gameplay state. |
+| Slots 5-8 (`$C250-$C28F`) | Menu/title helpers clear or scan this range; individual byte meanings still need trace. |
+| Slots 9-13 (`$C290-$C2DF`) | Options cursors, round-complete animations, countdown digits, and 2P field transition objects use these slots. |
 
 ## Sprite Update Table Format
 
@@ -79,8 +101,9 @@ Y=`$A0` for all 40 hardware sprites.
 
 ## Open Questions
 
-- Producers for the remaining bytes in each `$C2x0` logical slot still need to
-  be traced and named.
+- The producer path for gameplay slots 1-4 is now traced, but the exact
+  semantics of slot-local bytes `+$01`, `+$03`, `+$05`, `+$07`, `+$08`,
+  `+$09`, and `+$0F` still need narrower names.
 - The exact set of high-bit object types, if any, needs runtime/call-site
   confirmation because the high bit is not masked before the frame-table index.
 - The frame tables are now structurally understood, but the individual object

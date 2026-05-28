@@ -1044,20 +1044,20 @@ jr_000_05d6:
 
 
 UpdateSpriteObject::
-    ld [$c68b], a
+    ld [SPRITE_OBJECT_STAGING_INDEX], a
     inc a
     sla a
     sla a
     sla a
     sla a
     ld l, a
-    ld h, $c2
+    ld h, SPRITE_OBJECTS_HI
     ld a, l
-    ld [$ff96], a
-    ld de, $c68c
-    ld bc, $000a
+    ld [SPRITE_OBJECT_SLOT_OFFSET_TMP], a
+    ld de, SPRITE_OBJECT_STAGING
+    ld bc, SPRITE_OBJECT_STAGING_SIZE
     call MemcopyCall
-    ld a, [$c694]
+    ld a, [SPRITE_OBJECT_STAGING + $08]
     and a
     ret z
 
@@ -1071,21 +1071,21 @@ UpdateSpriteObject::
     jr jr_000_0617
 
 jr_000_0606:
-    ld hl, $c693
+    ld hl, SPRITE_OBJECT_STAGING + $07
     dec [hl]
     jr nz, jr_000_0617
 
     ld a, [$c66e]
-    ld [$c693], a
+    ld [SPRITE_OBJECT_STAGING + $07], a
     ld a, $02
-    ld [$c694], a
+    ld [SPRITE_OBJECT_STAGING + $08], a
 
 jr_000_0617:
-    ld hl, $c68c
-    ld d, $c2
-    ld a, [$ff96]
+    ld hl, SPRITE_OBJECT_STAGING
+    ld d, SPRITE_OBJECTS_HI
+    ld a, [SPRITE_OBJECT_SLOT_OFFSET_TMP]
     ld e, a
-    ld bc, $000a
+    ld bc, SPRITE_OBJECT_STAGING_SIZE
     call MemcopyCall
     ret
 
@@ -1595,8 +1595,8 @@ CheckCollisionCore::
     swap h
     srl h
     ld d, h
-    ld hl, $c210
-    ld b, $04
+    ld hl, SPRITE_OBJECT_SLOT_1
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
 
 jr_000_083e:
     ld a, [hl]
@@ -1614,7 +1614,7 @@ jr_000_083e:
     jr jr_000_0851
 
 jr_000_084f:
-    ld a, $10
+    ld a, SPRITE_OBJECT_SLOT_SIZE
 
 jr_000_0851:
     add l
@@ -1648,8 +1648,8 @@ jr_000_0864:
 
 
 UpdateDropPositions::
-    ld hl, $c215
-    ld b, $04
+    ld hl, SPRITE_OBJECT_SLOT_1 + $05
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
 
 jr_000_086c:
     ld a, [hl]
@@ -1663,7 +1663,7 @@ jr_000_086c:
     ld [hl], a
 
 jr_000_0877:
-    ld a, $10
+    ld a, SPRITE_OBJECT_SLOT_SIZE
     add l
     ld l, a
     dec b
@@ -2162,7 +2162,7 @@ InitGameState2::
     ret nz
 
     ld [hl], $02
-    ld hl, $c202
+    ld hl, SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_FRAME
     ld a, [hl]
     cp $04
     jr nc, jr_000_0b67
@@ -3035,8 +3035,8 @@ jr_000_12bd:
 
 
 DisplayLines::
-    ld hl, $c210
-    ld b, $04
+    ld hl, SPRITE_OBJECT_SLOT_1
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
 
 jr_000_12d2:
     ld a, [hl]
@@ -3120,7 +3120,7 @@ jr_000_1317:
 
     ld a, $01
     ld [$c66f], a
-    ld a, [$c206]
+    ld a, [SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_BASE_X]
     swap a
     srl a
     push af
@@ -3131,7 +3131,7 @@ jr_000_1317:
     jr jr_000_1341
 
 jr_000_1341:
-    ld hl, $c206
+    ld hl, SPRITE_OBJECT_SLOT_0 + SPRITE_OBJECT_BASE_X
     ldh a, [JOYPAD_HELD]
     bit 7, a
     jr nz, jr_000_136d
@@ -3171,19 +3171,19 @@ jr_000_1361:
 
 
 jr_000_136d:
-    ld a, [$c218]
+    ld a, [SPRITE_OBJECT_SLOT_1 + $08]
     cp $02
     jr z, jr_000_138a
 
-    ld a, [$c228]
+    ld a, [SPRITE_OBJECT_SLOT_2 + $08]
     cp $02
     jr z, jr_000_138a
 
-    ld a, [$c238]
+    ld a, [SPRITE_OBJECT_SLOT_3 + $08]
     cp $02
     jr z, jr_000_138a
 
-    ld a, [$c248]
+    ld a, [SPRITE_OBJECT_SLOT_4 + $08]
     cp $02
     jr z, jr_000_138a
 
@@ -3199,8 +3199,8 @@ jr_000_138a:
     ld [hl], $03
 
 jr_000_1394:
-    ld b, $04
-    ld hl, $c21f
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
+    ld hl, SPRITE_OBJECT_SLOT_1 + $0f
 
 jr_000_1399:
     ld a, [hl]
@@ -3211,7 +3211,7 @@ jr_000_1399:
 
 jr_000_13a0:
     ld a, l
-    add $10
+    add SPRITE_OBJECT_SLOT_SIZE
     ld l, a
     dec b
     jr nz, jr_000_1399
@@ -3279,7 +3279,7 @@ UpdateMatchState::
     cp $02
     jr nz, jr_000_13f6
 
-    ld a, [$c68b]
+    ld a, [SPRITE_OBJECT_STAGING_INDEX]
     call GameOverSequence
 
 jr_000_13f6:
@@ -3291,9 +3291,9 @@ jr_000_13f6:
     cp b
     jr nc, jr_000_140f
 
-    ld a, [$c690]
+    ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_BASE_Y]
     add $08
-    ld [$c690], a
+    ld [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_BASE_Y], a
     ld a, $01
     ret
 
@@ -3358,12 +3358,12 @@ jr_000_1463:
     pop hl
 
 MovePieceDown::
-    ld a, [$c68b]
+    ld a, [SPRITE_OBJECT_STAGING_INDEX]
     inc a
     swap a
     ld l, a
-    ld h, $c2
-    ld b, $0a
+    ld h, SPRITE_OBJECTS_HI
+    ld b, SPRITE_OBJECT_STAGING_SIZE
     xor a
 
 jr_000_1472:
@@ -3415,8 +3415,8 @@ jr_000_14a0:
 
 
 MovePieceRight::
-    ld hl, $c210
-    ld b, $80
+    ld hl, SPRITE_OBJECT_SLOT_1
+    ld b, SPRITE_OBJECT_SLOT_SIZE * $08
     xor a
 
 jr_000_14af:
@@ -3664,7 +3664,7 @@ jr_000_15d0:
     call DisplayResults
 
 jr_000_15e8:
-    ld hl, $c200
+    ld hl, SPRITE_OBJECT_SLOT_0
     ld [hl], $01
     ret
 
@@ -3964,7 +3964,7 @@ UpdateTimer::
     ld hl, RoundCompleteStateRemapTable
     call GetArrayElement
     ldh [SCREEN_STATE], a
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $03
     inc hl
     inc hl
@@ -3985,14 +3985,14 @@ UpdateTimer::
     sla a
     add $10
     ld [hl], a
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $03
     inc l
     inc l
     ld [hl], $00
     ld b, $0f
     call Send2PData
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $03
 
 Process2Player::
@@ -4001,8 +4001,8 @@ Process2Player::
     ld [hl], $10
     ld b, $0f
     call Send2PData
-    ld hl, $c2a0
-    ld de, $0010
+    ld hl, SPRITE_OBJECT_SLOT_10
+    ld de, SPRITE_OBJECT_SLOT_SIZE
     xor a
     ld b, a
 
@@ -4014,11 +4014,11 @@ jr_000_17d6:
     ld [hl], b
     inc l
     inc l
-    ld a, [$c294]
+    ld a, [SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_BASE_Y]
     ld [hl], a
     inc l
     inc l
-    ld a, [$c296]
+    ld a, [SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_BASE_X]
     ld [hl], a
     pop hl
     add hl, de
@@ -4034,7 +4034,7 @@ jr_000_17d6:
     ld [$c6c7], a
     ld a, SND_ROUND_COMPLETE
     call PlaySound
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $03
     inc l
     inc l
@@ -4042,7 +4042,7 @@ jr_000_17d6:
     ld b, $14
     call Send2PData
     ld a, $01
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $03
     inc hl
     inc hl
@@ -4062,10 +4062,10 @@ jr_000_181a:
 
     ld b, $19
     call Send2PData
-    ld a, [$c292]
+    ld a, [SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_FRAME]
     xor $10
-    ld [$c292], a
-    ld a, [$c292]
+    ld [SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_FRAME], a
+    ld a, [SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_FRAME]
     cp $14
     jr nz, jr_000_1846
 
@@ -4094,7 +4094,7 @@ jr_000_184b:
     call AddScore
     call UpdateAnimFrame
     call AdvanceEggAnimation
-    ld hl, $c290
+    ld hl, SPRITE_OBJECT_SLOT_9
     ld [hl], $00
     ret
 
@@ -4298,7 +4298,7 @@ AnimateGameOver::
     inc a
     swap a
     ld l, a
-    ld h, $c2
+    ld h, SPRITE_OBJECTS_HI
     ld [hl], $02
     inc hl
     inc hl
@@ -4366,8 +4366,8 @@ jr_000_19be:
 
 
 ProcessMenuInput::
-    ld b, $04
-    ld hl, $c250
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
+    ld hl, SPRITE_OBJECT_SLOT_5
     ld de, $000e
     xor a
 
@@ -4648,8 +4648,8 @@ jr_000_1b28:
 DrawTitleText::
     push bc
     push hl
-    ld hl, $c210
-    ld b, $04
+    ld hl, SPRITE_OBJECT_SLOT_1
+    ld b, SPRITE_OBJECT_ACTIVE_SLOT_COUNT
 
 jr_000_1b38:
     ld a, [hl]
@@ -4793,7 +4793,7 @@ DrawTextBox::
     ret nz
 
     ld [hl], $20
-    ld hl, $c210
+    ld hl, SPRITE_OBJECT_SLOT_1
     ld de, $0010
     ld b, $08
 
@@ -5207,15 +5207,15 @@ SettingsCursorTileData::
 
 ApplySettings::
     ld hl, SettingsCursorSpriteInit0
-    ld de, $c290
+    ld de, SPRITE_OBJECT_SLOT_9
     ld bc, $0007
     call MemcopyCall
     ld hl, SettingsCursorSpriteInit1
-    ld de, $c2a0
+    ld de, SPRITE_OBJECT_SLOT_10
     ld bc, $0007
     call MemcopyCall
     ld hl, SettingsCursorSpriteInit2
-    ld de, $c2b0
+    ld de, SPRITE_OBJECT_SLOT_11
     ld bc, $0007
     call MemcopyCall
     ret
@@ -5793,7 +5793,7 @@ Setup2PField::
     cp [hl]
     ret z
 
-    ld hl, $c2b6
+    ld hl, SPRITE_OBJECT_SLOT_11 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
     call SetupLinkCable
     cp $10
@@ -5830,7 +5830,7 @@ jr_000_2201:
     xor a
     ld [$c6c8], a
     ld [$c6c3], a
-    ld [$c2b0], a
+    ld [SPRITE_OBJECT_SLOT_11], a
     ld a, $10
     pop hl
     ret
@@ -5842,7 +5842,7 @@ DrawField1::
     cp [hl]
     ret z
 
-    ld hl, $c2a6
+    ld hl, SPRITE_OBJECT_SLOT_10 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
     call DrawField2
     cp $10
@@ -5880,7 +5880,7 @@ jr_000_2241:
     xor a
     ld [$c6c9], a
     ld [$c6c4], a
-    ld [$c2a0], a
+    ld [SPRITE_OBJECT_SLOT_10], a
     ld a, $10
     pop hl
     ret
@@ -5892,7 +5892,7 @@ DrawField3::
     cp [hl]
     ret z
 
-    ld hl, $c2d6
+    ld hl, SPRITE_OBJECT_SLOT_13 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
     call DrawField4
     cp $10
@@ -5927,7 +5927,7 @@ jr_000_227e:
     xor a
     ld [$c6ca], a
     ld [$c6c5], a
-    ld [$c2d0], a
+    ld [SPRITE_OBJECT_SLOT_13], a
     ld a, $10
     pop hl
     ret
@@ -5939,7 +5939,7 @@ DrawFieldBorder::
     cp [hl]
     ret z
 
-    ld hl, $c2c6
+    ld hl, SPRITE_OBJECT_SLOT_12 + SPRITE_OBJECT_BASE_X
     ld a, [hl]
     call DrawFieldRow
     cp $10
@@ -5979,7 +5979,7 @@ jr_000_22be:
     xor a
     ld [$c6c7], a
     ld [$c6c6], a
-    ld [$c2c0], a
+    ld [SPRITE_OBJECT_SLOT_12], a
     ld a, $10
     pop hl
     ret
@@ -7738,8 +7738,8 @@ ContinueCountdown::
 
 
 DrawCountdownNum::
-    ld hl, $c292
-    ld de, $0010
+    ld hl, SPRITE_OBJECT_SLOT_9 + SPRITE_OBJECT_FRAME
+    ld de, SPRITE_OBJECT_SLOT_SIZE
     ld b, $03
 
 jr_000_2ee0:
@@ -8003,8 +8003,8 @@ CountdownDigitPattern9::
     db $38, $6c, $6c, $6c, $3c, $0c, $38, $00
 
 ProcessRoundComplete::
-    ld hl, $c2a0
-    ld de, $0010
+    ld hl, SPRITE_OBJECT_SLOT_10
+    ld de, SPRITE_OBJECT_SLOT_SIZE
     xor a
     ld b, a
 
@@ -8142,7 +8142,7 @@ jr_000_30eb:
 jr_000_3100:
     push af
     xor a
-    ld hl, $c200
+    ld hl, SPRITE_OBJECTS
     ld b, $ef
 
 jr_000_3107:
@@ -8198,7 +8198,7 @@ ProcessNewHighScore::
     push af
     push bc
     push hl
-    ld hl, $c2a0
+    ld hl, SPRITE_OBJECT_SLOT_10
     xor a
     ld b, $40
 
@@ -8860,7 +8860,7 @@ jr_000_3572:
     ldh [ANIM_FRAME], a
 
 jr_000_3576:
-    ld hl, $c210
+    ld hl, SPRITE_OBJECT_SLOT_1
     ld bc, $00e0
     ld d, $00
     call DrawCharacter

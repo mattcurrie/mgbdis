@@ -70,6 +70,8 @@
   - object slot `+$04/+$06`: base Y/X, with hardware OAM biases `$10/$08`.
   - frame table entry: `dw tile_id_list, layout_list`.
   - layout list: repeated `y_delta, x_delta, attr`; attr bit 0 ends the list.
+- `UpdateSpriteObject` is the first confirmed producer path for gameplay sprite objects: input `A=0..3` selects `$C210/$C220/$C230/$C240`, copies 10 bytes through `$C68C-$C695`, updates state, and writes the record back.
+- Slot 0 (`$C200`) is a separately managed gameplay/cursor object initialized by `ProcessColumn`; slots 9-13 are reused by options, countdown, round-complete, and 2P field transition objects.
 - `docs/source_recovery/sprite_oam.md` records the current OAM/object evidence and open questions.
 - The temporary compatibility `DEF` symbols that were needed for later fake-code references have been removed; after the music stream conversion, no references to those fake labels remain.
 - `docs/source_recovery/data_ranges.md` records converted and remaining high-priority data ranges.

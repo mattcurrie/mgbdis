@@ -37,6 +37,7 @@ Phases 2-4
 - [x] Replace Bank 0 graphics-load source immediates with Bank 2/3 data labels
 - [ ] Identify tilemaps, OAM templates, animation tables, and score/text data
 - [x] Document first-pass `$C200` logical sprite object and `$C400` shadow OAM format
+- [x] Trace first-pass `$C200` sprite object producer/staging path
 - [x] Convert first obvious data blob from bogus instructions to db/dw labels
 - [x] Convert Bank 0 option UI strings, marker coordinates, cursor tile lists, and option bound tables
 - [x] Convert Bank 0 score/result/continue text strings and marker strings
