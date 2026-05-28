@@ -256,6 +256,8 @@ DEF LINK_SEND_QUEUE_1 EQU $c6fd
 DEF LINK_SEND_QUEUE_INDEX EQU $c6fe
 DEF LINK_RECV_LEVEL EQU $c6ff
 DEF LINK_RECV_SPEED EQU $c700
+DEF LINK_RESULT_NONZERO_MARKS EQU $c701 ; 2P result marks for nonzero result codes
+DEF LINK_RESULT_ZERO_MARKS EQU $c702 ; 2P result marks for zero result codes
 DEF RESULT_CLEAR_FLAG EQU $c703 ; set when the B-type board/round clear condition is reached
 DEF RESULT_GAME_OVER_FLAG EQU $c704 ; set when the local field overflows into game over
 DEF ROUND_RESULT_PENDING EQU $c705 ; queued result/high-score processing flag

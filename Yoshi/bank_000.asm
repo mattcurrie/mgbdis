@@ -5573,8 +5573,8 @@ jr_000_2154:
 
 RunTitleMenu::
     xor a
-    ld [$c701], a
-    ld [$c702], a
+    ld [LINK_RESULT_NONZERO_MARKS], a
+    ld [LINK_RESULT_ZERO_MARKS], a
     ld [EGG_COUNT_RESERVED], a
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
@@ -8184,15 +8184,15 @@ CheckHighScoreTable::
     ldh [STATE_TRANSITION], a
     jr z, jr_000_3211
 
-    ld a, [$c701]
+    ld a, [LINK_RESULT_NONZERO_MARKS]
     inc a
-    ld [$c701], a
+    ld [LINK_RESULT_NONZERO_MARKS], a
     jr jr_000_3218
 
 jr_000_3211:
-    ld a, [$c702]
+    ld a, [LINK_RESULT_ZERO_MARKS]
     inc a
-    ld [$c702], a
+    ld [LINK_RESULT_ZERO_MARKS], a
 
 jr_000_3218:
     cp $03
@@ -8309,7 +8309,7 @@ jr_000_32c1:
     ld hl, $c4ff
     ld bc, $0202
     call FillRect
-    ld a, [$c701]
+    ld a, [LINK_RESULT_NONZERO_MARKS]
     and a
     jr z, jr_000_3328
 
@@ -8330,7 +8330,7 @@ jr_000_3317:
     jr nz, jr_000_3317
 
 jr_000_3328:
-    ld a, [$c702]
+    ld a, [LINK_RESULT_ZERO_MARKS]
     and a
     jr z, jr_000_3343
 
