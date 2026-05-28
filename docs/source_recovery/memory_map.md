@@ -94,6 +94,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6D3-$C6D5` | `EGG_COUNT_ONES` / `EGG_COUNT_TENS` / `EGG_COUNT_HUNDREDS` | High | `IncrementEggCounter` updates these as decimal digits capped at 999; `DrawEggCount` renders ones/tens as tile `$40+digit`, and result setup copies hundreds/tens/ones into `$C752-$C754`. |
 | `$C6E1` | `BGM_INDEX` | Medium | Used when selecting BGM/sound. |
 | `$C6E6` | `LINK_FIELD_EVENT_PAYLOAD` | Medium | Falling-piece code builds a bit-6 field-event payload here, then the round-complete path copies it into `LINK_SEND_QUEUE_0`. |
+| `$C6E7` | `LINK_SEND_DROP_INPUT_LOCK` | High | `Send2PData` sets this while calling `CheckMatch` inside its link-send wait loop; `CheckMatch` uses it to suppress starting a new drop while still allowing movement/input polling. |
 | `$C6EB-$C6EC` | `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED` | High | The 2P option loop edits these two bytes, `UpdateGameField` packs them into `LINK_SEND`, and 2P setup copies them into `ACTIVE_LEVEL` / `ACTIVE_SPEED`. |
 | `$C6F0` | `LINK_SETTINGS_CURSOR` | High | 2P pre-play cursor. Up/down clamp it to level row `0` or speed row `1`; left/right index `LINK_2P_SELECTED_LEVEL` / `LINK_2P_SELECTED_SPEED`. |
 | `$C6F1` | `SETTINGS_BLINK_PHASE` | High | `TickSettingsBlink` toggles this bit every `$0F` frames. Selected 2P setting/result-option rows use it to alternate between normal text and blank text. |

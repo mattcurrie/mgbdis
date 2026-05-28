@@ -2965,7 +2965,7 @@ jr_000_1317:
     and a
     jr nz, jr_000_1341
 
-    ld a, [$c6e7]
+    ld a, [LINK_SEND_DROP_INPUT_LOCK]
     and a
     jr nz, jr_000_1341
 
@@ -3968,11 +3968,11 @@ Send2PData::
     call ReadJoypad
     call HandlePause
     ld a, $01
-    ld [$c6e7], a
+    ld [LINK_SEND_DROP_INPUT_LOCK], a
     call CheckMatch
     call LoadGameBGTiles
     xor a
-    ld [$c6e7], a
+    ld [LINK_SEND_DROP_INPUT_LOCK], a
     call SetupMultiplayer
     call UpdateFieldTimers
     pop hl

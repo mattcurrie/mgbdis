@@ -9,6 +9,7 @@ This note documents the recovered 2-player/link staging bytes around
 |---------|------|----------|
 | `$C6EB` | `LINK_2P_SELECTED_LEVEL` | The 2P option loop edits this byte when `LINK_SETTINGS_CURSOR` selects row 0, `UpdateGameField` sends it in the high nibble, and the 2P game setup copies it into `ACTIVE_LEVEL`. |
 | `$C6EC` | `LINK_2P_SELECTED_SPEED` | The 2P option loop edits this byte when `LINK_SETTINGS_CURSOR` selects row 1, `UpdateGameField` sends it in the low nibble, and the 2P game setup copies it into `ACTIVE_SPEED`. |
+| `$C6E7` | `LINK_SEND_DROP_INPUT_LOCK` | `Send2PData` raises this around its embedded `CheckMatch` call; `CheckMatch` still handles movement but suppresses starting a new drop while the link-send wait loop is running. |
 | `$C6FF` | `LINK_RECV_LEVEL` | `UpdateGameField` receives a packed peer option byte, stores the high nibble here, and the preview/result path draws it as the peer selection. |
 | `$C700` | `LINK_RECV_SPEED` | `UpdateGameField` receives a packed peer option byte, stores the low nibble here, and result text chooses the peer speed label from it. |
 | `$C708` | `LINK_PEER_RESULT_CODE` | `UpdateDifficulty` waits for a bit-7 result packet from the peer, clears bit 7, and stores the peer code here for `CalcRankPosition` to compare against the local result code. |

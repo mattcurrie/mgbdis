@@ -221,6 +221,7 @@ DEF EGG_COUNT_MAX_DIGIT EQU $09
 DEF EGG_COUNT_TILE_BASE EQU $40
 DEF BGM_INDEX         EQU $c6e1 ; BGMインデックス
 DEF LINK_FIELD_EVENT_PAYLOAD EQU $c6e6 ; staged bit-6 field event copied into send queue
+DEF LINK_SEND_DROP_INPUT_LOCK EQU $c6e7 ; suppresses drop-start input during Send2PData inner updates
 DEF LINK_2P_SELECTED_LEVEL EQU $c6eb
 DEF LINK_2P_SELECTED_SPEED EQU $c6ec
 DEF LINK_SETTINGS_CURSOR EQU $c6f0 ; 2P pre-play settings cursor (0=level, 1=speed)
