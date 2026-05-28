@@ -33,7 +33,7 @@ This document tracks the recovered meaning of the option/settings variables arou
 ## Option UI Data
 
 - `DrawOptionTextLabels` draws `$FF`-terminated tile strings for `A GAME`, `B GAME`, `LEVEL`, `SPEED`, `BGM`, `LOW`, `HIGH`, and `OFF`.
-- `DrawOptionMarkers` clears eight marker positions from `OptionMarkerPositions`, then writes tile `$9A` at the currently selected game type, speed, and BGM positions.
+- `DrawOptionMarkers` clears eight marker positions from `OptionMarkerPositions` to tile `$4A`, then writes tile `$9A` at the currently selected game type, speed, and BGM positions.
 - `DrawTileTripletList` consumes row/column/tile triples ending in `$FF`; the option screen uses these tables for inactive and highlighted cursor decorations.
 
 ## Naming Correction

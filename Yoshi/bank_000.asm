@@ -4952,7 +4952,7 @@ OptionMarkerPositions::
     db $10, $06, $10, $09, $10, $0c, $10, $0f
 
 DrawOptionMarkers::
-    ld b, $08
+    ld b, OPTION_MARKER_COUNT
     ld hl, OptionMarkerPositions
 
 jr_000_1dc4:
@@ -4964,7 +4964,7 @@ jr_000_1dc4:
     ld h, d
     ld l, e
     call CalcTilemapAddress
-    ld [hl], $4a
+    ld [hl], OPTION_MARKER_BLANK_TILE
     pop hl
     dec b
     jr nz, jr_000_1dc4
@@ -4973,12 +4973,12 @@ jr_000_1dc4:
     and a
     jr nz, jr_000_1de2
 
-    ld hl, $0101
+    ld hl, OPTION_MARKER_A_GAME_COORD
     call DrawOptionMarker
     jr jr_000_1de8
 
 jr_000_1de2:
-    ld hl, $010b
+    ld hl, OPTION_MARKER_B_GAME_COORD
     call DrawOptionMarker
 
 jr_000_1de8:
@@ -4986,12 +4986,12 @@ jr_000_1de8:
     and a
     jr nz, jr_000_1df6
 
-    ld hl, $0c08
+    ld hl, OPTION_MARKER_SPEED_LOW_COORD
     call DrawOptionMarker
     jr jr_000_1dfc
 
 jr_000_1df6:
-    ld hl, $0c0e
+    ld hl, OPTION_MARKER_SPEED_HIGH_COORD
     call DrawOptionMarker
 
 jr_000_1dfc:
@@ -4999,7 +4999,7 @@ jr_000_1dfc:
     and a
     jr nz, jr_000_1e09
 
-    ld hl, $1006
+    ld hl, OPTION_MARKER_BGM_0_COORD
     call DrawOptionMarker
     ret
 
@@ -5008,7 +5008,7 @@ jr_000_1e09:
     cp $01
     jr nz, jr_000_1e14
 
-    ld hl, $1009
+    ld hl, OPTION_MARKER_BGM_1_COORD
     call DrawOptionMarker
     ret
 
@@ -5017,20 +5017,20 @@ jr_000_1e14:
     cp $02
     jr nz, jr_000_1e1f
 
-    ld hl, $100c
+    ld hl, OPTION_MARKER_BGM_2_COORD
     call DrawOptionMarker
     ret
 
 
 jr_000_1e1f:
-    ld hl, $100f
+    ld hl, OPTION_MARKER_BGM_OFF_COORD
     call DrawOptionMarker
     ret
 
 
 DrawOptionMarker::
     call CalcTilemapAddress
-    ld [hl], $9a
+    ld [hl], OPTION_MARKER_SELECTED_TILE
     ret
 
 
