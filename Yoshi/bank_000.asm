@@ -7754,13 +7754,13 @@ jr_000_2ee0:
 
 
 UpdateCountdownTimer::
-    ld a, [$c7ce]
+    ld a, [COUNTDOWN_BLIT_TIMER]
     and a
     ret z
 
-    ld a, [$c7cf]
+    ld a, [COUNTDOWN_BLIT_PHASE]
     xor $ff
-    ld [$c7cf], a
+    ld [COUNTDOWN_BLIT_PHASE], a
     jr nz, jr_000_2f54
 
     ld a, [$c61e]
@@ -7775,8 +7775,8 @@ UpdateCountdownTimer::
     inc d
 
 jr_000_2f09:
-    ld hl, $c7be
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_2
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
 
 jr_000_2f0e:
     ld a, [de]
@@ -7798,8 +7798,8 @@ jr_000_2f0e:
     inc d
 
 jr_000_2f27:
-    ld hl, $c7be
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_2
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
 
 jr_000_2f2c:
     ld a, [de]
@@ -7823,8 +7823,8 @@ jr_000_2f2c:
     inc d
 
 jr_000_2f48:
-    ld hl, $c7c6
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_3
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
 
 jr_000_2f4d:
     ld a, [de]
@@ -7849,8 +7849,8 @@ jr_000_2f54:
     inc d
 
 jr_000_2f65:
-    ld hl, $c7b6
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_1
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
 
 jr_000_2f6a:
     ld a, [de]
@@ -7872,8 +7872,8 @@ jr_000_2f6a:
     inc d
 
 jr_000_2f83:
-    ld hl, $c7b6
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_1
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
 
 jr_000_2f88:
     ld a, [de]
@@ -7898,8 +7898,8 @@ jr_000_2f88:
     inc d
 
 jr_000_2fa6:
-    ld hl, $c7ae
-    ld b, $07
+    ld hl, COUNTDOWN_DIGIT_BUFFER_0
+    ld b, COUNTDOWN_DIGIT_BUFFER_ROWS
     sla c
 
 jr_000_2fad:
@@ -7919,19 +7919,19 @@ jr_000_2fb5:
 
 
 RandomNext::
-    ld a, [$c7ce]
+    ld a, [COUNTDOWN_BLIT_TIMER]
     and a
     ret z
 
     dec a
-    ld [$c7ce], a
-    ld a, [$c7cf]
+    ld [COUNTDOWN_BLIT_TIMER], a
+    ld a, [COUNTDOWN_BLIT_PHASE]
     and a
     jr nz, jr_000_2fe2
 
-    ld de, $c7be
+    ld de, COUNTDOWN_DIGIT_BUFFER_2
     ld hl, $9020
-    ld b, $08
+    ld b, COUNTDOWN_DIGIT_BUFFER_BYTES
 
 jr_000_2fd1:
     ld a, [de]
@@ -7941,7 +7941,7 @@ jr_000_2fd1:
     dec b
     jr nz, jr_000_2fd1
 
-    ld b, $08
+    ld b, COUNTDOWN_DIGIT_BUFFER_BYTES
 
 jr_000_2fda:
     ld a, [de]
@@ -7955,9 +7955,9 @@ jr_000_2fda:
 
 
 jr_000_2fe2:
-    ld de, $c7ae
+    ld de, COUNTDOWN_DIGIT_BUFFER_0
     ld hl, $9120
-    ld b, $08
+    ld b, COUNTDOWN_DIGIT_BUFFER_BYTES
 
 jr_000_2fea:
     ld a, [de]
@@ -7967,7 +7967,7 @@ jr_000_2fea:
     dec b
     jr nz, jr_000_2fea
 
-    ld b, $08
+    ld b, COUNTDOWN_DIGIT_BUFFER_BYTES
 
 jr_000_2ff3:
     ld a, [de]
@@ -8902,7 +8902,7 @@ jr_000_35ab:
     call DrawString
     xor a
     ld [GAME_ACTIVE], a
-    ld [$c7ce], a
+    ld [COUNTDOWN_BLIT_TIMER], a
     ld de, TitleResultTileData0
     ld hl, $8820
     ld c, $50

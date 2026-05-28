@@ -113,6 +113,8 @@
 - `$C6D2` is now `EGG_COUNT_RESERVED`: init paths clear it with the egg counter, but no direct read has been confirmed.
 - `$C6EB/$C6EC` are the local 2P selected level/speed bytes; `UpdateGameField` packs them into one link byte, while the receiver unpacks that byte into `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` at `$C6FF/$C700`.
 - `$C6FC/$C6FD` are a two-byte link send queue selected by `$C6FE`; `TimerTickCore` sends one queued byte per tick and clears the slot afterward.
+- `$C7AE-$C7CD` are four countdown digit bitmap staging buffers. `UpdateCountdownTimer` builds them from `SCORE_BCD_*` and `CountdownDigitPatternTable`; `RandomNext` copies buffer pairs to VRAM `$9020` / `$9120`.
+- `$C7CE/$C7CF` are the countdown digit blit timer/phase bytes. `LoadAnimData` seeds the timer with `2`, `UpdateCountdownTimer` toggles the phase, and `RandomNext` decrements the timer after each blit.
 - Bank 0 `00:$22CC-$230E` and `00:$230F-$234B` are field animation delta tables. `StepFieldAnimSlot11SideDelta` / `StepFieldAnimSlot10SideDelta` index `FieldSideDeltaTable`, while `StepFieldAnimSlot13RowDelta` / `StepFieldAnimSlot12RowDelta` index `FieldRowDeltaTable`; both tables terminate with `$10`.
 - WRAM `$C6C3-$C6C6` now names the per-slot field animation cursors for logical sprite object slots 11, 10, 13, and 12. `$C6C7-$C6CA` now names the matching active flags, in slot order 12, 11, 10, and 13.
 - `UpdateFieldTimers` is called from both Bank 1 `GameMainUpdate` and Bank 0 `Send2PData`, decrementing `FIELD_COLUMN_TIMERS` at `$C6CB-$C6CE` and clearing logical sprite object slots 10-13 when each timer expires.

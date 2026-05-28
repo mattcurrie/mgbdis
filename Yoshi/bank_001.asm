@@ -477,12 +477,12 @@ jr_001_4311:
 
 jr_001_4314:
     ld [hl], $03
-    ld a, [$c7ce]
+    ld a, [COUNTDOWN_BLIT_TIMER]
     and a
     ret nz
 
     ld a, $02
-    ld [$c7ce], a
+    ld [COUNTDOWN_BLIT_TIMER], a
     ret
 
 

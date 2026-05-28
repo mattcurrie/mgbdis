@@ -88,6 +88,9 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6FE` | `LINK_SEND_QUEUE_INDEX` | High | Alternates between 0 and 1 to select the next link send queue slot. |
 | `$C6FF-$C700` | `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` | High | `UpdateGameField` unpacks peer level/speed nibbles from `LINK_RECV`; preview/result paths read these values for peer display. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |
+| `$C7AE-$C7CD` | `COUNTDOWN_DIGIT_BUFFER_0..3` | High | Four 8-byte digit bitmap staging buffers. `UpdateCountdownTimer` builds them from `SCORE_BCD_*` and `CountdownDigitPatternTable`; `RandomNext` blits pairs to VRAM `$9020` / `$9120`. |
+| `$C7CE` | `COUNTDOWN_BLIT_TIMER` | High | Nonzero while countdown digit buffers still need VRAM blits. `LoadAnimData` seeds it with 2, `RandomNext` decrements it, and result setup clears it. |
+| `$C7CF` | `COUNTDOWN_BLIT_PHASE` | High | Toggled by `UpdateCountdownTimer`; selects which digit-buffer pair `RandomNext` copies to VRAM. |
 
 ## High-Priority Unnamed Regions
 
@@ -100,7 +103,7 @@ These addresses appear often enough to deserve early recovery. Some are real str
 | `$C300-$C3FF` | Sprite/field-adjacent work area, not yet fully mapped. | Some references may still be from real field/UI state or from older data artifacts; needs separate trace. |
 | `$C400-$C49F` | `SHADOW_OAM`; 40 hardware OAM entries. | `ClearOAM` clears `$A0` bytes; HRAM OAM DMA copies page `$C4` to hardware OAM; `UpdateSprites` appends entries here. |
 | `$C4A0-$C5FF` | Used by result/title/2P display routines as data destinations. | UI/OAM/meta-sprite buffers and display work area. |
-| `$C7A9-$C7CF` | Title/result/high-score-like code writes here. | UI/result state tables; needs trace. |
+| `$C7A4-$C7AD` | Title blink/high-score-like code writes here. | Remaining UI/result state bytes before the recovered countdown digit buffers. |
 
 ## Code/Data Misclassification Candidates
 
@@ -123,6 +126,6 @@ The reference scan intentionally reports address-like operands even when they oc
 
 1. Refine medium-confidence `SOUND_CH_*` slide/tempo/envelope names by decoding more sequence examples.
 2. Trace `GAME_STATE` writes and assign concrete state names.
-3. Trace `$C7A9-$C7CF` title/result/high-score-like state records.
+3. Trace `$C7A4-$C7AD` title blink/high-score-like state bytes.
 4. Decode the visual meaning of each Bank 2/3 graphics load range.
 5. Confirm the `$FFB3` secondary VRAM count path.
