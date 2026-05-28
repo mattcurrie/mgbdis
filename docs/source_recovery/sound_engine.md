@@ -39,6 +39,7 @@ labels for the confirmed entries.
 | ID | Constant | Sound table alias | Evidence |
 |----|----------|-------------------|----------|
 | `$1B` | `SND_DROP_START` | `SoundIndexEntry_DropStart` | Called immediately before `StartDropAnim` when a down/drop input starts the drop animation. |
+| `$25` | `SND_BOARD_SCAN_STEP_BASE` | `SoundIndexEntry_25` | `ScanBoard` plays `SND_BOARD_SCAN_STEP_BASE - c` while its scan animation step counter advances. |
 | `$26` | `SND_COMMIT_PIECE` | `SoundIndexEntry_CommitPiece` | Called by `CommitFallingPieceToBoard`, the code path that writes the falling piece into the board state. |
 | `$27` | `SND_PIECE_LAND` | `SoundIndexEntry_PieceLand` | Called by `HandlePieceLanding` after updating the board and moving the piece down. |
 | `$28` | `SND_CURSOR_MOVE` | `SoundIndexEntry_CursorMove` | Used by menu cursor movement and simple left/right movement feedback. |

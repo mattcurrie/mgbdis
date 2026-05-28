@@ -30,8 +30,8 @@ and `LINK_RECV_SPEED`.
 | `$C6FE` | `LINK_SEND_QUEUE_INDEX` | Alternates between `0` and `1` to select the next queued send byte. |
 
 `LINK_FIELD_EVENT_PAYLOAD` (`$C6E6`) is a staging byte for bit-6 field events.
-The falling-piece path builds the payload by ORing `$40`, then later copies it
-to `LINK_SEND_QUEUE_0`.
+The falling-piece path builds the payload by ORing `LINK_FIELD_EVENT_FLAG`
+(`$40`), then later copies it to `LINK_SEND_QUEUE_0`.
 
 `LINK_PENDING_FIELD_RISE` (`$C6FA`) accumulates incoming bit-6 values. The
 selector/gameplay path consumes it in chunks and adjusts `SCREEN_STATE` while

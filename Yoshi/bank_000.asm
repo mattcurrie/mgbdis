@@ -3639,7 +3639,7 @@ ScanBoard::
     ld hl, LINK_SEND_QUEUE_0
     ld b, [hl]
     add b
-    or $40
+    or LINK_FIELD_EVENT_FLAG
     ld [LINK_FIELD_EVENT_PAYLOAD], a
     pop hl
     pop bc
@@ -3694,19 +3694,19 @@ jr_000_16f1:
     call DrawGridPiece
     pop hl
     pop bc
-    ld a, $25
+    ld a, SND_BOARD_SCAN_STEP_BASE
     sub c
     call PlaySound
     inc h
     ld a, c
-    cp $07
+    cp BOARD_SCAN_STEP_MAX
     jr z, jr_000_1708
 
     inc c
 
 jr_000_1708:
     push bc
-    ld b, $07
+    ld b, BOARD_SCAN_SEND_FRAMES
     call Send2PData
     pop bc
     dec b
