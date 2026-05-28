@@ -155,6 +155,9 @@ DEF BOARD_DATA        EQU $c62a ; 盤面データ開始 (4列×7行)
 DEF GAME_TYPE         EQU $c671 ; ゲーム種別 (0=A-TYPE系, 1=B-TYPE系)
 DEF PIECE_FALL_POS    EQU $c68f ; ピース落下位置
 DEF PIECE_ROTATION    EQU $c691 ; ピース回転状態
+DEF GAME_TURN_TABLE_INDEX EQU $c6a9 ; index into GameTurnParamTable
+DEF GAME_TURN_STEP_TIMER EQU $c6aa ; per-record countdown before advancing the turn table
+DEF GAME_TURN_DELAY EQU $c6ac ; fall/update delay loaded from GameTurnParamTable
 DEF MENU_CURSOR       EQU $c6b1 ; メニューカーソル位置
 DEF OPTION_GAME_TYPE  EQU $c6b2 ; オプション: ゲーム種別
 DEF OPTION_LEVEL      EQU $c6b3 ; オプション: レベル

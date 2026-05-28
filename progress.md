@@ -166,6 +166,8 @@
   - Created `docs/source_recovery/title_menu.md` to document the title 1P/2P selection and Start/link entry path.
   - Converted `00:$254E-$254F` from apparent instructions to `LinkSettingsMaxValueTable`.
   - Converted `00:$2B9D-$2BA0` from apparent instructions to `RoundPaletteSequence`.
+  - Converted the fake-code head of the Bank 0 game-turn parameter table at `00:$0B8D-$0C3F` to explicit `db` rows and labeled the full `00:$0B8D-$0ED2` table as `GameTurnParamTable`.
+  - Named the local game-turn schedule bytes at `$C6A9`, `$C6AA`, and `$C6AC` as `GAME_TURN_TABLE_INDEX`, `GAME_TURN_STEP_TIMER`, and `GAME_TURN_DELAY`.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -235,6 +237,7 @@
 | Pre-play loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Title menu loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Small Bank 0 data island conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Game-turn parameter table conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log
@@ -244,6 +247,7 @@
 | 2026-05-28 | First `VRAM_*` rename changed output bytes at `$4B45/$4B48` | 1 | Corrected `VRAMCopyDMA` destination pointer stores to `$FFB1/$FFB2`; `cmp` returned exit `0`. |
 | 2026-05-28 | First `FieldRowDeltaTable` split made ROM0 one byte too large, then produced byte differences | 1 | Rechecked the exact source bytes with `xxd`; corrected the table to exact `00:$230F-$234B` length/content and restored `UpdateFieldTimers` at `00:$234C`. |
 | 2026-05-28 | Initial Bank 3 graphics labels for `$5C00` and `$6AB0` landed at repeated-looking rows and changed two `ld hl` operands | 1 | Address-counted `bank_003.asm` by 16-byte tile rows, moved labels to exact source offsets, then restored byte-identical output. |
+| 2026-05-28 | First `GameTurnParamTable` conversion omitted the `$04,$02,$08,$01` record at `00:$0C21-$0C24`, shifting the table tail four bytes early | 1 | `cmp -s` failed, `xxd` comparison showed the shifted table bytes, and the missing record was restored; the rebuild returned to byte-identical output. |
 
 ## 5-Question Reboot Check
 | Question | Answer |

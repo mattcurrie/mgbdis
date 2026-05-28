@@ -76,6 +76,7 @@ Notes:
 
 | Range | Source label | Status | Evidence |
 |-------|--------------|--------|----------|
+| `00:$0B8D-$0ED2` | `GameTurnParamTable` | Labeled full table; converted fake-code head to `db` | `DrawMenuCursor` seeds `GAME_TURN_TABLE_INDEX` from `LevelThresholds`, and both it and `ProcessMenuLoop` compute `GameTurnParamTable + index * 4`. The first byte reloads `GAME_TURN_STEP_TIMER`, the second selects a `DisplayResults` state, and the third reloads `GAME_TURN_DELAY`. |
 | `00:$15FE-$1611` | `LevelFallDelayTable` | Converted to `db` | `ProcessFalling` loads this address, caps active level to `$13`, and calls `GetArrayElement`; the result seeds the fall timer at `$C6A7`, halved when `ACTIVE_SPEED` is nonzero. |
 | `00:$18CB-$18D1` | `RoundCompleteStateRemapTable` | Converted to `db` | `UpdateTimer` indexes this table with `SCREEN_STATE` and writes the result back to `SCREEN_STATE` before building the 2P/OAM state packet. |
 | `00:$18D2-$18E3` | `RoundCompleteDelayParamTable` | Converted to `db` big-endian word pairs | The round-complete path indexes this table with the saved pre-remap state at `$C6A2 * 2`, loads the first byte into `H` and second byte into `L`, then calls `$432F`. `CalcResults` starts immediately after at `00:$18E4`. |
@@ -84,6 +85,7 @@ Notes:
 
 Notes:
 
+- `GameTurnParamTable_0c40` is only an internal exact-address landmark inside the same 4-byte stride table; the actual indexed base is `GameTurnParamTable` at `00:$0B8D`.
 - `00:$1612` is not table data. It is a real code entry called by `UpdateMatchState`, now labeled `UpdateLandingProgress`, and falls through to `CommitFallingPieceToBoard` at `00:$162A`.
 - The previous disassembly decoded bytes across the `00:$15FE-$1611` table and the `00:$1612` code entry as one misleading instruction stream.
 - The previous disassembly also decoded `00:$18CB-$18E3` as instructions after `HandlePieceLanding`, even though both `$18CB` and `$18D2` have direct table references.

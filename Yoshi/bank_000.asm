@@ -2209,121 +2209,21 @@ LevelCountTable::
 LevelThresholds::
     db $00, $0a, $14, $1e, $28
 
-    inc b
-    ld [bc], a
-    jr z, jr_000_0b92
+GameTurnParamTable::
+    db $04, $02, $28, $01, $04, $02, $24, $01, $04, $02, $20, $01, $04, $02, $1c, $01
+    db $04, $02, $1a, $01, $04, $02, $18, $01, $04, $02, $16, $01, $04, $02, $14, $01
+    db $04, $02, $12, $01, $04, $02, $10, $01, $04, $02, $1e, $01, $04, $02, $1c, $01
+    db $04, $02, $1a, $01, $04, $02, $18, $01, $04, $02, $16, $01, $04, $02, $14, $01
+    db $04, $02, $12, $01, $04, $02, $10, $01, $07, $02, $0e, $01, $01, $03, $0c, $01
+    db $04, $02, $14, $01, $04, $02, $13, $01, $04, $02, $12, $01, $04, $02, $11, $01
+    db $04, $02, $10, $01, $04, $02, $0f, $01, $04, $02, $0e, $01, $04, $02, $0d, $01
+    db $06, $02, $0c, $01, $02, $03, $0b, $01, $04, $02, $0f, $01, $04, $02, $0e, $01
+    db $04, $02, $0d, $01, $04, $02, $0c, $01, $04, $02, $0b, $01, $04, $02, $0a, $01
+    db $04, $02, $09, $01, $04, $02, $08, $01, $05, $02, $07, $01, $03, $03, $06, $01
+    db $04, $02, $0f, $01
+    db $04, $02, $0e, $01, $04, $02, $0d, $01, $04, $02, $0c, $01, $04, $02, $0b
 
-    inc b
-
-jr_000_0b92:
-    ld [bc], a
-    inc h
-    ld bc, $0204
-    jr nz, jr_000_0b9a
-
-    inc b
-
-jr_000_0b9a:
-    ld [bc], a
-    inc e
-    ld bc, $0204
-    ld a, [de]
-    ld bc, $0204
-    jr jr_000_0ba6
-
-    inc b
-
-jr_000_0ba6:
-    ld [bc], a
-    ld d, $01
-    inc b
-    ld [bc], a
-    inc d
-    ld bc, $0204
-    ld [de], a
-    ld bc, $0204
-    db $10
-    ld bc, $0204
-    ld e, $01
-    inc b
-    ld [bc], a
-    inc e
-    ld bc, $0204
-    ld a, [de]
-    ld bc, $0204
-    jr jr_000_0bc6
-
-    inc b
-
-jr_000_0bc6:
-    ld [bc], a
-    ld d, $01
-    inc b
-    ld [bc], a
-    inc d
-    ld bc, $0204
-    ld [de], a
-    ld bc, $0204
-    db $10
-    ld bc, $0207
-    ld c, $01
-    ld bc, $0c03
-    ld bc, $0204
-    inc d
-    ld bc, $0204
-    inc de
-    ld bc, $0204
-    ld [de], a
-    ld bc, $0204
-    ld de, $0401
-    ld [bc], a
-    db $10
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    ld c, $01
-    inc b
-    ld [bc], a
-    dec c
-    ld bc, $0206
-    inc c
-    ld bc, $0302
-    dec bc
-    ld bc, $0204
-    rrca
-    ld bc, $0204
-    ld c, $01
-    inc b
-    ld [bc], a
-    dec c
-    ld bc, $0204
-    inc c
-    ld bc, $0204
-    dec bc
-    ld bc, $0204
-    ld a, [bc]
-    ld bc, $0204
-    add hl, bc
-    ld bc, $0204
-    ld [$0501], sp
-    ld [bc], a
-    rlca
-    ld bc, $0303
-    ld b, $01
-    inc b
-    ld [bc], a
-    rrca
-    ld bc, $0204
-    ld c, $01
-    inc b
-    ld [bc], a
-    dec c
-    ld bc, $0204
-    inc c
-    ld bc, $0204
-    dec bc
-
-GameTurnTable::
+GameTurnParamTable_0c40::
     db $01, $04, $02, $0a, $01, $04, $02, $09, $01, $04, $02, $08, $01, $04, $02, $07
     db $01, $04, $03, $06, $01, $04, $02, $0f, $01, $04, $02, $0e, $01, $04, $02, $0d
     db $01, $04, $02, $0c, $01, $04, $02, $0b, $01, $04, $02, $0a, $01, $04, $02, $09
@@ -4387,18 +4287,18 @@ jr_000_19cc:
 ProcessMenuLoop::
     call ProcessMenuInput
     call CalcResults
-    ld hl, $c6a9
+    ld hl, GAME_TURN_TABLE_INDEX
     ld a, [hl]
     ld l, a
     ld h, $00
     add hl, hl
     add hl, hl
     push bc
-    ld bc, $0b8d
+    ld bc, GameTurnParamTable
     add hl, bc
     pop bc
     ld a, [hl]
-    ld [$c6aa], a
+    ld [GAME_TURN_STEP_TIMER], a
     inc hl
     inc hl
     ld a, [hl]
@@ -4414,7 +4314,7 @@ ProcessMenuLoop::
 
 jr_000_19fd:
     ld a, b
-    ld [$c6ac], a
+    ld [GAME_TURN_DELAY], a
     dec hl
     ld a, [hl]
     push af
@@ -4426,12 +4326,12 @@ jr_000_19fd:
 
 
 UpdateMenuCursor::
-    ld hl, $c6aa
+    ld hl, GAME_TURN_STEP_TIMER
     dec [hl]
     jr z, jr_000_1a2b
 
     call ProcessMenuInput
-    ld a, [$c6ac]
+    ld a, [GAME_TURN_DELAY]
     ld [$c6a7], a
     ld [$c696], a
     call CalcResults
@@ -4441,7 +4341,7 @@ UpdateMenuCursor::
 
 
 jr_000_1a2b:
-    ld hl, $c6a9
+    ld hl, GAME_TURN_TABLE_INDEX
     ld a, [hl]
     cp $ff
     jr z, jr_000_1a3d
@@ -4465,12 +4365,12 @@ jr_000_1a3d:
 
 DrawMenuCursor::
     xor a
-    ld [$c6aa], a
+    ld [GAME_TURN_STEP_TIMER], a
     ld a, [ACTIVE_LEVEL]
     ld hl, LevelThresholds
     call GetArrayElement
-    ld [$c6a9], a
-    ld hl, $0b8d
+    ld [GAME_TURN_TABLE_INDEX], a
+    ld hl, GameTurnParamTable
     sla a
     sla a
     call GetArrayElement
@@ -4492,7 +4392,7 @@ DrawMenuCursor::
 
 jr_000_1a74:
     ld a, b
-    ld [$c6ac], a
+    ld [GAME_TURN_DELAY], a
     ld [$c696], a
     ld [$c6a7], a
     jp ProcessMenuLoop
