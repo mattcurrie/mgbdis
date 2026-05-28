@@ -120,14 +120,16 @@ each accepted change must remain byte-identical to `Yoshi/yoshi.gb`.
 
 ### Immediate Next Chunks
 
-- Investigate `$C620`, `$C628`, `$C629`, and `$C672`, which are touched around
-  score display/update but are not yet safely named.
 - Investigate `$C66E`, currently known only as the reload source for a sprite
   object delay counter.
 - Continue classifying `$C69D`, `$C6AD`, `$C6AE`, `$C6AF`, `$C6BF`, `$C6C0`,
   `$C6F7`, and `$C6F8` around falling, display-state, and game-over flow.
 - Continue replacing raw tilemap offsets with named screen-region constants only
   where a repeated layout role is clear.
+- Keep `$C620`, `$C628`, `$C629`, and `$C672` unresolved until a consumer is
+  found. They are touched around score/init code, but the current scan shows no
+  independent read of the `$C628/$C629/$C672` chain and only preserve/restore
+  behavior for `$C620`.
 
 ### Medium-Term Work
 

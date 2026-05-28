@@ -208,4 +208,9 @@
 - Which existing labels came from user/manual analysis versus automatic symbol recovery?
 - Which game states correspond to demo/attract behavior, if present?
 - Which data blocks are currently mis-disassembled as instructions?
-- Should `$C672/$C628/$C629`, touched by `AddScore` immediately after score digit unpacking, be named as game-type/result display digits after tracing their draw sites?
+- `$C620`, `$C628`, `$C629`, and `$C672` should remain unnamed for now.
+  Current evidence is write-heavy only: `$C620` is set to `1` in
+  `ResetTitleState` and preserved while `InitGameScreen` clears
+  `SCORE_BCD_LOW` through `SCORE_DIGITS`; `$C672` is seeded with `$30` in
+  `ValidatePosition`, and `AddScore` copies it to `$C629` and its swapped form
+  to `$C628`. No independent consumer has been confirmed.
