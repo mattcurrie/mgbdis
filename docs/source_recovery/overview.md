@@ -52,6 +52,7 @@ High-confidence recovery areas already have dedicated notes:
 | Link protocol/state | `link_state.md`, `Yoshi/SERIAL_PROTOCOL.md` |
 | Sound engine | `sound_engine.md` |
 | Graphics loads and tile sheets | `graphics_loads.md`, `tile_sheets/README.md` |
+| Next recovery chunks | `next_work_checklist.md` |
 
 ## Confidence Policy
 
@@ -79,6 +80,9 @@ The most valuable remaining recovery work is:
   examples.
 - Compare ambiguous behavior with user memory when static analysis leaves more
   than one plausible interpretation.
+
+Use `next_work_checklist.md` for the concrete chunk order and per-chunk safety
+checks.
 
 ## Handoff Rule
 

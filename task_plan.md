@@ -137,8 +137,8 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 ### Phase 7: Documentation & Handoff
 - [x] Write a source recovery overview
 - [x] Summarize confidence levels and unresolved questions
-- [ ] Provide a next-work checklist
-- **Status:** pending
+- [x] Provide a next-work checklist
+- **Status:** completed
 
 ## Key Questions
 1. Which labels/comments are already trusted, and which were guessed by prior analysis?
