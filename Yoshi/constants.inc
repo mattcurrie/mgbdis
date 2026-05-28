@@ -175,6 +175,8 @@ DEF PIECE_DISPLAY_STATES EQU $c6a3 ; four piece display states built by DisplayR
 DEF PIECE_DISPLAY_STATE_COUNT EQU $04
 DEF PIECE_FALL_DELAY  EQU $c6a7 ; reload value for PIECE_FALL_TIMER
 DEF PIECE_FALL_DELAY_MIN EQU $02
+DEF PIECE_FALL_ACCEL_TIMER EQU $c6b0 ; divider before PIECE_FALL_DELAY decreases
+DEF PIECE_FALL_ACCEL_PERIOD EQU $0a
 DEF GAME_TURN_TABLE_INDEX EQU $c6a9 ; index into GameTurnParamTable
 DEF GAME_TURN_STEP_TIMER EQU $c6aa ; per-record countdown before advancing the turn table
 DEF GAME_TURN_DELAY EQU $c6ac ; fall/update delay loaded from GameTurnParamTable

@@ -2910,7 +2910,7 @@ jr_000_12e0:
 
 
 DisplaySpeed::
-    ld hl, $c6b0
+    ld hl, PIECE_FALL_ACCEL_TIMER
     dec [hl]
     ret nz
 
@@ -2924,15 +2924,15 @@ DisplaySpeed::
     jr jr_000_12fd
 
 jr_000_12f5:
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
     jr jr_000_1301
 
 jr_000_12f9:
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
     jr jr_000_1301
 
 jr_000_12fd:
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
     jr jr_000_1301
 
 jr_000_1301:
@@ -3319,7 +3319,7 @@ jr_000_14d8:
     ld [COLUMN_TOP_ROW_SEED], a
     ld a, $30
     ld [$c672], a
-    ld hl, $c6b0
+    ld hl, PIECE_FALL_ACCEL_TIMER
     ld a, [ACTIVE_LEVEL]
     cp $03
     jr z, jr_000_1500
@@ -3327,15 +3327,15 @@ jr_000_14d8:
     cp $04
     jr nc, jr_000_1504
 
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
     jr jr_000_1506
 
 jr_000_1500:
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
     jr jr_000_1506
 
 jr_000_1504:
-    ld a, $0a
+    ld a, PIECE_FALL_ACCEL_PERIOD
 
 jr_000_1506:
     ld [hl], a

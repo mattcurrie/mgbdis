@@ -67,6 +67,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6A9` | `GAME_TURN_TABLE_INDEX` | High | `DrawMenuCursor` seeds this from `LevelThresholds`; `ProcessMenuLoop` increments it and indexes `GameTurnParamTable + index * 4`. |
 | `$C6AA` | `GAME_TURN_STEP_TIMER` | High | Reloaded from the first byte of the current `GameTurnParamTable` record, decremented by `UpdateMenuCursor`, and advances the table when it reaches zero. |
 | `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
+| `$C6B0` | `PIECE_FALL_ACCEL_TIMER` | High | Countdown reloaded with `$0A`; when it expires, `DisplaySpeed` lowers `PIECE_FALL_DELAY` by one until the minimum delay is reached. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type; copied into `GAME_TYPE` by `InitGameState`. |
 | `$C6B3` | `OPTION_LEVEL` | High | Selected starting level; copied into `ACTIVE_LEVEL`. |
