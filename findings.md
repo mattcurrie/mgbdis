@@ -65,6 +65,7 @@
 - Bank 1 range `01:$40A0-$42F4` is sprite update data, not executable code. It is now represented as `SpriteUpdatePointerTable`, `SpriteFrameTable_*`, `SpriteTileList_*`, and `SpriteLayout_*` labels.
 - `UpdateSprites` expands 16 logical sprite object slots at `$C200-$C2FF` into the `$C400-$C49F` shadow OAM buffer.
 - Confirmed object type names now cover player cursor (`$01`), game-over piece (`$02`), round transition (`$03`), round-complete tile (`$04`), and settings cursor (`$05`).
+- Bank 1 tile string ranges `01:$462B-$465C` and `01:$46ED-$46FE` are data, not code. `AnimateSprite` and `DrawTitleLabels` pass these `$FF`-terminated rows to `DrawStringToGrid`.
 - The recovered sprite update format is:
   - object slot `+$00`: active object type; zero skips the slot.
   - object slot `+$02`: frame index; `$FF` skips the slot.

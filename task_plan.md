@@ -40,6 +40,7 @@ Phases 2-4
 - [x] Trace first-pass `$C200` sprite object producer/staging path
 - [x] Split Bank 1 sprite frame data into frame tables, tile lists, and layouts
 - [x] Name confirmed sprite object types `$01-$05`
+- [x] Convert Bank 1 sprite/title tile strings at `$462B` and `$46ED`
 - [x] Convert first obvious data blob from bogus instructions to db/dw labels
 - [x] Convert Bank 0 option UI strings, marker coordinates, cursor tile lists, and option bound tables
 - [x] Convert Bank 0 score/result/continue text strings and marker strings

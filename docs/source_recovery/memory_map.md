@@ -102,6 +102,8 @@ The reference scan intentionally reports address-like operands even when they oc
 |------|----------|--------|
 | `Yoshi/bank_001.asm` `01:$40A0-$42F4` | `UpdateSprites` indexes `$40A0` as a pointer table; the range before `UpdateAnimFrame` was previously decoded as bogus instructions. | Converted to `SpriteUpdatePointerTable`, object frame tables, tile-id lists, and layout triples in source. |
 | `Yoshi/bank_001.asm` `01:$442C-$445B` | `LoadGameBGTiles` indexes `$442C` as six 16-byte records before real code at `$445C`. | Converted to `FieldColumnTilePatternTable`; `$445C` is now the real `StartNextRound` entry. |
+| `Yoshi/bank_001.asm` `01:$462B-$465C` | `AnimateSprite` selects `$462B`, `$4639`, or `$464B`, then calls `DrawStringToGrid` four times. | Converted to `SpriteAnimTextFrame0..2` tile-string blocks; `$465D` remains the real `ProcessEgg` entry. |
+| `Yoshi/bank_001.asm` `01:$46ED-$46FE` | `DrawTitleLabels` draws `$46ED` and `$46F6` through `DrawStringToGrid`. | Converted to `TitleLabelTextPlayer` and `TitleLabelTextYoshi`; `$46FF` remains the real `ProcessTitleInput` entry. |
 | `Yoshi/bank_001.asm` `01:$55E2-$5668` | `SoundEngine` and `SoundLookupIndex` jump to `$55E2`; the bytes form a coherent sound setup routine. | Converted to `StartSoundSequence` code. |
 | `Yoshi/bank_001.asm` `01:$5669-$5699` | Sound routines directly index `$566A`, `$5672`, `$567A`, and `$5682`; `$569A` is a sequence entry target, not pitch-table data. | Split into small sound support tables. |
 | `Yoshi/bank_001.asm` `01:$569A-$5FE2` | Already represented as `db`, but was mostly one large unlabeled sequence block. | Added first-pass internal pointer-target labels. |

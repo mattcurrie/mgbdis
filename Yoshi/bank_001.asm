@@ -969,15 +969,15 @@ jr_001_4605:
     jr jr_001_4619
 
 jr_001_460f:
-    ld de, $462b
+    ld de, SpriteAnimTextFrame0
     jr jr_001_461c
 
 jr_001_4614:
-    ld de, $4639
+    ld de, SpriteAnimTextFrame1
     jr jr_001_461c
 
 jr_001_4619:
-    ld de, $464b
+    ld de, SpriteAnimTextFrame2
 
 jr_001_461c:
     call DrawStringToGrid
@@ -992,45 +992,23 @@ jr_001_4629:
     ret
 
 
-    ldh a, [$fff1]
-    rst $38
-    ldh a, [c]
-    di
-    rst $38
-    push af
-    or $f7
-    rst $38
-    ld hl, sp-$07
-    ld a, [$e0ff]
-    pop hl
-    rst $38
-    ldh [c], a
-    db $e3
-    db $e4
-    ld c, h
-    rst $38
-    push hl
-    and $e7
-    ld c, h
-    rst $38
-    add sp, -$17
-    ld [$ff4c], a
-    ldh a, [$fff1]
-    rst $38
-    ldh a, [c]
-    di
-    db $f4
-    ld c, h
-    rst $38
-    db $eb
-    db $ec
-    db $ed
-    ld c, h
-    rst $38
-    xor $ef
-    db $fd
-    ld c, h
-    rst $38
+SpriteAnimTextFrame0::
+    db $f0, $f1, $ff
+    db $f2, $f3, $ff
+    db $f5, $f6, $f7, $ff
+    db $f8, $f9, $fa, $ff
+
+SpriteAnimTextFrame1::
+    db $e0, $e1, $ff
+    db $e2, $e3, $e4, $4c, $ff
+    db $e5, $e6, $e7, $4c, $ff
+    db $e8, $e9, $ea, $4c, $ff
+
+SpriteAnimTextFrame2::
+    db $f0, $f1, $ff
+    db $f2, $f3, $f4, $4c, $ff
+    db $eb, $ec, $ed, $4c, $ff
+    db $ee, $ef, $fd, $4c, $ff
 
 ProcessEgg::
     ld a, [TWO_PLAYER_FLAG]
@@ -1118,31 +1096,20 @@ InitEggSystem::
 
 DrawTitleLabels::
     ld hl, $0f06
-    ld de, $46ed
+    ld de, TitleLabelTextPlayer
     call DrawStringToGrid
     ld hl, $1006
-    ld de, $46f6
+    ld de, TitleLabelTextYoshi
     call DrawStringToGrid
     call GenerateNext
     ret
 
 
-    ld h, d
-    ldh [$ff64], a
-    ld h, l
-    ld h, [hl]
-    ld h, a
-    ld l, b
-    ld l, c
-    rst $38
-    ld d, d
-    ldh [$ff64], a
-    ld h, l
-    ld h, [hl]
-    ld h, a
-    ld l, b
-    ld l, c
-    rst $38
+TitleLabelTextPlayer::
+    db $62, $e0, $64, $65, $66, $67, $68, $69, $ff
+
+TitleLabelTextYoshi::
+    db $52, $e0, $64, $65, $66, $67, $68, $69, $ff
 
 ProcessTitleInput::
     call DisplayNextPiece
