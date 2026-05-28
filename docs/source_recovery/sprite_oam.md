@@ -46,10 +46,20 @@ Confirmed slot groups:
 
 | Slot/range | Current evidence |
 |------------|------------------|
-| Slot 0 (`$C200`) | `ProcessColumn` initializes object type `$01`, frame `$00`, base Y `$80`, and base X `$20`. `InitGameState2` advances its frame, and left/right input adjusts base X by `$20`. |
+| Slot 0 (`$C200`) | `ProcessColumn` initializes `SPRITE_OBJECT_TYPE_PLAYER_CURSOR`, frame `$00`, base Y `$80`, and base X `$20`. `InitGameState2` advances its frame, and left/right input adjusts base X by `$20`. |
 | Slots 1-4 (`$C210-$C24F`) | `DrawBox` calls `UpdateSpriteObject` four times. Collision/drop code scans these four slots and uses additional bytes such as `+$05`, `+$08`, and `+$0F` for gameplay state. |
 | Slots 5-8 (`$C250-$C28F`) | Menu/title helpers clear or scan this range; individual byte meanings still need trace. |
 | Slots 9-13 (`$C290-$C2DF`) | Options cursors, round-complete animations, countdown digits, and 2P field transition objects use these slots. |
+
+Confirmed object types:
+
+| Type | Constant | Evidence |
+|------|----------|----------|
+| `$01` | `SPRITE_OBJECT_TYPE_PLAYER_CURSOR` | Slot 0 setup and left/right input path. |
+| `$02` | `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` | Written by `AnimateGameOver` into slots selected from game-over state. |
+| `$03` | `SPRITE_OBJECT_TYPE_ROUND_TRANSITION` | Written to slot 9 during the round-complete / 2P transition path. |
+| `$04` | `SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE` | Written to slots 10-13 by `ProcessRoundComplete` and the 2P round-complete path. |
+| `$05` | `SPRITE_OBJECT_TYPE_SETTINGS_CURSOR` | Used by `SettingsCursorSpriteInit0` through `SettingsCursorSpriteInit2`. |
 
 ## Sprite Update Table Format
 
@@ -62,7 +72,7 @@ In source, the formerly flat `01:$40A0-$42F4` payload is split into:
 
 | Label family | Meaning |
 |--------------|---------|
-| `SpriteFrameTable_Object*` | Per-object animation frame records. |
+| `SpriteFrameTable_*` | Per-object animation frame records. High-confidence object types now use semantic suffixes; unknown types still use `Object6`/`Object7`. |
 | `SpriteTileList_*` | Tile IDs read sequentially, one byte for each emitted hardware sprite. |
 | `SpriteLayout_*` | Repeated `y_delta, x_delta, attr` triples. |
 
@@ -118,5 +128,4 @@ Y=`$A0` for all 40 hardware sprites.
   `+$09`, and `+$0F` still need narrower names.
 - The exact set of high-bit object types, if any, needs runtime/call-site
   confirmation because the high bit is not masked before the frame-table index.
-- The frame tables are now structurally split, but the individual object types
-  still need semantic names beyond `Object1` through `Object7`.
+- Object types `$06` and `$07` still need semantic names.

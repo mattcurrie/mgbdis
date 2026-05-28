@@ -148,15 +148,15 @@ jr_001_4097:
 
 
 SpriteUpdatePointerTable::
-    dw SpriteFrameTable_Object1
-    dw SpriteFrameTable_Object2
-    dw SpriteFrameTable_Object3
-    dw SpriteFrameTable_Object4
-    dw SpriteFrameTable_Object5
+    dw SpriteFrameTable_PlayerCursor
+    dw SpriteFrameTable_GameOverPiece
+    dw SpriteFrameTable_RoundTransition
+    dw SpriteFrameTable_RoundCompleteTile
+    dw SpriteFrameTable_SettingsCursor
     dw SpriteFrameTable_Object6
     dw SpriteFrameTable_Object7
 
-SpriteFrameTable_Object5::
+SpriteFrameTable_SettingsCursor::
     dw SpriteTileList_4233, SpriteLayout_42bf
     dw SpriteTileList_4237, SpriteLayout_42bf
     dw SpriteTileList_423b, SpriteLayout_42bf
@@ -177,7 +177,7 @@ SpriteFrameTable_Object5::
     dw SpriteTileList_4239, SpriteLayout_42bf
     dw SpriteTileList_423d, SpriteLayout_42bf
 
-SpriteFrameTable_Object1::
+SpriteFrameTable_PlayerCursor::
     dw SpriteTileList_420e, SpriteLayout_42cb
     dw SpriteTileList_4214, SpriteLayout_42dd
     dw SpriteTileList_4218, SpriteLayout_42dd
@@ -187,7 +187,7 @@ SpriteFrameTable_Object1::
     dw SpriteTileList_4218, SpriteLayout_42e9
     dw SpriteTileList_4214, SpriteLayout_42e9
 
-SpriteFrameTable_Object2::
+SpriteFrameTable_GameOverPiece::
     dw SpriteTileList_42a7, SpriteLayout_42bf
     dw SpriteTileList_42a7, SpriteLayout_42c5
     dw SpriteTileList_42a9, SpriteLayout_42c5
@@ -214,7 +214,7 @@ SpriteFrameTable_Object2::
     dw SpriteTileList_42bf, SpriteLayout_42c5
     dw SpriteTileList_42bf, SpriteLayout_42c5
 
-SpriteFrameTable_Object3::
+SpriteFrameTable_RoundTransition::
     dw SpriteTileList_423f, SpriteLayout_426b
     dw SpriteTileList_4245, SpriteLayout_426b
     dw SpriteTileList_424b, SpriteLayout_4271
@@ -237,7 +237,7 @@ SpriteFrameTable_Object3::
     dw SpriteTileList_424f, SpriteLayout_427d
     dw SpriteTileList_425b, SpriteLayout_428f
 
-SpriteFrameTable_Object4::
+SpriteFrameTable_RoundCompleteTile::
     dw SpriteTileList_4226, SpriteLayout_4227
     dw SpriteTileList_4226, SpriteLayout_422a
     dw SpriteTileList_4226, SpriteLayout_422d
@@ -738,7 +738,7 @@ ProcessColumn::
     ld a, $01
     ld [$c6e0], a
     ld hl, SPRITE_OBJECT_SLOT_0
-    ld [hl], $01
+    ld [hl], SPRITE_OBJECT_TYPE_PLAYER_CURSOR
     inc hl
     inc hl
     ld [hl], $00

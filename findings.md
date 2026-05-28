@@ -62,8 +62,9 @@
 - The settings bytes `$C6B2-$C6B5` are now named `OPTION_GAME_TYPE`, `OPTION_LEVEL`, `OPTION_SPEED`, and `OPTION_BGM`.
 - The active gameplay copies `$C6B7-$C6B8` are now named `ACTIVE_LEVEL` and `ACTIVE_SPEED`.
 - `docs/source_recovery/options_variables.md` records the current evidence for these settings variables.
-- Bank 1 range `01:$40A0-$42F4` is sprite update data, not executable code. It is now represented as `SpriteUpdatePointerTable`, `SpriteFrameTable_Object*`, `SpriteTileList_*`, and `SpriteLayout_*` labels.
+- Bank 1 range `01:$40A0-$42F4` is sprite update data, not executable code. It is now represented as `SpriteUpdatePointerTable`, `SpriteFrameTable_*`, `SpriteTileList_*`, and `SpriteLayout_*` labels.
 - `UpdateSprites` expands 16 logical sprite object slots at `$C200-$C2FF` into the `$C400-$C49F` shadow OAM buffer.
+- Confirmed object type names now cover player cursor (`$01`), game-over piece (`$02`), round transition (`$03`), round-complete tile (`$04`), and settings cursor (`$05`).
 - The recovered sprite update format is:
   - object slot `+$00`: active object type; zero skips the slot.
   - object slot `+$02`: frame index; `$FF` skips the slot.

@@ -3665,7 +3665,7 @@ jr_000_15d0:
 
 jr_000_15e8:
     ld hl, SPRITE_OBJECT_SLOT_0
-    ld [hl], $01
+    ld [hl], SPRITE_OBJECT_TYPE_PLAYER_CURSOR
     ret
 
 
@@ -3965,7 +3965,7 @@ UpdateTimer::
     call GetArrayElement
     ldh [SCREEN_STATE], a
     ld hl, SPRITE_OBJECT_SLOT_9
-    ld [hl], $03
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_TRANSITION
     inc hl
     inc hl
     ldh a, [SCREEN_STATE]
@@ -3986,14 +3986,14 @@ UpdateTimer::
     add $10
     ld [hl], a
     ld hl, SPRITE_OBJECT_SLOT_9
-    ld [hl], $03
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_TRANSITION
     inc l
     inc l
     ld [hl], $00
     ld b, $0f
     call Send2PData
     ld hl, SPRITE_OBJECT_SLOT_9
-    ld [hl], $03
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_TRANSITION
 
 Process2Player::
     inc l
@@ -4007,7 +4007,7 @@ Process2Player::
     ld b, a
 
 jr_000_17d6:
-    ld [hl], $04
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE
     push hl
     inc l
     inc l
@@ -4035,7 +4035,7 @@ jr_000_17d6:
     ld a, SND_ROUND_COMPLETE
     call PlaySound
     ld hl, SPRITE_OBJECT_SLOT_9
-    ld [hl], $03
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_TRANSITION
     inc l
     inc l
     ld [hl], $01
@@ -4043,7 +4043,7 @@ jr_000_17d6:
     call Send2PData
     ld a, $01
     ld hl, SPRITE_OBJECT_SLOT_9
-    ld [hl], $03
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_TRANSITION
     inc hl
     inc hl
 
@@ -4299,7 +4299,7 @@ AnimateGameOver::
     swap a
     ld l, a
     ld h, SPRITE_OBJECTS_HI
-    ld [hl], $02
+    ld [hl], SPRITE_OBJECT_TYPE_GAME_OVER_PIECE
     inc hl
     inc hl
     ld [hl], b
@@ -5222,11 +5222,11 @@ ApplySettings::
 
 
 SettingsCursorSpriteInit0::
-    db $05, $00, $00, $00, $73, $00, $30
+    db SPRITE_OBJECT_TYPE_SETTINGS_CURSOR, $00, $00, $00, $73, $00, $30
 SettingsCursorSpriteInit1::
-    db $05, $00, $01, $01, $73, $00, $48
+    db SPRITE_OBJECT_TYPE_SETTINGS_CURSOR, $00, $01, $01, $73, $00, $48
 SettingsCursorSpriteInit2::
-    db $05, $00, $02, $02, $73, $00, $60
+    db SPRITE_OBJECT_TYPE_SETTINGS_CURSOR, $00, $02, $02, $73, $00, $60
 
 ResetSettings::
     ld a, $1b
@@ -8009,7 +8009,7 @@ ProcessRoundComplete::
     ld b, a
 
 jr_000_3053:
-    ld [hl], $04
+    ld [hl], SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE
     push hl
     inc l
     inc l

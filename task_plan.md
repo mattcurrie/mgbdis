@@ -39,6 +39,7 @@ Phases 2-4
 - [x] Document first-pass `$C200` logical sprite object and `$C400` shadow OAM format
 - [x] Trace first-pass `$C200` sprite object producer/staging path
 - [x] Split Bank 1 sprite frame data into frame tables, tile lists, and layouts
+- [x] Name confirmed sprite object types `$01-$05`
 - [x] Convert first obvious data blob from bogus instructions to db/dw labels
 - [x] Convert Bank 0 option UI strings, marker coordinates, cursor tile lists, and option bound tables
 - [x] Convert Bank 0 score/result/continue text strings and marker strings
