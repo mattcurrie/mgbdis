@@ -99,7 +99,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6BB` | `LINK_ROLE` | High | Read throughout 2P/link paths; values appear to distinguish no link/master/slave. |
 | `$C6BC` | `TITLE_PLAYER_MARKER_TIMER` | High | `DisplayNextPiece` decrements this timer before toggling the title 1P/2P selection marker. |
 | `$C6BE` | `TITLE_PLAYER_MARKER_PHASE` | High | Selects whether `DisplayNextPiece` draws the top or bottom title selection marker tiles. |
-| `$C6BF` | Unresolved landing/scan counter | Medium | Cleared by `DropPiece`, decremented by `ScanBoard` after `UpdateTimer`, decremented by two by `UpdateLandingProgress` for staged payload `$08`, and used to decide when to clear `$C69D/$C6AE`. |
+| `$C6BF` | Unresolved landing/scan counter | Medium | Cleared by `DropPiece`, decremented by `ScanBoard` after `UpdateTimer`, decremented by two by `UpdateLandingProgress` for staged payload `BOARD_SCAN_TARGET_PAYLOAD`, and used to decide when to clear `$C69D/$C6AE`. |
 | `$C6C0` | Unresolved write-only landing/reset byte | Low | `DropPiece` writes `$14` here; no consumer has been confirmed. |
 | `$C6C1` | `BGM_PREVIEW_TIMER` | Medium | Set during BGM option changes and decremented by `TickBgmPreviewTimer`. |
 | `$C6C2` | `BGM_PREVIEW_PERIOD` | Low | Stores BGM-specific values during preview setup; direct consumer still needs confirmation. |

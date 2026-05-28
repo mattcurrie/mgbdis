@@ -120,6 +120,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name gameplay cursor/drop input masks and fast-fall clamp constants
 - [x] Name board fall-end row boundary
 - [x] Apply board fall-end row boundary consistently in gameplay setup/update
+- [x] Name board scan trigger/target payload constants
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending

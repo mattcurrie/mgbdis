@@ -3151,7 +3151,7 @@ jr_000_13f6:
 
 jr_000_140f:
     ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
-    cp $07
+    cp BOARD_SCAN_TRIGGER_PAYLOAD
     call z, ScanBoard
     call MovePieceLeft
     cp b
@@ -3539,7 +3539,7 @@ LevelFallDelayTable::
 
 UpdateLandingProgress::
     ld a, [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_TILE_ID]
-    cp $08
+    cp BOARD_SCAN_TARGET_PAYLOAD
     jr nz, CommitFallingPieceToBoard
 
     ld a, [$c6bf]
@@ -3689,7 +3689,7 @@ jr_000_16d9:
 jr_000_16f1:
     push bc
     push hl
-    ld a, $07
+    ld a, BOARD_SCAN_TRIGGER_PAYLOAD
     dec h
     call DrawGridPiece
     pop hl
@@ -3751,7 +3751,7 @@ UpdateFallTimer::
 
 jr_000_1746:
     call GetFallSpeed
-    cp $08
+    cp BOARD_SCAN_TARGET_PAYLOAD
     jr z, jr_000_1756
 
     inc h

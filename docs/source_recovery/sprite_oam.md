@@ -30,7 +30,7 @@ slot; a zero type disables the object.
 | `+$06` | Base X | Added to each layout X delta plus OAM bias `$08`. |
 | `+$07` | Delay counter | `UpdateSpriteObject` decrements this field while `SPRITE_OBJECT_PHASE` is `$01`; when it reaches zero, the routine reloads it from `SPRITE_OBJECT_DELAY_RELOAD` and advances the phase to `$02`. |
 | `+$08` | Object phase | `0` disables the producer-side update, `$01` waits on `SPRITE_OBJECT_DELAY_COUNTER`, and `$02` enters `UpdateMatchState`; `CheckMatch` tests slots 1-4 for phase `$02` before clamping the drop timers. |
-| `+$09` | Tile / piece payload | In the staged `$C695` byte, `UpdateMatchState` passes this value to `DrawGridPiece`, writes it back into `BOARD_DATA`, and compares `$07/$08` for scan/landing behavior. `AnimateGameOver` also writes this byte as the visible piece payload. |
+| `+$09` | Tile / piece payload | In the staged `$C695` byte, `UpdateMatchState` passes this value to `DrawGridPiece`, writes it back into `BOARD_DATA`, and compares `BOARD_SCAN_TRIGGER_PAYLOAD` / `BOARD_SCAN_TARGET_PAYLOAD` for scan/landing behavior. `AnimateGameOver` also writes this byte as the visible piece payload. |
 
 The remaining slot bytes, including `+$01`, `+$03`, `+$05`, and `+$0F`, are
 used by producers elsewhere and still need a dedicated trace.
