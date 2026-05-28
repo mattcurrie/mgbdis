@@ -28,7 +28,7 @@ slot; a zero type disables the object.
 | `+$02` | Animation frame index | If `$FF`, the slot is skipped. Otherwise multiplied by 4 and used to pick a frame record from the selected frame table. |
 | `+$04` | Base Y | Added to each layout Y delta plus OAM bias `$10`. |
 | `+$06` | Base X | Added to each layout X delta plus OAM bias `$08`. |
-| `+$07` | Delay counter | `UpdateSpriteObject` decrements this field while `SPRITE_OBJECT_PHASE` is `$01`; when it reaches zero, the routine reloads it from `$C66E` and advances the phase to `$02`. |
+| `+$07` | Delay counter | `UpdateSpriteObject` decrements this field while `SPRITE_OBJECT_PHASE` is `$01`; when it reaches zero, the routine reloads it from `SPRITE_OBJECT_DELAY_RELOAD` and advances the phase to `$02`. |
 | `+$08` | Object phase | `0` disables the producer-side update, `$01` waits on `SPRITE_OBJECT_DELAY_COUNTER`, and `$02` enters `UpdateMatchState`; `CheckMatch` tests slots 1-4 for phase `$02` before clamping the drop timers. |
 | `+$09` | Tile / piece payload | In the staged `$C695` byte, `UpdateMatchState` passes this value to `DrawGridPiece`, writes it back into `BOARD_DATA`, and compares `$07/$08` for scan/landing behavior. `AnimateGameOver` also writes this byte as the visible piece payload. |
 
@@ -47,6 +47,10 @@ the selected 10-byte record when the object finishes. The staged tail bytes are
 now named as offsets: `SPRITE_OBJECT_DELAY_COUNTER` (`+$07`),
 `SPRITE_OBJECT_PHASE` (`+$08`), and `SPRITE_OBJECT_TILE_ID` (`+$09`, address
 `$C695` while staged).
+
+`SPRITE_OBJECT_DELAY_RELOAD` (`$C66E`) is initialized to `1` by
+`ResetTitleState` and copied into each staged object's `+$07` delay counter when
+`UpdateSpriteObject` advances a waiting slot from phase `$01` to phase `$02`.
 
 Confirmed slot groups:
 

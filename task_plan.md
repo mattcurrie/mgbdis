@@ -99,6 +99,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [ ] Name drop, rotation, match, clear, remaining scoring, level, and game-over routines
 - [x] Investigate remaining score-adjacent state `$C620/$C628/$C629/$C672`
 - [ ] Revisit `$C620/$C628/$C629/$C672` only after finding an independent consumer
+- [x] Name sprite object delay reload byte `$C66E`
 - [ ] Investigate remaining fall/display/game-over flow bytes `$C69D/$C6AD/$C6AE/$C6AF/$C6BF/$C6C0/$C6F7/$C6F8`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them

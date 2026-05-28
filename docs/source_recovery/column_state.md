@@ -38,6 +38,5 @@ Evidence:
 - `DisplayScore` keeps its update timer active while either
   `DROP_CURSOR_ANIM_ACTIVE` or `DROP_ANIM_ACTIVE` is nonzero.
 
-`$C66E` is intentionally left unnamed here. It reloads
-`SPRITE_OBJECT_STAGING + SPRITE_OBJECT_DELAY_COUNTER` in `UpdateSpriteObject`,
-but its broader role is not yet tied tightly enough to the column state.
+The adjacent `$C66E` byte is `SPRITE_OBJECT_DELAY_RELOAD`, documented with the
+sprite object producer state in `sprite_oam.md`.

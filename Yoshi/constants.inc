@@ -165,6 +165,7 @@ DEF SCORE_DIGITS      EQU $c621 ; 表示用スコア5桁
 DEF BOARD_DATA        EQU $c62a ; 盤面データ開始 (4列×7行)
 DEF COLUMN_TOP_ROWS   EQU $c66a ; four current column top/fall-target rows
 DEF COLUMN_COUNT      EQU $04
+DEF SPRITE_OBJECT_DELAY_RELOAD EQU $c66e ; reload for slot-local delay counters
 DEF DROP_CURSOR_ANIM_ACTIVE EQU $c66f
 DEF DROP_CURSOR_FRAME_TIMER EQU $c670
 DEF DROP_CURSOR_FRAME_PERIOD EQU $02

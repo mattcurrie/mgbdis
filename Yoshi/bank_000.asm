@@ -1076,7 +1076,7 @@ jr_000_0606:
     dec [hl]
     jr nz, jr_000_0617
 
-    ld a, [$c66e]
+    ld a, [SPRITE_OBJECT_DELAY_RELOAD]
     ld [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_DELAY_COUNTER], a
     ld a, SPRITE_OBJECT_PHASE_UPDATE
     ld [SPRITE_OBJECT_STAGING + SPRITE_OBJECT_PHASE], a
@@ -5545,7 +5545,7 @@ ResetTitleState::
     inc a
     ld [$c620], a
     ld [$ff94], a
-    ld [$c66e], a
+    ld [SPRITE_OBJECT_DELAY_RELOAD], a
     call DrawTitleLabels
     ret
 
