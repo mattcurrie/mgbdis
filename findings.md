@@ -46,7 +46,7 @@
   - `$FFAE` = `VRAM_COPY_BLOCKS`, a 16-byte block count used by `VRAMCopyDMA`.
   - `$FFAF/$FFB0` = source pointer low/high.
   - `$FFB1/$FFB2` = destination pointer low/high.
-  - `$FFB3` = second/alternate block count candidate from `VRAMCopySetup`; role still needs confirmation.
+  - `$FFB3-$FFB7` = `UNUSED_VRAM_COPY2_*`, written only by an unreachable secondary-copy setup fragment at `00:$0244`; the live VBlank DMA path does not read it.
 - `tools/recovery_refs.py` provides a repeatable WRAM/HRAM reference summary for `bank_000.asm` and `bank_001.asm`.
 - The high-frequency reference scan highlights fake code references inside sound/music data. The previous assumption that all of `01:$55E2-$5FE2` was data was too broad: `$55E2-$5668` is executable sound setup code, while later ranges still need sequence/data boundary recovery.
 - `GAME_STATE` (`$FFC7`) has seven observed values, now defined in `Yoshi/constants.inc`:
@@ -188,7 +188,6 @@
 
 ## Open Questions
 - Which existing labels came from user/manual analysis versus automatic symbol recovery?
-- Does `VRAM_COPY2_BLOCKS` at `$FFB3` drive a second queued VRAM transfer, or is it a setup-time scratch/count used by a narrower path?
 - Which game states correspond to demo/attract behavior, if present?
 - Which data blocks are currently mis-disassembled as instructions?
 - Should the current label `InitGameVars` be renamed to `RunTitleMenu` or a more precise title-loop name after its helper calls are fully traced?

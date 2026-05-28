@@ -32,7 +32,11 @@ DEF VRAM_SRC_LO       EQU $ffaf ; VRAM転送元アドレス(下位)
 DEF VRAM_SRC_HI       EQU $ffb0 ; VRAM転送元アドレス(上位)
 DEF VRAM_DST_LO       EQU $ffb1 ; VRAM転送先アドレス(下位)
 DEF VRAM_DST_HI       EQU $ffb2 ; VRAM転送先アドレス(上位)
-DEF VRAM_COPY2_BLOCKS EQU $ffb3 ; 予備/第2VRAM転送ブロック数 (16バイト単位)
+DEF UNUSED_VRAM_COPY2_BLOCKS EQU $ffb3 ; unreachable secondary VRAM-copy count
+DEF UNUSED_VRAM_COPY2_SRC_LO EQU $ffb4 ; unreachable secondary VRAM-copy source low
+DEF UNUSED_VRAM_COPY2_SRC_HI EQU $ffb5 ; unreachable secondary VRAM-copy source high
+DEF UNUSED_VRAM_COPY2_DST_LO EQU $ffb6 ; unreachable secondary VRAM-copy destination low
+DEF UNUSED_VRAM_COPY2_DST_HI EQU $ffb7 ; unreachable secondary VRAM-copy destination high
 DEF VBLANK_BUSY       EQU $ffc4 ; VBlankビジーフラグ
 DEF VBLANK_SYNC       EQU $ffc5 ; VBlank同期フラグ
 DEF GAME_STATE        EQU $ffc7 ; ゲーム状態 (ステートマシンインデックス)

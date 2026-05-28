@@ -372,62 +372,63 @@ jr_000_0218:
 
 VRAMCopySetup::
     ld a, e
-    ldh [$ffaf], a
+    ldh [VRAM_SRC_LO], a
     ld a, d
-    ldh [$ffb0], a
+    ldh [VRAM_SRC_HI], a
     ld a, l
-    ldh [$ffb1], a
+    ldh [VRAM_DST_LO], a
     ld a, h
-    ldh [$ffb2], a
+    ldh [VRAM_DST_HI], a
 
-jr_000_022f:
+VRAMCopyNextChunk:
     ld a, c
 
 VRAMCopyExec::
     cp $08
-    jr nc, jr_000_023a
+    jr nc, VRAMCopyFullChunk
 
-    ldh [$ffae], a
+    ldh [VRAM_COPY_BLOCKS], a
     call WaitVBlank
     ret
 
 
-jr_000_023a:
+VRAMCopyFullChunk:
     ld a, $08
-    ldh [$ffae], a
+    ldh [VRAM_COPY_BLOCKS], a
     call WaitVBlank
     ld a, c
     sub $08
     ld c, a
-    jr jr_000_022f
+    jr VRAMCopyNextChunk
 
+UnusedVRAMCopy2Setup:
     ld a, e
-    ldh [$ffb4], a
+    ldh [UNUSED_VRAM_COPY2_SRC_LO], a
     ld a, d
-    ldh [$ffb5], a
+    ldh [UNUSED_VRAM_COPY2_SRC_HI], a
     ld a, l
-    ldh [$ffb6], a
+    ldh [UNUSED_VRAM_COPY2_DST_LO], a
     ld a, h
-    ldh [$ffb7], a
+    ldh [UNUSED_VRAM_COPY2_DST_HI], a
 
-jr_000_0253:
+UnusedVRAMCopy2NextChunk:
     ld a, c
     cp $08
-    jr nc, jr_000_025e
+    jr nc, UnusedVRAMCopy2FullChunk
 
-    ldh [$ffb3], a
+    ldh [UNUSED_VRAM_COPY2_BLOCKS], a
     call WaitVBlank
     ret
 
 
-jr_000_025e:
+UnusedVRAMCopy2FullChunk:
     ld a, $08
-    ldh [$ffb3], a
+    ldh [UNUSED_VRAM_COPY2_BLOCKS], a
     call WaitVBlank
     ld a, c
     sub $08
     ld c, a
-    jr jr_000_0253
+    jr UnusedVRAMCopy2NextChunk
 
 StateInit::
     xor a

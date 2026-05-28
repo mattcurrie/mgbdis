@@ -36,7 +36,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$FFAE` | `VRAM_COPY_BLOCKS` | High | `VRAMCopySetup` writes a length/count byte here; `VRAMCopyDMA` reads it as a loop count and transfers 16 bytes per iteration. |
 | `$FFAF-$FFB0` | `VRAM_SRC_LO`/`VRAM_SRC_HI` | High | `VRAMCopySetup` stores the source pointer here; `VRAMCopyDMA` loads it into SP before popping 16-byte chunks. |
 | `$FFB1-$FFB2` | `VRAM_DST_LO`/`VRAM_DST_HI` | High | `VRAMCopySetup` stores destination pointer here; `VRAMCopyDMA` updates this pair after the copy loop. |
-| `$FFB3` | `VRAM_COPY2_BLOCKS` | Low | Written by a second setup block; likely alternate/secondary count, but the exact consumer path is not yet confirmed. |
+| `$FFB3-$FFB7` | `UNUSED_VRAM_COPY2_*` | High | Written only by the unreachable `UnusedVRAMCopy2Setup` fragment at `00:$0244`; no VBlank/DMA consumer reads this secondary slot. |
 | `$FFC4` | `VBLANK_BUSY` | Medium | Used by VBlank sync/wait logic. |
 | `$FFC5` | `VBLANK_SYNC` | Medium | Used by `WaitVBlank`/VBlank synchronization. |
 | `$FFC7` | `GAME_STATE` | High | Main state machine index in `MainLoop`. |
@@ -131,5 +131,5 @@ The reference scan intentionally reports address-like operands even when they oc
 1. Refine medium-confidence `SOUND_CH_*` slide/tempo/envelope names by decoding more sequence examples.
 2. Trace `GAME_STATE` writes and assign concrete state names.
 3. Decode the visual meaning of each Bank 2/3 graphics load range.
-4. Confirm the `$FFB3` secondary VRAM count path.
-5. Continue refining the shared settings/result cursor drawing routines.
+4. Continue refining the shared settings/result cursor drawing routines.
+5. Continue code/data separation for remaining small fake-code islands.

@@ -157,6 +157,9 @@
   - Created `docs/source_recovery/column_blink_state.md` to document the recovered blink slot arrays and result rank state.
   - Named the 2P pre-play settings cursor at `$C6F0` and the shared settings/result blink phase/timer at `$C6F1-$C6F2`.
   - Renamed the shared blink tick routine to `TickSettingsBlink` and created `docs/source_recovery/settings_blink_state.md`.
+  - Replaced raw HRAM operands in `VRAMCopySetup` with the primary `VRAM_*` constants.
+  - Confirmed `$FFB3-$FFB7` is not consumed by `VRAMCopyDMA` and named it as an unused secondary VRAM-copy slot.
+  - Created `docs/source_recovery/vram_copy.md` to document the primary queue and the unreachable secondary-copy fragment.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -168,6 +171,7 @@
   - `docs/source_recovery/countdown_digit_buffers.md`
   - `docs/source_recovery/column_blink_state.md`
   - `docs/source_recovery/settings_blink_state.md`
+  - `docs/source_recovery/vram_copy.md`
   - `docs/source_recovery/tile_sheets/`
   - `docs/source_recovery/memory_map.md`
   - `tools/render_gb_tiles.py`
@@ -220,6 +224,7 @@
 | Countdown digit buffer naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Column blink/rank state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Settings blink state naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| VRAM copy slot naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log
