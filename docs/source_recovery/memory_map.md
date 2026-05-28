@@ -61,7 +61,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C61C` | `LCD_REDRAW` | High | Read by `UpdateSprites`, written around LCD/VRAM refresh paths. |
 | `$C61D-$C61F` | `SCORE_BCD_LOW` / `SCORE_BCD_MID` / `SCORE_BCD_HIGH` | High | Bank 1 `AddScore` adds an `HL` BCD score delta with `daa`, caps overflow at `99999`, and stores the packed BCD accumulator here. |
 | `$C621-$C625` | `SCORE_DIGITS` | High | `AddScore` unpacks the BCD score into five low-nibble display digits; Bank 0 `UpdateLevel` reads five bytes from this range when drawing the score. |
-| `$C62A` | `BOARD_DATA` | Low | Existing constant, but direct scan did not see the symbol; board may be addressed via nearby pointers/indexed offsets. |
+| `$C62A-$C669` | `BOARD_DATA` | Medium | Four 16-byte column blocks. `GenerateNextPiece` clears `$40` bytes, `DrawAllColumns` renders seven visible entries per column from `BOARD_DATA + 1`, and `GetFallSpeed` / `MovePieceLeft` index a column as `PIECE_ROTATION * $10` plus row/fall position. Exact paired-byte semantics still need tracing. |
 | `$C66A-$C66D` | `COLUMN_TOP_ROWS` | High | Four per-column row/fall-target bytes. Seeded from level setup, indexed by `PIECE_ROTATION`, used by drawing and fall logic, and swapped by `AnimateDropping`. |
 | `$C66E` | `SPRITE_OBJECT_DELAY_RELOAD` | High | Initialized to `1` by `ResetTitleState` and copied into `SPRITE_OBJECT_STAGING + SPRITE_OBJECT_DELAY_COUNTER` when `UpdateSpriteObject` advances a waiting gameplay object slot. |
 | `$C66F` | `DROP_CURSOR_ANIM_ACTIVE` | High | Set when `CheckMatch` accepts a drop input, drives `InitGameState2` cursor-frame animation, and gates `DisplayScore` timing. |

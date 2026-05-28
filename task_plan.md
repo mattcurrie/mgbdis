@@ -90,7 +90,8 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - **Status:** in_progress
 
 ### Phase 5: Gameplay Algorithm Recovery
-- [ ] Recover board layout and piece representation
+- [x] Recover first-pass board column-block layout
+- [ ] Recover remaining piece representation semantics inside board cells
 - [x] Recover first-pass drop-input column swap animation state
 - [x] Recover first-pass column top-row state and drop cursor animation state
 - [x] Name the high-confidence score addition/display routine at Bank 1 `$432F`

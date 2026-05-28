@@ -1,0 +1,33 @@
+# Board Layout
+
+This note tracks the first recovered structure of `BOARD_DATA` at `$C62A`.
+
+## Storage Shape
+
+| Constant | Value | Evidence |
+|----------|-------|----------|
+| `COLUMN_COUNT` | `$04` | `DrawAllColumns`, `SeedColumnTopRows`, and several column-state loops process four columns. |
+| `BOARD_COLUMN_STRIDE` | `$10` | `MovePieceLeft` and `GetFallSpeed` select a column block by shifting `PIECE_ROTATION` left four times. |
+| `BOARD_DATA_SIZE` | `$40` | `GenerateNextPiece` clears `$40` bytes starting at `BOARD_DATA`; this matches `COLUMN_COUNT * BOARD_COLUMN_STRIDE`. |
+| `BOARD_CELL_STRIDE` | `$02` | `DrawAllColumns` advances the source pointer by two bytes for each visible row. `GetFallSpeed` also indexes by raw row offset after selecting a 16-byte column block. |
+| `BOARD_VISIBLE_ROW_COUNT` | `$07` | `DrawAllColumns` draws seven visible entries per column. |
+
+The board is currently best described as four 16-byte column blocks. Column
+selection uses `PIECE_ROTATION * $10` in `MovePieceLeft` and `GetFallSpeed`;
+row selection then adds the current row/fall position within that block.
+
+`DrawAllColumns` reads from `BOARD_DATA + 1`, draws seven entries per column,
+advances by two bytes per row, then skips two bytes before the next column.
+That supports the current "visible row cells are every two bytes" model, but
+the exact meaning of the paired/interleaved bytes still needs more tracing.
+
+## Main Consumers
+
+- `GenerateNextPiece` clears the full `$40`-byte area.
+- `DrawAllColumns` renders the visible board entries from the odd offsets.
+- `GetFallSpeed` probes a column block for payload `$08` while scanning fall
+  positions.
+- `MovePieceLeft` writes the staged piece payload back near the selected
+  column/row position.
+- `CommitFallingPieceToBoard` updates a `COLUMN_TOP_ROWS` entry, clears the
+  drawn falling position, and calls `UpdateBoard`.

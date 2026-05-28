@@ -1344,12 +1344,12 @@ jr_000_071e:
 
 DrawAllColumns::
     ld l, $00
-    ld de, $c62b
-    ld c, $04
+    ld de, BOARD_DATA + BOARD_CELL_DISPLAY_OFFSET
+    ld c, COLUMN_COUNT
 
 jr_000_0728:
-    ld b, $07
-    ld h, $02
+    ld b, BOARD_VISIBLE_ROW_COUNT
+    ld h, BOARD_DRAW_FIRST_ROW
 
 jr_000_072c:
     ld a, [de]
@@ -1366,7 +1366,7 @@ jr_000_072c:
     jr nz, jr_000_072c
 
     ld a, e
-    add $02
+    add BOARD_CELL_STRIDE
     ld e, a
     jr nc, jr_000_0742
 
@@ -3343,7 +3343,7 @@ jr_000_1506:
 
 
 GenerateNextPiece::
-    ld b, $40
+    ld b, BOARD_DATA_SIZE
     ld hl, BOARD_DATA
 
 jr_000_150d:
