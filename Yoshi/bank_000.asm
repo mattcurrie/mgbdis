@@ -2821,7 +2821,7 @@ jr_000_126e:
     ld a, $01
     ld [ROUND_TIMER_STOPPED], a
     ld [TOTAL_TIMER_STOPPED], a
-    ld [$c703], a
+    ld [RESULT_CLEAR_FLAG], a
     push af
     ld a, [TWO_PLAYER_FLAG]
     and a
@@ -3184,7 +3184,7 @@ jr_000_1429:
     jr nz, jr_000_1463
 
     ld a, $01
-    ld [$c704], a
+    ld [RESULT_GAME_OVER_FLAG], a
     xor a
     ld a, [TWO_PLAYER_FLAG]
     and a
@@ -6007,7 +6007,7 @@ ProcessBit5::
     bit 0, a
     jr z, jr_000_2404
 
-    ld a, [$c704]
+    ld a, [RESULT_GAME_OVER_FLAG]
     and a
     jr nz, jr_000_2404
 
@@ -8167,7 +8167,7 @@ jr_000_31e6:
 
     xor a
     ld [ROUND_RESULT_CODE], a
-    ld [$c704], a
+    ld [RESULT_GAME_OVER_FLAG], a
     ld a, $01
     ret
 
@@ -8576,7 +8576,7 @@ jr_000_34af:
     call FillRect
 
 jr_000_34b9:
-    ld a, [$c703]
+    ld a, [RESULT_CLEAR_FLAG]
     and a
     jr z, jr_000_34c8
 
@@ -8586,7 +8586,7 @@ jr_000_34b9:
 
 
 jr_000_34c8:
-    ld a, [$c704]
+    ld a, [RESULT_GAME_OVER_FLAG]
     and a
     jr z, jr_000_34d6
 

@@ -107,6 +107,8 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C6FC-$C6FD` | `LINK_SEND_QUEUE_0` / `LINK_SEND_QUEUE_1` | High | `TimerTickCore` alternates between these two bytes, sends the selected byte through `LINK_SEND`, then clears that queue slot. |
 | `$C6FE` | `LINK_SEND_QUEUE_INDEX` | High | Alternates between 0 and 1 to select the next link send queue slot. |
 | `$C6FF-$C700` | `LINK_RECV_LEVEL` / `LINK_RECV_SPEED` | High | `UpdateGameField` unpacks peer level/speed nibbles from `LINK_RECV`; preview/result paths read these values for peer display. |
+| `$C703` | `RESULT_CLEAR_FLAG` | High | B-type board-clear detection sets this when all four `COLUMN_TOP_ROWS` reach `$0F`; result display checks it before drawing the clear/win message and setup paths clear it for a new round/playfield. |
+| `$C704` | `RESULT_GAME_OVER_FLAG` | High | Set when the falling-piece placement overflows the local field; result/link display checks it for the game-over/loss message, and tie-resolution code can clear it before queueing the final result. |
 | `$C705` | `ROUND_RESULT_PENDING` | High | `QueueRoundResult` sets this flag after storing the result code; Bank 1 `Check2PGameState` consumes it to call `ProcessNewHighScore`, and `Send2PData` uses it to skip normal inner-frame updates once result flow is queued. |
 | `$C706` | `ROUND_RESULT_CODE` | High | `QueueRoundResult` stores the argument that Bank 1 later passes to `ProcessNewHighScore`; title/start-next-round setup clears it with `ROUND_RESULT_PENDING`. |
 | `$C707` | `PAUSE_FLAG` | High | Pause/unpause and 2P pause paths. |

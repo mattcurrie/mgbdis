@@ -687,8 +687,8 @@ StartNextRound::
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
     ld [EGG_COUNT_RESERVED], a
-    ld [$c703], a
-    ld [$c704], a
+    ld [RESULT_CLEAR_FLAG], a
+    ld [RESULT_GAME_OVER_FLAG], a
     ld [LINK_PENDING_FIELD_RISE], a
     ld [LINK_SEND_QUEUE_0], a
     ld [LINK_FIELD_EVENT_PAYLOAD], a
@@ -797,8 +797,8 @@ jr_001_4505:
 
 InitPlayfield::
     xor a
-    ld [$c703], a
-    ld [$c704], a
+    ld [RESULT_CLEAR_FLAG], a
+    ld [RESULT_GAME_OVER_FLAG], a
     ld [$c6f4], a
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
