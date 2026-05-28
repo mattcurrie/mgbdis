@@ -2600,17 +2600,17 @@ jr_000_111b:
     jr nz, jr_000_111b
 
     ld a, $cc
-    ld hl, $c509
+    ld hl, RESULT_LEVEL_LABEL_TOP_LEFT
     ld bc, HeaderLogo
     call FillRect
-    ld hl, $c510
+    ld hl, RESULT_LEVEL_VALUE_ONES
     ld a, [LEVEL_DISPLAY_ONES]
     add $d4
     ld [hl-], a
     ld a, [LEVEL_DISPLAY_TENS]
     add $d4
     ld [hl], a
-    ld hl, $c511
+    ld hl, RESULT_SPEED_VALUE_TOP_LEFT
     ld a, [ACTIVE_SPEED]
     sla a
     add $d0

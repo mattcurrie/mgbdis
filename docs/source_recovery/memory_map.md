@@ -49,6 +49,9 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | Address | Name | Confidence | Evidence |
 |---------|------|------------|----------|
 | `$C4A0-$C607` | `BG_MAP_SHADOW` | High | `FillGameTilemap` / `FillTitleTilemap` fill `$0168` bytes, `CalcTilemapAddress` maps row/column pairs as `$C4A0 + row * 20 + column`, and Bank 1 copies chunks of this buffer to BG map VRAM `$9C00-$9DDF`. |
+| `$C509` | `RESULT_LEVEL_LABEL_TOP_LEFT` | Medium | `UpdateLevel` fills four level-label tiles starting at `$CC` here immediately before drawing `LEVEL_DISPLAY_TENS` / `LEVEL_DISPLAY_ONES`. It is `BG_MAP_SHADOW + row 5 * $14 + column 5`. |
+| `$C50F-$C510` | `RESULT_LEVEL_VALUE_TENS` / `RESULT_LEVEL_VALUE_ONES` | High | `UpdateLevel` writes `LEVEL_DISPLAY_ONES + $D4` at `$C510`, then `LEVEL_DISPLAY_TENS + $D4` at `$C50F`. `InitTitleUI` also fills `$C510` in a title-screen layout, so these names describe the `UpdateLevel` status-panel use. |
+| `$C511-$C512` | `RESULT_SPEED_VALUE_TOP_LEFT` | Medium | `UpdateLevel` draws the two-tile speed value from `ACTIVE_SPEED * 2 + $D0` here. It is `BG_MAP_SHADOW + row 5 * $14 + column 13`. |
 | `$C546` | `RESULT_MAIN_PANEL_TOP_LEFT` | Medium | Repeated `FillRect` origin for the central result/matching panel. It is `BG_MAP_SHADOW + row 8 * $14 + column 6`, used by `ProcessMatching` and `PlayConfirmSound` with 6-row fills. |
 | `$C54C` | `RESULT_MAIN_PANEL_RIGHT_EDGE` | Medium | `ProcessMatching` writes tile `$05` down six rows from this origin using `BG_MAP_ROW_STRIDE`; it is the right-edge column of the `RESULT_MAIN_PANEL_TOP_LEFT` area. |
 | `$C5D1` | `RESULT_SCORE_LABEL_TOP_LEFT` | Medium | `UpdateLevel` fills four score-label tiles starting at `$C8` here immediately before drawing the five `SCORE_DIGITS` at `RESULT_SCORE_VALUE_TOP_LEFT`. It is `BG_MAP_SHADOW + row 15 * $14 + column 5`. |
