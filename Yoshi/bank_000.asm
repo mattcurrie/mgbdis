@@ -2409,7 +2409,7 @@ jr_000_0fc6:
 jr_000_0fce:
     ldh [ANIM_FRAME], a
     ld a, b
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0606
     call FillRect
     call WaitVBlank
@@ -2423,13 +2423,13 @@ jr_000_0fce:
     ld c, $1e
     call DrawString
     ld a, $48
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0606
     call FillRect
     ld c, $0a
     call DrawString
     ld a, $6c
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0607
     call FillRect
     ld c, $0a
@@ -2499,13 +2499,13 @@ jr_000_106e:
     jr nz, jr_000_106e
 
     ld a, $48
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0606
     call FillRect
     ld c, $0a
     call DrawString
     ld a, $00
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0606
     call FillRect
     ld a, $a8
@@ -8555,7 +8555,7 @@ PlayConfirmSound::
 
 jr_000_3495:
     ld a, b
-    ld hl, $c546
+    ld hl, RESULT_MAIN_PANEL_TOP_LEFT
     ld bc, $0608
     call FillRect
     ld a, [LINK_ROLE]
