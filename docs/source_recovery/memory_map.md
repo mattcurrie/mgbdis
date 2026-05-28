@@ -57,9 +57,11 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C671` | `GAME_TYPE` | High | Set from `OPTION_GAME_TYPE` in 1P and forced to 1 in 2P; selects A/B-style gameplay/layout/result behavior, not 1P/2P. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
+| `$C696` | `PIECE_FALL_TIMER` | High | Decremented/reloaded by `DisplayScore`; `UpdateMatchState` returns without moving the staged piece while it is nonzero. |
+| `$C6A7` | `PIECE_FALL_DELAY` | High | Reload value for `PIECE_FALL_TIMER`, initialized from `ProcessFalling` or `GAME_TURN_DELAY` and periodically lowered by `DisplaySpeed` down to `PIECE_FALL_DELAY_MIN`. |
 | `$C6A9` | `GAME_TURN_TABLE_INDEX` | High | `DrawMenuCursor` seeds this from `LevelThresholds`; `ProcessMenuLoop` increments it and indexes `GameTurnParamTable + index * 4`. |
 | `$C6AA` | `GAME_TURN_STEP_TIMER` | High | Reloaded from the first byte of the current `GameTurnParamTable` record, decremented by `UpdateMenuCursor`, and advances the table when it reaches zero. |
-| `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into the broader fall/update delay bytes `$C6A7/$C696`. |
+| `$C6AC` | `GAME_TURN_DELAY` | High | Loaded from the third byte of the current `GameTurnParamTable` record, optionally halved by `ACTIVE_SPEED`, then copied into `PIECE_FALL_DELAY` / `PIECE_FALL_TIMER`. |
 | `$C6B1` | `MENU_CURSOR` | High | Indexes the four option bytes from `$C6B2-$C6B5`. |
 | `$C6B2` | `OPTION_GAME_TYPE` | High | Selected game type; copied into `GAME_TYPE` by `InitGameState`. |
 | `$C6B3` | `OPTION_LEVEL` | High | Selected starting level; copied into `ACTIVE_LEVEL`. |

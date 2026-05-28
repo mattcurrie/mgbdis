@@ -2842,7 +2842,7 @@ jr_000_1290:
 
 
 DisplayScore::
-    ld hl, $c696
+    ld hl, PIECE_FALL_TIMER
     ld a, [hl]
     and a
     jr z, jr_000_12ac
@@ -2857,13 +2857,13 @@ DisplayScore::
     ret z
 
     ld a, $01
-    ld [$c696], a
+    ld [PIECE_FALL_TIMER], a
     ret
 
 
 jr_000_12ac:
-    ld a, [$c6a7]
-    ld [$c696], a
+    ld a, [PIECE_FALL_DELAY]
+    ld [PIECE_FALL_TIMER], a
     ret
 
 
@@ -2937,9 +2937,9 @@ jr_000_12fd:
 
 jr_000_1301:
     ld [hl], a
-    ld hl, $c6a7
+    ld hl, PIECE_FALL_DELAY
     ld a, [hl]
-    cp $02
+    cp PIECE_FALL_DELAY_MIN
     ret c
 
     ret z
@@ -3042,7 +3042,7 @@ jr_000_136d:
 
 
 jr_000_138a:
-    ld hl, $c696
+    ld hl, PIECE_FALL_TIMER
     ld a, [hl]
     cp $03
     jr c, jr_000_1394
@@ -3121,7 +3121,7 @@ ClearMatchedPieces::
 
 
 UpdateMatchState::
-    ld a, [$c696]
+    ld a, [PIECE_FALL_TIMER]
     and a
     ld a, $01
     ret nz
@@ -3296,19 +3296,19 @@ SetArrayElement::
 
 
 ValidatePosition::
-    ld hl, $c6a7
+    ld hl, PIECE_FALL_DELAY
     ld a, [ACTIVE_SPEED]
     and a
     jr z, jr_000_14d2
 
     call ProcessFalling
     srl a
-    ld [$c6a7], a
+    ld [PIECE_FALL_DELAY], a
     jr jr_000_14d8
 
 jr_000_14d2:
     call ProcessFalling
-    ld [$c6a7], a
+    ld [PIECE_FALL_DELAY], a
 
 jr_000_14d8:
     ld a, $02
@@ -4281,8 +4281,8 @@ UpdateMenuCursor::
 
     call ProcessMenuInput
     ld a, [GAME_TURN_DELAY]
-    ld [$c6a7], a
-    ld [$c696], a
+    ld [PIECE_FALL_DELAY], a
+    ld [PIECE_FALL_TIMER], a
     call CalcResults
     ld a, [$c698]
     call DisplayResults
@@ -4342,8 +4342,8 @@ DrawMenuCursor::
 jr_000_1a74:
     ld a, b
     ld [GAME_TURN_DELAY], a
-    ld [$c696], a
-    ld [$c6a7], a
+    ld [PIECE_FALL_TIMER], a
+    ld [PIECE_FALL_DELAY], a
     jp ProcessMenuLoop
 
 
