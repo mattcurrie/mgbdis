@@ -3158,7 +3158,7 @@ jr_000_140f:
     jr nz, jr_000_1429
 
     ld a, [PIECE_FALL_POS]
-    cp $0f
+    cp BOARD_FALL_END_ROW
     jr z, jr_000_1429
 
     call UpdateLandingProgress
@@ -3409,10 +3409,10 @@ jr_000_1543:
 
 ProcessInputTitle::
     ld a, [COLUMN_TOP_ROW_SEED]
-    cp $0f
+    cp BOARD_FALL_END_ROW
     ret z
 
-    sub $0f
+    sub BOARD_FALL_END_ROW
     cpl
     inc a
     ld b, a
