@@ -36,8 +36,8 @@ should make the recovered source more maintainable without changing the ROM.
 
 ### Sprite Object Slots
 
-- Trace slot-local fields `+$01`, `+$03`, `+$05`, and `+$0F` across the logical
-  sprite page and OAM expansion path.
+- Trace slot-local fields `+$01`, `+$03`, and `+$0F` across the logical sprite
+  page and OAM expansion path.
 - Decode object types `$06`, `$07`, and high-bit object types from their setup
   tables and render/update consumers.
 - Update `sprite_oam.md` only when a field role is visible in both a producer

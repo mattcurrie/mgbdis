@@ -101,6 +101,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Investigate remaining score-adjacent state `$C620/$C628/$C629/$C672`
 - [ ] Revisit `$C620/$C628/$C629/$C672` only after finding an independent consumer
 - [x] Name sprite object delay reload byte `$C66E`
+- [x] Name sprite object grid-column offset `+$05`
 - [x] Name piece display blink timer `$C6AF`
 - [x] Name piece display forced-state flags `$C6AD/$C6F7/$C6F8`
 - [x] Document unresolved landing/scan bytes `$C69D/$C6AE/$C6BF/$C6C0`

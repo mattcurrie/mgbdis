@@ -36,7 +36,7 @@ contract is found.
 | Board cells | What do the paired/interleaved bytes inside each 16-byte column block mean? | `BOARD_DATA` is four 16-byte columns. Visible rows are read from odd offsets, while fall scanning indexes by row/fall position. |
 | Piece payloads | What exact game pieces or states do all payload values represent? | `BOARD_SCAN_TRIGGER_PAYLOAD` and `BOARD_SCAN_TARGET_PAYLOAD` are named by scan behavior only; broader piece semantics remain open. |
 | Landing scan state | What are `$C69D`, `$C6AE`, `$C6BF`, and `$C6C0` semantically? | Reset/write/decrement patterns are real, but only `$C6BF` has a confirmed read/write role in scan/landing timing. |
-| Sprite object slots | What are slot-local bytes `+$01`, `+$03`, `+$05`, and `+$0F`? | `UpdateSpriteObject` stages slots 1-4, but those offsets still need a dedicated producer/consumer trace. |
+| Sprite object slots | What are slot-local bytes `+$01`, `+$03`, and `+$0F`? | `UpdateSpriteObject` stages slots 1-4; `+$05` is now traced as `SPRITE_OBJECT_GRID_COLUMN`, but the remaining offsets still need producer/consumer evidence. |
 | High-bit object types | Are there semantic high-bit sprite object types? | `UpdateSprites` does not mask bit 7 before indexing the frame table; call-site evidence is still incomplete. |
 | Sound commands | What are the full command semantics and channel roles in the recovered music streams? | Sound state and index tables are structured, but medium-confidence `SOUND_CH_*` names need more sequence decoding. |
 | Bank 3 graphics | Which exact screen regions do remaining Bank 3 tile ranges represent? | Load paths and VRAM destinations are documented, but several ranges still need visual/screen-role decoding. |
@@ -48,4 +48,3 @@ Prefer narrow names that describe the proven behavior over broad names that
 guess intent. For example, `BOARD_SCAN_TARGET_PAYLOAD` is acceptable because it
 describes the observed scan target; a concrete piece-name label should wait
 until the payload's player-visible meaning is proven.
-

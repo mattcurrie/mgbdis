@@ -27,13 +27,14 @@ slot; a zero type disables the object.
 | `+$00` | Object type / high-bit attribute source | Read first. If zero, the slot is skipped. The same byte is decremented and used to index `SpriteUpdatePointerTable`; bit `$80` is also saved for possible attribute inheritance. |
 | `+$02` | Animation frame index | If `$FF`, the slot is skipped. Otherwise multiplied by 4 and used to pick a frame record from the selected frame table. |
 | `+$04` | Base Y | Added to each layout Y delta plus OAM bias `$10`. |
+| `+$05` | Grid/collision column | For active gameplay slots, `AnimateGameOver` writes the display slot index here, `UpdateDropPositions` derives it from `Base X / $20` when the byte is `$FF`, and `CheckCollisionCore` compares it with the drop-animation column. |
 | `+$06` | Base X | Added to each layout X delta plus OAM bias `$08`. |
 | `+$07` | Delay counter | `UpdateSpriteObject` decrements this field while `SPRITE_OBJECT_PHASE` is `$01`; when it reaches zero, the routine reloads it from `SPRITE_OBJECT_DELAY_RELOAD` and advances the phase to `$02`. |
 | `+$08` | Object phase | `0` disables the producer-side update, `$01` waits on `SPRITE_OBJECT_DELAY_COUNTER`, and `$02` enters `UpdateMatchState`; `CheckMatch` tests slots 1-4 for phase `$02` before clamping the drop timers. |
 | `+$09` | Tile / piece payload | In the staged `$C695` byte, `UpdateMatchState` passes this value to `DrawGridPiece`, writes it back into `BOARD_DATA`, and compares `BOARD_SCAN_TRIGGER_PAYLOAD` / `BOARD_SCAN_TARGET_PAYLOAD` for scan/landing behavior. `AnimateGameOver` also writes this byte as the visible piece payload. |
 
-The remaining slot bytes, including `+$01`, `+$03`, `+$05`, and `+$0F`, are
-used by producers elsewhere and still need a dedicated trace.
+The remaining slot bytes, including `+$01`, `+$03`, and `+$0F`, are used by
+producers elsewhere and still need a dedicated trace.
 
 ## Object Producers
 
@@ -43,10 +44,10 @@ object slots. Its input `A` selects slots `$C210`, `$C220`, `$C230`, and
 slot into `SPRITE_OBJECT_STAGING`, updates state through `UpdateMatchState` or
 the slot-local `SPRITE_OBJECT_DELAY_COUNTER`, then copies the same 10-byte
 record back to the selected slot. `MovePieceDown` uses the saved index to clear
-the selected 10-byte record when the object finishes. The staged tail bytes are
-now named as offsets: `SPRITE_OBJECT_DELAY_COUNTER` (`+$07`),
-`SPRITE_OBJECT_PHASE` (`+$08`), and `SPRITE_OBJECT_TILE_ID` (`+$09`, address
-`$C695` while staged).
+the selected 10-byte record when the object finishes. The staged gameplay bytes
+are now named as offsets: `SPRITE_OBJECT_GRID_COLUMN` (`+$05`),
+`SPRITE_OBJECT_DELAY_COUNTER` (`+$07`), `SPRITE_OBJECT_PHASE` (`+$08`), and
+`SPRITE_OBJECT_TILE_ID` (`+$09`, address `$C695` while staged).
 
 `SPRITE_OBJECT_DELAY_RELOAD` (`$C66E`) is initialized to `1` by
 `ResetTitleState` and copied into each staged object's `+$07` delay counter when
@@ -57,7 +58,7 @@ Confirmed slot groups:
 | Slot/range | Current evidence |
 |------------|------------------|
 | Slot 0 (`$C200`) | `ProcessColumn` initializes `SPRITE_OBJECT_TYPE_PLAYER_CURSOR`, frame `$00`, base Y `$80`, and base X `$20`. `InitGameState2` advances its frame, and left/right input adjusts base X by `$20`. |
-| Slots 1-4 (`$C210-$C24F`) | `DrawBox` calls `UpdateSpriteObject` four times. Collision/drop code scans these four slots and uses additional bytes such as `+$05`, `+$08`, and `+$0F` for gameplay state. |
+| Slots 1-4 (`$C210-$C24F`) | `DrawBox` calls `UpdateSpriteObject` four times. Collision/drop code scans these four slots and uses `SPRITE_OBJECT_GRID_COLUMN`, `SPRITE_OBJECT_PHASE`, and still-unresolved `+$0F` for gameplay state. |
 | Slots 5-8 (`$C250-$C28F`) | Menu/title helpers clear or scan this range; individual byte meanings still need trace. |
 | Slots 9-13 (`$C290-$C2DF`) | Options cursors, round-complete animations, countdown digits, and 2P field transition objects use these slots. |
 
@@ -134,8 +135,8 @@ Y=`$A0` for all 40 hardware sprites.
 ## Open Questions
 
 - The producer path for gameplay slots 1-4 is now traced, but the exact
-  semantics of slot-local bytes `+$01`, `+$03`, `+$05`, `+$07`, `+$08`,
-  `+$09`, and `+$0F` still need narrower names.
+  semantics of slot-local bytes `+$01`, `+$03`, and `+$0F` still need narrower
+  names.
 - The exact set of high-bit object types, if any, needs runtime/call-site
   confirmation because the high bit is not masked before the frame-table index.
 - Object types `$06` and `$07` still need semantic names.
