@@ -40,7 +40,8 @@ This note records the four-byte piece display state array used by the
   frame/tile payload passed to `AnimateGameOver`.
 - `AnimateGameOver` writes sprite object type `$02` into slots 1-4, sets the
   frame from the state byte, sets base X from the array index, sets base Y to
-  `$28`, and copies the state byte into the slot's `SPRITE_OBJECT_TILE_ID`.
+  `PIECE_DISPLAY_OBJECT_BASE_Y` (`$28`), and copies the state byte into the
+  slot's `SPRITE_OBJECT_TILE_ID`.
 - `GameOverSequence` scans the same state array in reverse and writes sprite
   object type `$02` into slots 5-8. It uses the state byte as the frame and
   derives base X from the reverse display index.

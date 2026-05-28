@@ -4166,7 +4166,7 @@ AnimateGameOver::
     sla a
     sla a
     ld [hl+], a
-    ld [hl], $28
+    ld [hl], PIECE_DISPLAY_OBJECT_BASE_Y
     inc hl
     ld [hl], $01
     inc hl
