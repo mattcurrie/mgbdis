@@ -164,6 +164,8 @@
   - Updated `docs/source_recovery/state_machine.md` to record the 2P `$55` link-start handshake transition into `GAME_STATE_PLAY_SETUP`.
   - Renamed the state `$01` title frame loop from `InitGameVars` to `RunTitleMenu`.
   - Created `docs/source_recovery/title_menu.md` to document the title 1P/2P selection and Start/link entry path.
+  - Converted `00:$254E-$254F` from apparent instructions to `LinkSettingsMaxValueTable`.
+  - Converted `00:$2B9D-$2BA0` from apparent instructions to `RoundPaletteSequence`.
 - Files created/modified:
   - `docs/source_recovery/data_ranges.md`
   - `docs/source_recovery/sound_engine.md`
@@ -232,6 +234,7 @@
 | VRAM copy slot naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Pre-play loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Title menu loop naming rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
+| Small Bank 0 data island conversion rebuild | `make -B` plus `cmp -s` | byte-identical ROM | exit `0`; SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253` for both ROMs | pass |
 | Raw direct branch scan | `rg -n 'call \\$|jp \\$|jr \\$' Yoshi/bank_000.asm Yoshi/bank_001.asm` | no matches | no matches | pass |
 
 ## Error Log

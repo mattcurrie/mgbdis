@@ -46,6 +46,7 @@ Phases 2-4
 - [x] Name title player selection marker blink WRAM
 - [x] Convert first obvious data blob from bogus instructions to db/dw labels
 - [x] Convert Bank 0 option UI strings, marker coordinates, cursor tile lists, and option bound tables
+- [x] Convert Bank 0 2P settings limit and round palette byte tables
 - [x] Convert Bank 0 score/result/continue text strings and marker strings
 - [x] Convert Bank 0 preview/result tile string table
 - [x] Convert Bank 0 countdown digit pattern table

@@ -151,6 +151,8 @@
   - `00:$1E3D-$1E4F` and `00:$2026-$203A` are row/column/tile triplet lists consumed by `DrawTileTripletList`.
   - `00:$1E75-$1E89` is three 7-byte setting cursor/sprite records copied to `$C290/$C2A0/$C2B0`.
   - `00:$1F4C-$1F4F` and `00:$2C60-$2C63` are option-row upper-bound tables with bytes `$02,$05,$02,$04`.
+  - `00:$254E-$254F` is the 2P link settings upper-bound table with bytes `$05,$02`.
+  - `00:$2B9D-$2BA0` is a four-byte round/pre-play palette sequence written to `rBGP` by `SetRoundSpeed`.
 - The labels `UpdatePaletteFade`, `UpdateHighScore`, `LoadSettings`, and `SaveSettings` were renamed to `DrawOptionTextLabels`, `DrawOptionMarkers`, `DrawOptionMarker`, and `DrawTileTripletList` because their behavior is option UI drawing, not palette/high-score/save handling.
 - Bank 0 score/result text data has been recovered:
   - `00:$25C3-$25E0` score header strings selected by `LINK_ROLE`.

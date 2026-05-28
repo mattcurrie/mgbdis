@@ -113,6 +113,8 @@ Notes:
 | `00:$1E75-$1E89` | `SettingsCursorSpriteInit0..2` | Converted to `db` records | `ApplySettings` copies three fixed 7-byte records to `$C290`, `$C2A0`, and `$C2B0`. |
 | `00:$1F4C-$1F4F` | `OptionMaxValueTable` | Converted to `db` limits | Option increment code indexes this four-byte table with `MENU_CURSOR` before accepting a right-button change. |
 | `00:$2026-$203A` | `SettingsCursorTileData0..2` | Converted to `db` triplet lists | `SaveConfig1..3` pass these addresses to `DrawTileTripletList` to draw the highlighted cursor row. |
+| `00:$254E-$254F` | `LinkSettingsMaxValueTable` | Converted to `db` limits | `Run2PPreplayLoop` indexes this two-byte table with `LINK_SETTINGS_CURSOR` before accepting a right-button change to 2P level or speed. |
+| `00:$2B9D-$2BA0` | `RoundPaletteSequence` | Converted to `db` palette bytes | `SetRoundSpeed` reads four bytes from this table, writes each to `rBGP`, and calls `DrawString` with `C=$10` after each palette step. |
 | `00:$2C60-$2C63` | `RoundEndOptionMaxValueTable` | Converted to `db` limits | `Run1PPreplayLoop` uses the same four option-row limits in the result/start-wait path. |
 
 Notes:

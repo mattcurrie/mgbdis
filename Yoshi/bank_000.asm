@@ -6395,7 +6395,7 @@ jr_000_252f:
     inc a
     ld b, a
     push hl
-    ld hl, $254e
+    ld hl, LinkSettingsMaxValueTable
     ld a, [LINK_SETTINGS_CURSOR]
     call GetArrayElement
     cp b
@@ -6406,8 +6406,8 @@ jr_000_252f:
     ret
 
 
-    dec b
-    ld [bc], a
+LinkSettingsMaxValueTable::
+    db $05, $02
 
 jr_000_2550:
     ld a, SND_CURSOR_MOVE
@@ -7243,7 +7243,7 @@ jr_000_2b85:
 
 
 SetRoundSpeed::
-    ld hl, $2b9d
+    ld hl, RoundPaletteSequence
     ld b, $04
 
 jr_000_2b91:
@@ -7257,10 +7257,8 @@ jr_000_2b91:
     ret
 
 
-    nop
-    ld b, b
-    sub b
-    db $e4
+RoundPaletteSequence::
+    db $00, $40, $90, $e4
 
 InitPreplayBlinkTimer::
     ld a, SETTINGS_BLINK_PERIOD
