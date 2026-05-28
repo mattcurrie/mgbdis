@@ -2488,7 +2488,7 @@ jr_000_1040:
     call ClearOAM
     ld c, $0a
     call DrawString
-    ld hl, $c54c
+    ld hl, RESULT_MAIN_PANEL_RIGHT_EDGE
     ld de, BG_MAP_ROW_STRIDE
     ld c, $06
 
