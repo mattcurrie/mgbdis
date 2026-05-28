@@ -51,6 +51,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C4A0-$C607` | `BG_MAP_SHADOW` | High | `FillGameTilemap` / `FillTitleTilemap` fill `$0168` bytes, `CalcTilemapAddress` maps row/column pairs as `$C4A0 + row * 20 + column`, and Bank 1 copies chunks of this buffer to BG map VRAM `$9C00-$9DDF`. |
 | `$C546` | `RESULT_MAIN_PANEL_TOP_LEFT` | Medium | Repeated `FillRect` origin for the central result/matching panel. It is `BG_MAP_SHADOW + row 8 * $14 + column 6`, used by `ProcessMatching` and `PlayConfirmSound` with 6-row fills. |
 | `$C54C` | `RESULT_MAIN_PANEL_RIGHT_EDGE` | Medium | `ProcessMatching` writes tile `$05` down six rows from this origin using `BG_MAP_ROW_STRIDE`; it is the right-edge column of the `RESULT_MAIN_PANEL_TOP_LEFT` area. |
+| `$C5D6` | `RESULT_SCORE_VALUE_TOP_LEFT` | Medium | `UpdateLevel` writes five rendered `SCORE_DIGITS` here, and result fill helpers also clear/fill this value area. It is `BG_MAP_SHADOW + row 15 * $14 + column 10`. |
 | `$C61C` | `LCD_REDRAW` | High | Read by `UpdateSprites`, written around LCD/VRAM refresh paths. |
 | `$C61D-$C61F` | `SCORE_BCD_LOW` / `SCORE_BCD_MID` / `SCORE_BCD_HIGH` | High | Bank 1 `AddScore` adds an `HL` BCD score delta with `daa`, caps overflow at `99999`, and stores the packed BCD accumulator here. |
 | `$C621-$C625` | `SCORE_DIGITS` | High | `AddScore` unpacks the BCD score into five low-nibble display digits; Bank 0 `UpdateLevel` reads five bytes from this range when drawing the score. |

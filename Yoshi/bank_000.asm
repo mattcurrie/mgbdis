@@ -2586,7 +2586,7 @@ UpdateLevel::
     ld hl, $c5d1
     ld bc, HeaderLogo
     call FillRect
-    ld hl, $c5d6
+    ld hl, RESULT_SCORE_VALUE_TOP_LEFT
     ld c, $05
     ld de, SCORE_DIGITS
 
@@ -8375,7 +8375,7 @@ jr_000_3354:
     ld bc, $0206
     call FillRect
     ld a, $45
-    ld hl, $c5d6
+    ld hl, RESULT_SCORE_VALUE_TOP_LEFT
     ld bc, $0201
     call FillRect
     ld a, [LINK_ROLE]
@@ -8665,14 +8665,14 @@ jr_000_352f:
 
 FillScoreArea1::
     ld a, $47
-    ld hl, $c5d6
+    ld hl, RESULT_SCORE_VALUE_TOP_LEFT
     ld bc, $0207
     jp FillRect
 
 
 FillScoreArea2::
     ld a, $2d
-    ld hl, $c5d6
+    ld hl, RESULT_SCORE_VALUE_TOP_LEFT
     ld bc, $0206
     jp FillRect
 

@@ -106,6 +106,7 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [ ] Revisit `$C69D/$C6AE/$C6BF/$C6C0` only after finding stronger producer/consumer evidence
 - [x] Name repeated result main panel tilemap origin `$C546`
 - [x] Name result main panel right-edge tilemap origin `$C54C`
+- [x] Name result score value tilemap origin `$C5D6`
 - [ ] Compare inferred behavior with user memory where available
 - [ ] Add comments only where the code evidence supports them
 - **Status:** pending
