@@ -62,7 +62,7 @@ Confirmed object types:
 | Type | Constant | Evidence |
 |------|----------|----------|
 | `$01` | `SPRITE_OBJECT_TYPE_PLAYER_CURSOR` | Slot 0 setup and left/right input path. |
-| `$02` | `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` | Written by `AnimateGameOver` into slots selected from game-over state. |
+| `$02` | `SPRITE_OBJECT_TYPE_GAME_OVER_PIECE` | Written by `AnimateGameOver` into slots selected from `PIECE_DISPLAY_STATES`; despite the current name, this object type is the piece-display builder used by the game-over/display-results path. |
 | `$03` | `SPRITE_OBJECT_TYPE_ROUND_TRANSITION` | Written to slot 9 during the round-complete / 2P transition path. |
 | `$04` | `SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE` | Written to slots 10-13 by `ProcessRoundComplete` and the 2P round-complete path. |
 | `$05` | `SPRITE_OBJECT_TYPE_SETTINGS_CURSOR` | Used by `SettingsCursorSpriteInit0` through `SettingsCursorSpriteInit2`. |

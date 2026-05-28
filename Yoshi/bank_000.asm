@@ -4041,8 +4041,8 @@ DisplayResults::
     ld [hl], $01
 
 jr_000_18f6:
-    ld b, $04
-    ld hl, $c6a3
+    ld b, PIECE_DISPLAY_STATE_COUNT
+    ld hl, PIECE_DISPLAY_STATES
 
 jr_000_18fb:
     ld [hl], $00
@@ -4062,7 +4062,7 @@ jr_000_1902:
     ld a, b
     dec a
     call GetArrayElement
-    ld hl, $c6a3
+    ld hl, PIECE_DISPLAY_STATES
     call GetArrayElement
     pop af
     push bc
@@ -4092,8 +4092,8 @@ CheckGameOver::
 
     xor a
     ld [$c6f7], a
-    ld hl, $c6a3
-    ld b, $04
+    ld hl, PIECE_DISPLAY_STATES
+    ld b, PIECE_DISPLAY_STATE_COUNT
 
 jr_000_1943:
     ld a, [hl]
@@ -4113,11 +4113,11 @@ jr_000_194c:
 
 
 HandleGameOver::
-    ld hl, $c6a3
+    ld hl, PIECE_DISPLAY_STATES
     xor a
     ld d, a
     ld b, a
-    ld c, $04
+    ld c, PIECE_DISPLAY_STATE_COUNT
 
 jr_000_1958:
     ld a, [hl]
@@ -4175,8 +4175,8 @@ AnimateGameOver::
 
 
 GameOverSequence::
-    ld b, $04
-    ld hl, $c6a6
+    ld b, PIECE_DISPLAY_STATE_COUNT
+    ld hl, PIECE_DISPLAY_STATES + PIECE_DISPLAY_STATE_COUNT - 1
 
 jr_000_1999:
     ld a, [hl]
@@ -4554,8 +4554,8 @@ TitleScreenLoop::
     and a
     ret z
 
-    ld hl, $c6a3
-    ld b, $04
+    ld hl, PIECE_DISPLAY_STATES
+    ld b, PIECE_DISPLAY_STATE_COUNT
 
 jr_000_1b73:
     ld a, [hl]

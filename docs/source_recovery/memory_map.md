@@ -57,6 +57,7 @@ These definitions already exist in `Yoshi/constants.inc` and are referenced by t
 | `$C671` | `GAME_TYPE` | High | Set from `OPTION_GAME_TYPE` in 1P and forced to 1 in 2P; selects A/B-style gameplay/layout/result behavior, not 1P/2P. |
 | `$C68F` | `PIECE_FALL_POS` | Medium | Used by falling/update/scan routines. |
 | `$C691` | `PIECE_ROTATION` | Medium | Used by piece movement/update routines. |
+| `$C6A3-$C6A6` | `PIECE_DISPLAY_STATES` | High | Four display-state bytes built by `DisplayResults` and scanned by `HandleGameOver` / `AnimateGameOver` to emit piece sprite objects in slots 1-4. |
 | `$C696` | `PIECE_FALL_TIMER` | High | Decremented/reloaded by `DisplayScore`; `UpdateMatchState` returns without moving the staged piece while it is nonzero. |
 | `$C6A7` | `PIECE_FALL_DELAY` | High | Reload value for `PIECE_FALL_TIMER`, initialized from `ProcessFalling` or `GAME_TURN_DELAY` and periodically lowered by `DisplaySpeed` down to `PIECE_FALL_DELAY_MIN`. |
 | `$C6A9` | `GAME_TURN_TABLE_INDEX` | High | `DrawMenuCursor` seeds this from `LevelThresholds`; `ProcessMenuLoop` increments it and indexes `GameTurnParamTable + index * 4`. |
