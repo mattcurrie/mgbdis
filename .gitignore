@@ -1,6 +1,8 @@
 __pycache__/
 disassembly/
-test/
+test/build
+test/disassembly
+test/test.gb
 tmp/
 
 # Build artifacts

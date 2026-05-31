@@ -3,8 +3,8 @@
 """Disassemble a Game Boy ROM into RGBDS compatible assembly code"""
 
 __author__ = 'Matt Currie and contributors'
-__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm']
-__version__ = '2.0'
+__credits__ = ['mattcurrie', 'kemenaran', 'bnzis', 'ISSOtm', 'BlueAnthem37510', 'brianum']
+__version__ = '3.0'
 __copyright__ = 'Copyright 2018 by Matt Currie'
 __license__ = 'MIT'
 
@@ -13,6 +13,7 @@ import glob
 import hashlib
 import os
 import png
+import re
 from shutil import copyfile
 
 from instruction_set import instructions, cb_instructions, instruction_variants
@@ -138,7 +139,13 @@ ldh_a8_formatters = {
     'ld_ff00_a8': lambda value: '[{0}+{1}]'.format(hex_word(0xff00), hex_byte(value)),
     'ldh_ffa8': lambda value: '[{0}]'.format(hex_word(0xff00 + value)),
 }
-
+special_characters = {
+    0 : '\0', #null
+    92 : '\\\\',
+    34 : '\\"',
+    123 : '\\{',
+    125 : '\\}'
+}
 
 def warn(*args, **kwargs):
     print("WARNING: ", *args, **kwargs)
@@ -289,10 +296,14 @@ class Bank:
             return self.bank0.symbols.get_label(0, address)
         return self.symbols.get_label(self.bank_number, address)
 
-    def get_label_for_instruction_operand(self, value):
+    def get_label_for_instruction_operand(self, value, rst = False):
         # an operand value lower than $100 is more probably an actual value than an address:
         # don't lookup symbols for it
-        if value <= 0x100:
+        if value <= 0x100 and rst == False:
+            return None
+
+        if rst == True and value & 0x38 != value:
+            # check if this is really a rst vector
             return None
 
         return self.get_label(value)
@@ -394,7 +405,7 @@ class Bank:
 
     def disassemble(self, rom, first_pass = False):
         self.first_pass = first_pass
-
+        self.current_map_index = None
         if first_pass:
             self.resolve_blocks()
 
@@ -414,7 +425,6 @@ class Bank:
             end_address = start_address + block['length']
             self.disassemble_block_range[block['type']](rom, self.rom_base_address + start_address, self.rom_base_address + end_address, block['arguments'])
             self.append_empty_line_if_none_already()
-
         return '\n'.join(self.output)
 
 
@@ -449,10 +459,10 @@ class Bank:
             instruction_name = rom.instruction_names[opcode]
             operands = rom.instruction_operands[opcode]
 
-        if instruction_name == 'stop' or (instruction_name == 'halt' and not self.style['disable_halt_nops']):
+        if instruction_name == 'stop':
             if rom.data[pc + 1] == 0x00:
-                # rgbds adds a nop instruction after a stop/halt, so if that instruction
-                # exists then we can insert it as a stop/halt command with length 2
+                # rgbds adds a nop instruction after a stop, so if that instruction
+                # exists then we can insert it as a stop command with length 2
                 length += 1
             else:
                 # otherwise handle it as a data byte
@@ -468,6 +478,14 @@ class Bank:
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
                 operand_values.append(hex_word(value))
+
+            elif operand == 'vec':
+                value = rom.data[pc] & 0x38
+                label = self.get_label_for_instruction_operand(value, True)
+                if label:
+                    operand_values.append(label)
+                else:
+                    operand_values.append(hex_byte(value))
 
             elif operand == '[a16]':
                 length += 2
@@ -629,6 +647,10 @@ class Bank:
             print('Outputting data in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
 
         values = []
+        width = 16
+
+        if arguments is not None:
+            width = int(arguments, 16)
 
         for address in range(start_address, end_address):
             mem_address = rom_address_to_mem_address(address)
@@ -644,22 +666,61 @@ class Bank:
 
             values.append(hex_byte(rom.data[address]))
 
-            # output max of 16 bytes per line, and ensure any remaining values are output
-            if len(values) == 16 or (address == end_address - 1 and len(values)):
+            # output max of {width} bytes per line, and ensure any remaining values are output
+            if len(values) == width or (address == end_address - 1 and len(values)):
                 self.append_output(self.format_data(values))
                 values = []
 
+    def get_character_map_index(self, arguments):
+        #no args
+        if arguments == None:
+            return -1
+        name = None
+        for argument in arguments.split(":"):
+            key_value = argument.split("=", 1)
+            if len(key_value) == 2:
+                key,name = key_value
+            else:
+                key = key_value[0]
+                name = "0"
+            if key == "cm" or key == "charmap":
+                break
+        else:
+            return -1
+        #map name
+        for m in range(len(rom.character_maps)):
+            if rom.character_maps[m].name == name:
+                return m     
+        #index
+        if name.isnumeric():
+            map_index = int(name)
+            if map_index >= len(rom.character_maps):
+                abort("Character map index {} out of range".format(name))
+            return map_index
+        #no charmap found                       
+        abort("Character map '{}' does not exist.".format(name)) 
 
     def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
-
+        # process arguments
+        custom_map = False                          
+        map_index = self.get_character_map_index(arguments)
+        if map_index != -1 and map_index < len(rom.character_maps):
+            custom_map = True
+            if self.current_map_index != map_index:
+                self.current_map_index = map_index                       
+                self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)                                                   
+        if map_index == -1 and self.current_map_index != None:  
+            self.current_map_index = None
+            self.append_output("SETCHARMAP main")
         values = []
         text = ''
-
-        for address in range(start_address, end_address):
+        address = start_address - 1        
+        while(address < end_address-1):
+            address += 1   
             mem_address = rom_address_to_mem_address(address)
-
+        
             labels = self.get_labels_for_non_code_address(mem_address)
             if len(labels):
                 # add any existing values to the output and reset the list
@@ -674,24 +735,48 @@ class Bank:
                 self.append_labels_to_output(labels)
 
             byte = rom.data[address]
-            if byte >= 0x20 and byte < 0x7F:
-                
-                if chr(byte) in {'"', '\\', '{', '}'}:
-                    text += '\\'
-
-                text += chr(byte)
+            if custom_map:
+                key = None
+                character_map = rom.character_maps[self.current_map_index]
+                #check for multi length character mapping
+                for length in range(character_map.max_length, 1,-1):                    
+                    if address + length-1 > end_address: 
+                        continue                  
+                    to_check = tuple(list(rom.data[address: address+length]))                                        
+                    if to_check in character_map.character_map:
+                        key = to_check
+                        break            
+                if key == None:
+                    if byte in character_map.character_map:
+                        key = byte
+                if key != None:
+                    text += character_map.character_map[key]
+                    if isinstance(key, tuple):
+                        address += len(key)-1
+                else:
+                   
+                    if len(text):
+                        values.append('"{}"'.format(text))
+                        text = ''
+                    values.append(hex_byte(byte))
             else:
-                if len(text):
-                    values.append('"{}"'.format(text))
-                    text = ''
-                values.append(hex_byte(byte))
+                if byte >= 0x20 and byte < 0x7F:
+                    if byte in special_characters:
+                        character = special_characters[byte]
+                    else:
+                        character = chr(byte)
+                    text += character
+                else:
+                    if len(text):
+                        values.append('"{}"'.format(text))
+                        text = ''
+                    values.append(hex_byte(byte))
 
         if len(text):
             values.append('"{}"'.format(text))
 
         if len(values):
             self.append_output(self.format_data(values))
-
     def process_image_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting image in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
@@ -818,13 +903,14 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, style, tiny):
+    def __init__(self, rom_path, style, tiny, character_maps):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
+        self.character_maps = character_maps        
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -849,7 +935,8 @@ class ROM:
     def load(self, tiny):
         if os.path.isfile(self.rom_path):
             print('Loading "{}"...'.format(self.rom_path))
-            self.data = open(self.rom_path, 'rb').read()
+            with open(self.rom_path, 'rb') as f:
+                self.data = f.read()
             self.rom_size = len(self.data)
             if self.rom_size < 0x150:
                 abort("ROM is too small, doesn't even contain a header!")
@@ -938,6 +1025,7 @@ class ROM:
             self.write_bank_asm(bank)
 
         self.copy_hardware_inc()
+        self.copy_charater_map()
         self.write_game_asm()
         self.write_makefile()
 
@@ -955,7 +1043,7 @@ class ROM:
             print('.', end='', flush=True)
 
         path = os.path.join(self.output_directory, 'bank_{0:03x}.asm'.format(bank))
-        f = open(path, 'w')
+        f = open(path, 'w', encoding="utf-8")
 
         self.write_header(f)
         f.write(self.banks[bank].disassemble(rom))
@@ -974,19 +1062,28 @@ class ROM:
         src = os.path.join(self.script_dir, 'hardware.inc')
         dest = os.path.join(self.output_directory, 'hardware.inc')
         copyfile(src, dest)
-
-
+    def get_character_map_paths(self):
+        return list(set([p.path for p in self.character_maps]))
+    def copy_charater_map(self):
+        paths = self.get_character_map_paths()
+        for src in paths:
+            dest =  os.path.join(self.output_directory, os.path.basename(src))
+            copyfile(src, dest)
     def write_game_asm(self):
         path = os.path.join(self.output_directory, 'game.asm')
-        f = open(path, 'w')
+        f = open(path, 'w', encoding="utf-8")
 
         self.write_header(f)
 
         f.write('INCLUDE "hardware.inc"')
+        character_maps = self.get_character_map_paths()
+        if(len(character_maps) > 0):
+            for map in character_maps:
+                f.write('\nINCLUDE "{}"'.format(os.path.basename(map)))
+            f.write('\nSETCHARMAP main')
         for bank in range(0, self.num_banks):
             f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
         f.close()
-
 
     def write_image(self, basename, arguments, data):
 
@@ -1118,7 +1215,7 @@ class ROM:
         f.write('all: game.{}\n\n'.format(rom_extension))
 
         f.write('%.2bpp: %.png\n')
-        f.write('\trgbgfx -o $@ $<\n\n')
+        f.write('\trgbgfx --colors embedded -o $@ $<\n\n')
 
         f.write('%.1bpp: %.png\n')
         f.write('\trgbgfx -d 1 -o $@ $<\n\n')
@@ -1128,12 +1225,7 @@ class ROM:
         else:
             f.write('game.o: game.asm bank_*.asm\n')
 
-        parameters = ['--preserve-ld']
-        if self.style['disable_halt_nops']:
-            parameters.append('--halt-without-nop')
-        else:
-            parameters.append('--nop-after-halt')
-        f.write('\trgbasm {} -o game.o game.asm\n\n'.format(' '.join(parameters)))
+        f.write('\trgbasm -o game.o game.asm\n\n')
 
         f.write('game.{}: game.o\n'.format(rom_extension))
         if self.tiny:
@@ -1149,12 +1241,55 @@ class ROM:
 
         f.close()
 
-
+class CharacterMap():
+    def __init__(self, name, path):
+        self.name = name        
+        self.path = path
+        self.character_map = {}
+        self.max_length = 1
+    def read_number(number_string):
+        number_string = number_string.strip()
+        if number_string.startswith("$"):
+            return int(number_string[1:].replace("_", ""), 16)
+        else:
+            return int(number_string)
+    def create_character_maps(file_path :str):
+        lines = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        maps = []
+        new_map = None
+        for line in lines:
+            line = line.strip()
+            mapSearch = re.match(r"newcharmap", line, re.IGNORECASE)
+            if mapSearch is not None:
+                if new_map != None: 
+                    maps.append(new_map)
+                    if debug:
+                        print("Loaded character map: "+new_map.name)
+                        print("Mappings:")
+                        print(new_map.character_map)
+                new_map = CharacterMap(line[mapSearch.end():].strip(), file_path)                               
+            else:
+                mapSearch = re.search('[ \t]*charmap[ \t]*"((?:[^"]|\\")+)",[ \t]*([^;]+)', line, re.IGNORECASE)
+                if(mapSearch == None): continue               
+                mapping = mapSearch[1].rsplit('"', 1)[0]              
+                ints = mapSearch[2].strip().split(",")
+                if(len(ints) == 1):
+                    key = CharacterMap.read_number(ints[0])
+                else:
+                    key = tuple(CharacterMap.read_number(i) for i in ints)
+                    if len(key) > new_map.max_length:
+                        new_map.max_length = len(key)
+                new_map.character_map[key] = mapping
+        maps.append(new_map)
+        return maps
 
 app_name = 'mgbdis v{version} - Game Boy ROM disassembler by {author}.'.format(version=__version__, author=__author__)
 parser = argparse.ArgumentParser(description=app_name)
 parser.add_argument('rom_path', help='Game Boy (Color) ROM file to disassemble')
 parser.add_argument('--output-dir', default='disassembly', help='Directory to write the files into. Defaults to "disassembly"', action='store')
+parser.add_argument('--character-map-path', help='ASM file containing character map(s) for use with data labeled .text:cm=<index>', action='store')
 parser.add_argument('--uppercase-hex', help='Print hexadecimal numbers using uppercase characters', action='store_true')
 parser.add_argument('--print-hex', help='Print the hexadecimal representation next to the opcodes', action='store_true')
 parser.add_argument('--align-operands', help='Format the instruction operands to align them vertically', action='store_true')
@@ -1162,9 +1297,8 @@ parser.add_argument('--indent-spaces', help='Number of spaces to use to indent i
 parser.add_argument('--indent-tabs', help='Use tabs for indenting instructions', action='store_true')
 parser.add_argument('--uppercase-db', help='Use uppercase for DB data declarations', action='store_true')
 parser.add_argument('--hli', help='Mnemonic to use for \'ld [hl+], a\' type instructions.', type=str, default='hl+', choices=['hl+', 'hli', 'ldi'])
-parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [a8], a\' type instructions.', type=str, default='ldh_a8', choices=['ldh_a8', 'ldh_ffa8', 'ld_ff00_a8'])
-parser.add_argument('--ld_c', help='Mnemonic to use for \'ld [c], a\' type instructions.', type=str, default='ld_c', choices=['ld_c', 'ldh_c', 'ld_ff00_c'])
-parser.add_argument('--disable-halt-nops', help='Disable RGBDS\'s automatic insertion of \'nop\' instructions after \'halt\' instructions.', action='store_true')
+parser.add_argument('--ldh_a8', help='Mnemonic to use for \'ldh [ffa8], a\' type instructions.', type=str, default='ldh_ffa8', choices=['ldh_ffa8', 'ld_ff00_a8'])
+parser.add_argument('--ld_c', help='Mnemonic to use for \'ldh [c], a\' type instructions.', type=str, default='ldh_c', choices=['ldh_c', 'ld_ff00_c'])
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
@@ -1181,9 +1315,10 @@ style = {
     'hli': args.hli,
     'ldh_a8': args.ldh_a8,
     'ld_c': args.ld_c,
-    'disable_halt_nops': args.disable_halt_nops,
 }
 instructions = apply_style_to_instructions(style, instructions)
-
-rom = ROM(args.rom_path, style, args.tiny)
+charMap = []
+if args.character_map_path is not None:
+    charMap = CharacterMap.create_character_maps(args.character_map_path)
+rom = ROM(args.rom_path, style, args.tiny, charMap)
 rom.disassemble(args.output_dir)
