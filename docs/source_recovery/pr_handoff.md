@@ -232,6 +232,19 @@ independent API billing record.
 - `origin/master` was merged before publication to resolve the only detected
   dry-merge conflict.
 
+## PR Creation Log
+
+- A fork was created at `koriym/mgbdis` because the local authenticated account
+  had read-only permission on upstream `mattcurrie/mgbdis`.
+- The branch `codex/yoshi-recovery-review-stack` was pushed to that fork.
+- Creating the PR through the GitHub connector failed with `403 Resource not
+  accessible by integration`, so publication fell back to `gh pr create`.
+- The first `gh pr create` command had a shell quoting error while building the
+  temporary body file. It still created the draft PR, but with an empty body.
+- The PR body was immediately repaired with `gh pr edit --body-file`.
+- GitHub reported no checks on the head branch immediately after creation.
+  Local validation remains the verification source recorded above.
+
 ## Recommended Reviewer Focus
 
 - Confirm that `Yoshi/yoshi.gb` is an acceptable tracked baseline ROM for this
