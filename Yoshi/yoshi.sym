@@ -5,419 +5,1058 @@
 ; Bank 0: System & Game Logic ($0000-$3FFF)
 ; ============================================================
 
-; --- Data Tables ---
-00:0068 PositionTable
+; --- Reset Vectors ---
+00:0000 RST_00
+00:0008 RST_08
+00:0010 RST_10
+00:0018 RST_18
+00:0020 RST_20
+00:0028 RST_28
+00:0030 RST_30
+00:0038 RST_38
+
+; --- Interrupt Vectors ---
+00:0040 VBlankInterrupt
+00:0048 LCDCInterrupt
+00:0050 TimerOverflowInterrupt
+00:0058 SerialTransferCompleteInterrupt
+00:0060 JoypadTransitionInterrupt
+00:0000 .code:68
+
+; --- Interrupt Vector Padding ---
+00:0068 UnusedInterruptVectorPadding
 00:0068 .data:98
 
-; --- Entry Point ---
+; --- Entry Point And Cartridge Header ---
 00:0100 EntryPoint
+00:0104 HeaderLogo
+00:0134 HeaderTitle
+00:0144 HeaderNewLicenseeCode
+00:0146 HeaderSGBFlag
+00:0147 HeaderCartridgeType
+00:0148 HeaderROMSize
+00:0149 HeaderRAMSize
+00:014a HeaderDestinationCode
+00:014b HeaderOldLicenseeCode
+00:014c HeaderMaskROMVersion
+00:014d HeaderComplementCheck
+00:014e HeaderGlobalChecksum
+00:0104 .data:4c
 
 ; --- Joypad ---
 00:0150 ReadJoypad
 00:015a ReadJoypadButtons
+00:019d ResetJoypadStateAndReinitOnRelease
+00:01a0 WaitJoypadLinesReleasedLoop
 00:01b3 JoypadStuckCheck
 
 ; --- OAM DMA ---
 00:01ba SetupOAMDMA
+00:01c1 CopyOAMDMARoutineToHRAMLoop
 00:01c3 OAMDMACopyLoop
 00:01c8 OAMDMARoutine
-00:01c8 .data:a
+00:01ce WaitOAMDMATransfer
+00:01c8 .code:a
 
 ; --- LCD Control ---
 00:01d2 LCDOff
+00:01d9 WaitForLCDOffSafeLine
+00:01e3 StoreDisabledLCDCAndRestoreIE
 00:01e9 LCDOn
 
 ; --- OAM ---
 00:01f0 ClearOAM
+00:01f6 ClearShadowOamLoop
 00:01fb HideAllSprites
+00:0205 HideShadowOamSpritesLoop
 
 ; --- Memory ---
 00:020b Memcopy
 00:0214 MemcopyCall
+00:0218 CopyBytesDuplicatedLoop
 
 ; --- VRAM Copy ---
 00:0223 VRAMCopySetup
+00:022f VRAMCopyNextChunk
 00:0230 VRAMCopyExec
+00:023a VRAMCopyFullChunk
+00:0247 UnusedVRAMCopy2Setup
+00:0253 UnusedVRAMCopy2NextChunk
+00:025e UnusedVRAMCopy2FullChunk
 
 ; --- Main Loop / State Machine ---
 00:026b StateInit
 00:0277 MainLoop
+00:02cb DispatchTitleMenuState
+00:02d3 DispatchPlaySetupState
+00:02f2 PlaySinglePlayerSelectedBgm
+00:02f8 InitPlayfieldAfterBgmSetup
+00:0302 DispatchPlayingState
+00:030e DispatchRoundEndState
+00:0317 DispatchPreplayLoopState
+00:0320 DispatchPreplayInitState
+00:0352 IgnoreInvalidGameStateAndLoop
 00:0355 AdvanceState
+00:0358 StoreGameStateAndLoop
 
 ; --- Graphics Loading ---
 00:035d LoadGameTiles
+00:039f RestoreMainBankAfterGameTileLoad
 
 ; --- Pause ---
 00:03a5 HandlePause
+00:03b1 CheckPauseAllowedForLinkMaster
+00:03b5 CheckPauseButtonInput
+00:03bd WaitPauseResumeInputLoop
 00:03ca PauseGame
+00:03da PlayPauseSoundAndHalt
 00:03e4 DrawPauseOverlay
 00:03f1 UnpauseGame
 00:03fe CheckPause2P
-00:0421 PauseSpriteData
+00:0411 WaitLinkPeerUnpauseLoop
+00:0421 PauseOverlayOamTemplate
 00:0421 .data:20
 
 ; --- Initialization ---
 00:0441 Init
+00:047e CheckPersistMagicByte1
+00:048e UseFullWRAMClear
+00:0490 BeginWRAMClear
+00:0497 ClearWRAMLoop
+00:04a7 ClearWRAMByte
 00:04c2 ClearVRAM
+00:04c5 ClearVRAMLoop
+00:04d1 ClearHRAMWorkAreaLoop
 00:04fc StartGame
 
-; --- OAM Buffer Fill ---
-00:050d FillOAMGameTile
-00:0511 FillOAMTitleTile
+; --- BG Map Shadow Fill ---
+00:050d FillGameTilemap
+00:0511 FillTitleTilemap
+00:0513 BeginBgMapShadowFill
+00:051a FillBgMapShadowLoop
 
 ; --- Grid/Tile Utilities ---
-00:0535 CalcOAMAddress
+00:0535 CalcTilemapAddress
+00:0544 AddTilemapColumnOffset
+00:0548 AddBgMapShadowBaseLow
+00:054d StoreCalculatedTilemapAddressLow
 00:054f FillTilemap
+00:0554 BeginHardwareTilemapFill
+00:0558 FillHardwareTilemapLoop
 
 ; --- Sound ---
 00:0560 PlaySound
 
 ; --- Math ---
 00:056a Multiply
+00:0582 MultiplyShiftMultiplierLoop
+00:05a6 AddShiftedMultiplicandToProduct
 00:05b0 MultiplyAddStep
+00:05b1 MultiplyAddCarryChain
+00:05bb ShiftMultiplicandForNextBit
 00:05cb MultiplyAndCount
+00:05d1 CountMaskedMultiplyBitsLoop
+00:05d6 ContinueMaskedMultiplyBitCount
 
 ; --- Sprite Object System ---
 00:05da UpdateSpriteObject
-00:0627 GetSpriteDataOffset1
-00:0637 GetSpriteDataOffset2
-00:0645 CopySprite4Bytes
-00:0652 CopySprite4BytesCond
+00:0606 TickSpriteObjectWaitPhase
+00:0617 WriteBackSpriteObjectStaging
+00:0627 GetColumnSpritePatternOffset
+00:0637 GetGridPiecePatternOffset
+00:0645 CopyTilePatternRow4
+00:0652 CopyEncodedTilePatternRow4SkipFF
+00:0658 AdvanceAfterConditionalSpriteByte0
+00:065f AdvanceAfterConditionalSpriteByte1
+00:0666 AdvanceAfterConditionalSpriteByte2
+00:066d ReturnAfterConditionalSpriteBytes
 00:066e DrawColumnSprite
+00:0680 ReadColumnTopRowForSprite
+00:0699 UnreachedColumnSpriteAlternateRowFragment
+00:06a8 UnreachedColumnSpriteWrapRow
+00:06b7 UnreachedColumnSpriteContinueAtRow1
+00:06b9 DrawColumnSpriteRow0
+00:06c3 DrawColumnSpriteRow1
+00:06cd DrawColumnSpriteRow2
 00:06d1 DrawGridPiece
+00:06d9 DrawGridPieceWithinBounds
+00:06ea DrawGridPieceSecondRow
 00:06ee ClearColumnLeft
+00:06f5 ClearColumnLeftLoop
+00:0700 ClearColumnLeftNextTilemapPage
+00:0703 ReturnFromClearColumnLeft
 00:0706 ClearColumnRight
+00:0710 ClearColumnRightLoop
+00:071e ReturnFromClearColumnRight
 00:0721 DrawAllColumns
+00:0728 DrawAllColumnsColumnLoop
+00:072c DrawAllColumnsRowLoop
+00:0742 AdvanceDrawAllColumnsColumn
 00:074a AnimateDropping
+00:0767 BeginDropDownCascade
+00:0769 AnimateDropDownCascadeLoop
+00:078a CheckDropDownCascadeEnd
+00:0790 AdvanceDropDownCascadeSlot
+00:07a8 BeginDropUpCascade
+00:07aa AnimateDropUpCascadeLoop
+00:07cb CheckDropUpCascadeEnd
+00:07d5 AdvanceDropUpCascadeSlot
+00:07de FinishDropCascadeAndSwapColumns
+00:07e9 BeginDropAnimationColumnSwap
+00:07eb SwapDropAnimationColumnCellsLoop
+00:0802 SwapColumnTopRowsAfterDrop
 
 ; --- Collision Detection ---
-00:080b CheckCollisionDown
-00:081b CheckCollisionUp
-00:082a CheckCollisionCore
-00:0858 CheckSpriteOverlap
+00:080b CheckDropDownCollisionAndNudge
+00:081b CheckDropUpCollisionAndNudge
+00:082a CheckDropCollisionAgainstActiveObjects
+00:083e ScanDropCollisionSpriteSlotsLoop
+00:084f SkipInactiveDropCollisionSlot
+00:0851 AdvanceDropCollisionSlot
+00:0858 CheckDropSpriteOverlap
+00:0864 ReturnDropCollisionDetected
 
 ; --- Animation ---
 00:0867 UpdateDropPositions
+00:086c UpdateDropPositionsLoop
+00:0877 AdvanceDropPositionSlot
 00:087f CalcGridPosition
 00:0896 AnimateDropDown
+00:08ab RedrawDropDownState1
+00:08b4 ReturnFromDropDownState1
+00:08b5 CheckDropDownState2
+00:08c9 RedrawDropDownState2
+00:08d2 ReturnFromDropDownState2
+00:08d3 CheckDropDownState3
+00:08e6 RedrawDropDownState3
+00:08ef ReturnFromDropDownState3
+00:08f0 HandleDropDownFinalState
+00:0902 RedrawDropDownFinalState
 00:090c AnimateDropUp
-00:0999 ClearAnimState
-00:09a4 StartDropAnim
+00:091d RedrawDropUpState1
+00:0927 CheckDropUpState2
+00:0939 RedrawDropUpState2
+00:0943 CheckDropUpState3
+00:095c HandleDropUpState3Boundary
+00:0968 DrawDropUpState3Piece
+00:096d HandleDropUpFinalState
+00:0988 HandleDropUpFinalBoundary
+00:0994 DrawDropUpFinalPiece
+00:0999 ClearDropAnimationState
+00:099f ClearDropAnimationStateLoop
+00:09a4 StartDropColumnSwapAnimation
+00:09c6 ReturnFromStartDropColumnSwapAnimation
+00:09c8 UnusedFillBoardDataPattern
+00:09d1 UnusedBoardPatternColumnLoop
+00:09d5 ClearUnusedBoardPatternLeadingBytes
+00:09e1 FillUnusedBoardPatternIndexBytes
+00:09e5 StoreUnusedBoardPatternTailByte
 
 ; --- Blink Animation ---
+00:09f4 UpdateColumnBlinkState
+00:0a03 BeginColumnBlinkSlotScan
+00:0a0b ColumnBlinkSlotLoop
+00:0a1b TickColumnBlinkSlotTimer
+00:0a21 ToggleColumnBlinkSlotFrame
+00:0a2c SetColumnBlinkFrame1
+00:0a2e DrawColumnBlinkSlot
+00:0a38 AdvanceColumnBlinkSlot
 00:0a3e InitBlinkState
 
 ; --- Sprite Data Tables ---
-00:0a4d SpritePatternTable1
-00:0a4d .data:48
-00:0a95 SpritePatternTable2
-00:0a95 .data:70
+00:0a4d GridPiecePatternTable
+00:0a4d .data:8
+00:0a55 GridPiecePatternPiece1
+00:0a55 .data:8
+00:0a5d GridPiecePatternPiece2
+00:0a5d .data:8
+00:0a65 GridPiecePatternPiece3
+00:0a65 .data:8
+00:0a6d GridPiecePatternPiece4
+00:0a6d .data:8
+00:0a75 GridPiecePatternPiece5
+00:0a75 .data:8
+00:0a7d GridPiecePatternPiece6
+00:0a7d .data:8
+00:0a85 GridPiecePatternScanTrigger
+00:0a85 .data:8
+00:0a8d GridPiecePatternScanTarget
+00:0a8d .data:8
+00:0a95 ColumnSpritePatternTable
+00:0a95 .data:c
+00:0aa1 ColumnSpritePatternFrame2Column1
+00:0aa1 .data:c
+00:0aad ColumnSpritePatternFrame2Column2
+00:0aad .data:c
+00:0ab9 ColumnSpritePatternFrame2Column3
+00:0ab9 .data:c
+00:0ac5 ColumnSpritePatternFrame1Block
+00:0ac5 .data:c
+00:0ad1 ColumnSpritePatternFrame1Column1
+00:0ad1 .data:c
+00:0add ColumnSpritePatternFrame1Column2
+00:0add .data:c
+00:0ae9 ColumnSpritePatternFrame1Column3
+00:0ae9 .data:c
+00:0af5 UnreachedColumnSpritePatternTailRows
+00:0af5 .data:10
 
 ; --- Game State Init ---
 00:0b05 InitGameState
-00:0b50 InitGameState2
-00:0b7a InitGameBoard
+00:0b1b InitSinglePlayerLevelSpeedSettings
+00:0b33 InitTwoPlayerLevelSpeedSettings
+00:0b50 UpdateDropCursorAnimation
+00:0b67 AdvanceDropCursorAltFrame
+00:0b6d StoreAdvancedDropCursorFrame
+00:0b75 StopDropCursorFrameAnimation
+00:0b7a InitDropCursorAnimationState
 
 ; --- Game Data Tables ---
-00:0b83 LevelCountTable
+00:0b83 BTypeColumnTopRowSeedTable
 00:0b83 .data:5
-00:0b88 LevelThresholds
+00:0b88 GameTurnLevelStartIndexTable
 00:0b88 .data:5
+00:0b8d GameTurnParamTable
+00:0b8d .data:348
 
 ; --- Game Logic ---
-00:0c40 GameTurnTable
-00:0c40 .data:295
+00:0c40 GameTurnParamTableContinuation
 00:0ed5 ProcessMatching
+00:0edb StoreMatchingStateAndLoadGraphics
+00:0f4b FillMatchingMiddleOamTileIdsLoop
+00:0f6a MatchingIntroScrollBlinkLoop
+00:0f78 SelectMatchingIntroBlinkTile
+00:0f80 DrawMatchingIntroBlinkBlock
+00:0f95 WaitMatchingIntroScrollFrame
+00:0fb8 ResultPanelScrollBlinkLoop
+00:0fc6 SelectResultPanelBlinkTile
+00:0fce DrawResultPanelBlinkBlock
+00:102a SlideMatchingTopOamRightLoop
+00:103a SlideMatchingOamTogetherLeftLoop
+00:1040 ShiftMatchingMiddleOamLeftLoop
+00:106e FillResultMainPanelRightEdgeLoop
+00:10bb LoadMatchingFinalOamTileBase
+00:10cc MoveMatchingFinalOamUpLoop
 
-; --- Score / Level ---
-00:10de UpdateScore
-00:1108 UpdateLevel
+; --- Matching Result Stats ---
+00:10de ApplyMatchingScoreBonusAndWait
+00:10f8 WaitMatchingScoreSoundEndLoop
+00:1108 DrawMatchingResultStats
+00:111b DrawResultScoreDigitsLoop
+00:117c MatchingOamTemplateTop
+00:1184 MatchingOamTemplateMiddle
+00:1194 MatchingOamTemplateFinal
+00:119c MatchingScoreBonusTable
+00:11d4 MatchingTileBaseIndexTable
+00:11f0 UnusedDrawVerticalTilePairUnlessFF
 
 ; --- Drawing Functions ---
-00:1203 DrawNumber
-00:120e DrawDigit
-00:1220 DrawString
-00:1227 DrawCharacter
+00:1203 ShiftMatchingOamPairX
+00:120e ReloadGameTilesAndRequestRedraw
+00:1220 WaitVBlankFrames
+00:1227 FillBytesWithD
 00:122f FillRect
-00:1240 FillRectAlt
-00:124a DrawBox
+00:1232 FillRectRowLoop
+00:1234 FillRectColumnLoop
+00:1240 WaitAnyButtonPress
+00:124a UpdateGameplayObjectsAndCheckBTypeClear
+00:124d UpdateGameplayObjectSlotsLoop
+00:126e CheckBTypeColumnClearLoop
+00:128b ProcessBTypeClearRoundResult
+00:1290 TickFallTimerForActiveGameplayObjects
 
-; --- Number Display ---
-00:1294 DisplayScore
-00:12b3 DisplayLevel
-00:12cd DisplayLines
-00:12e3 DisplaySpeed
+; --- Gameplay Update ---
+00:1294 UpdatePieceFallTimer
+00:12ac ReloadPieceFallTimer
+00:12b3 UpdatePieceDisplayByGameType
+00:12bd RunBTypePieceDisplayUpdate
+00:12cd CheckGameplayObjectSlotsActive
+00:12d2 ScanGameplayObjectSlotsLoop
+00:12e0 ReturnGameplayObjectsActive
+00:12e3 UpdateFallAcceleration
+00:12f5 ReloadFallAccelTimerForLowLevel
+00:12f9 UnreachableReloadFallAccelTimerForLevel3
+00:12fd ReloadFallAccelTimerForHighLevel
+00:1301 StoreFallAccelTimerReload
 
-; --- Game Rules ---
-00:130c CheckMatch
-00:13a8 CheckVerticalMatch
-00:13b8 CheckHorizontalMatch
-00:13c5 ProcessMatch
-00:13d5 ClearMatchedPieces
-00:13e2 UpdateMatchState
+; --- Game Rules / Piece Display Shuffle ---
+00:130c HandlePlayfieldInput
+00:1317 CheckDropStartInput
+00:1341 HandleCursorMoveOrFastFall
+00:1355 MovePlayerCursorRight
+00:1361 MovePlayerCursorLeft
+00:136d CheckFastFallActiveSlots
+00:138a ClampFastFallTimers
+00:1394 ClampGameplayObjectFastFallTimers
+00:1399 ClampGameplayObjectFastFallLoop
+00:13a0 AdvanceFastFallClampSlot
+00:13a8 ShufflePieceDisplaySlotOrder
+00:13b8 SelectPieceDisplaySlotOrderEntry
+00:13c5 ShufflePieceDisplayCodePool
+00:13d5 SelectPieceDisplayCodePoolEntry
+00:13e2 UpdateFallingPieceMotionAndLanding
+00:13f6 AdvanceFallingPiecePosition
+00:140f HandleFallingPieceReachedColumn
+00:1429 DrawLandedPieceAndUpdateColumnTop
+00:145d ProcessSinglePlayerGameOverResult
+00:1463 ClearLandedGameplayObject
+00:1465 UnreachedClearLandedGameplayObjectPop
 
 ; --- Piece Movement ---
-00:1466 MovePieceDown
-00:1477 MovePieceUp
-00:1484 MovePieceLeft
-00:14a9 MovePieceRight
+00:1466 ClearCurrentGameplaySpriteObjectRecord
+00:1472 ClearGameplayObjectRecordLoop
+00:1477 GetSelectedColumnTopRow
+00:1481 ReadSelectedColumnTopRowEntry
+00:1484 StagePiecePayloadInSelectedColumn
+00:14a0 StoreStagedPayloadInBoardColumn
+00:14a9 ClearPieceSpriteObjectSlots
+00:14af ClearPieceSpriteObjectSlotsLoop
 00:14b4 GetArrayElement
-00:14bb SetArrayElement
-00:14bf ValidatePosition
+00:14b8 ReadArrayElementAtOffset
+00:14bb InitATypeGameTurnPieceDisplay
+00:14bf InitBTypeFallTimingAndBoardSeed
+00:14d2 LoadUnhalvedBTypeFallDelay
+00:14d8 InitBTypeBoardSeed
+00:1500 InitFallAccelTimerForLevel3
+00:1504 InitFallAccelTimerForHighLevel
+00:1506 StoreInitialFallAccelTimer
 
 ; --- Piece Generation ---
-00:1508 GenerateNextPiece
-00:1513 GetRandomPiece
-00:1520 ShuffleRandom
+00:1508 ClearBoardData
+00:150d ClearBoardDataLoop
+00:1513 SeedColumnTopRows
+00:151b SeedColumnTopRowsLoop
+00:1520 InitPieceDisplaySlotOrder
 
 ; --- Input Processing ---
-00:152f ProcessInput
-00:153c ProcessInputGame
-00:1549 ProcessInputTitle
-00:1581 RotatePiece
-00:1595 DropPiece
-00:15ab HandleDrop
-00:15ee ProcessFalling
+00:152f InitPieceDisplayCodePool
+00:1536 InitPieceDisplayCodePoolLoop
+00:153c FillInitialBoardWithVBlankWait
+00:1543 WaitInitialBoardFillVBlankLoop
+00:1549 FillInitialBoardColumns
+00:155e FillInitialBoardColumnLoop
+00:1560 FillInitialBoardCellLoop
+00:1581 AvoidInitialBoardAdjacentDuplicate
+00:158f ReturnInitialBoardPieceCandidate
+00:1593 ReturnIncrementedInitialBoardPiece
+00:1595 ClearRoundLandingAndResultState
+00:15ab InitPlayfieldBoardAndPieceState
+00:15d0 InitBTypePlayfieldBoardAndDisplay
+00:15e8 SetPlayfieldCursorSlotType
+00:15ee GetLevelFallDelay
+00:15fa ReadLevelFallDelayTable
+00:15fe LevelFallDelayTable
 
 ; --- Board Management ---
-00:1655 UpdateBoard
-00:168f ScanBoard
+00:1612 HandleMatchedLandingScanState
+00:162a CommitFallingPieceToBoard
+00:1655 SpawnFieldColumnEffect
+00:168f RunBoardScanTriggerSequence
+00:16c7 StoreBoardScanDistanceRewardIndex
+00:16cb DrawBoardScanAnimation
+00:16d9 BoardScanAnimationStepLoop
+00:16f1 DrawBoardScanTriggerPayload
+00:1708 SendBoardScanStepFrames
 
 ; --- Timer / Speed ---
-00:173a UpdateFallTimer
-00:1758 GetFallSpeed
-00:1771 UpdateTimer
+00:173a FindBoardScanTargetRow
+00:1746 FindBoardScanTargetRowLoop
+00:1754 ReturnNoBoardScanTarget
+00:1756 ReturnBoardScanTargetRow
+00:1758 ReadBoardCellAtColumnRow
+00:1768 StoreBoardColumnBaseLow
+00:176e ReadBoardCellAtComputedAddress
+00:1771 RunBoardScanRoundTransition
 
 ; --- 2-Player Logic ---
-00:17c5 Process2Player
+00:17c5 SendRoundTransitionPreFrame1
+00:17d6 InitRoundCompleteTileSlotsLoop
+00:181a SendRoundTransitionFrameLoop
+00:1846 PlayRoundTransitionDefaultSound
+00:184b ApplyBoardScanRewardScoreAndEggCount
 00:1875 Send2PData
+00:18af AbortSend2PDataFrames
 
 ; --- Piece Landing ---
-00:18bb HandlePieceLanding
+00:18bb FinishBoardScanNoTargetLanding
 
 ; --- Results ---
-00:18b6 ShowResults
-00:18e4 CalcResults
-00:18e8 DisplayResults
+00:18b6 DecrementPieceDisplayRemaining
+00:18cb BoardScanTransitionFrameLimitTable
+00:18d2 BoardScanRewardScoreDeltaTable
+00:18e4 BuildPieceDisplayObjects
+00:18e8 BuildPieceDisplayStatesForCount
+00:18f6 InitPieceDisplayStateBuild
+00:18fb ClearPieceDisplayStatesLoop
+00:1902 BuildPieceDisplayStatesLoop
 
-; --- Game Over ---
-00:1935 CheckGameOver
-00:1950 HandleGameOver
-00:1963 DrawGameOver
-00:196f AnimateGameOver
-00:1994 GameOverSequence
+; --- Piece Display Objects ---
+00:1935 ApplyFirstForcedPieceDisplayState
+00:1943 FindFirstForcedPieceDisplayStateLoop
+00:194c StoreFirstForcedPieceDisplayState
+00:1950 BuildPieceDisplayObjectsFromStates
+00:1958 BuildPieceDisplayObjectSlotsLoop
+00:1963 InitPieceDisplayObjectFromState
+00:196f InitActivePieceDisplayObject
+00:1994 BuildGameOverPieceDisplayObjects
+00:1999 BuildGameOverPieceDisplayObjectSlotsLoop
+00:19be AdvanceGameOverPieceDisplaySlot
+00:19c3 ClearPieceDisplayObjectSlots
+00:19cc ClearPieceDisplayObjectSlotsLoop
 
-; --- Menu / Selection ---
-00:19d4 ProcessMenuLoop
-00:19c3 ProcessMenuInput
-00:1a0f UpdateMenuCursor
-00:1a45 DrawMenuCursor
-00:1a81 ProcessMenuSelection
+; --- Game Turn Piece Display ---
+00:19d4 LoadGameTurnPieceDisplayStep
+00:19fb UnreachedGameTurnDelayClamp
+00:19fd StoreGameTurnPieceDelay
+00:1a0f UpdateGameTurnPieceDisplay
+00:1a2b AdvanceGameTurnTableIndex
+00:1a3c IncrementGameTurnTableIndex
+00:1a3d ContinueAdvancedGameTurn
+00:1a45 InitGameTurnPieceDisplay
+00:1a72 UnreachedInitialGameTurnDelayClamp
+00:1a74 StoreInitialGameTurnPieceDelay
+00:1a81 SelectPieceDisplayCode
+00:1a8d CheckBTypeTimedSpecialPieceDisplayCode
+00:1aa0 UseBTypeTimedSpecialPieceDisplayCode
+00:1acc UseFirstForcedPieceDisplayCode
+00:1ae2 UseDefaultPieceDisplayCode
+00:1afb ReturnPieceDisplayCode1
+00:1afe ReturnPieceDisplayCode4
+00:1b01 ReturnPieceDisplayCode2
+00:1b04 ReturnPieceDisplayCode3
+00:1b07 ReturnPieceDisplayForcedState
+00:1b0a ReturnPieceDisplayCode8
 
 ; --- Title Screen ---
-00:1b0d InitTitleGfx
-00:1b31 DrawTitleText
-00:1b47 AnimateTitle
-00:1b69 TitleScreenLoop
-00:1b7e TitleInputHandler
-00:1b92 SelectMenuItem
+00:1b0d CountFieldOccupancyIntoUiScratch
+00:1b19 FieldOccupancyScanRowLoop
+00:1b1b FieldOccupancyScanColumnLoop
+00:1b28 AdvanceFieldOccupancyScanCell
+00:1b31 AddNonForcedPieceDisplayObjectsToUiScratch
+00:1b38 ScanPieceDisplayObjectsForUiScratchLoop
+00:1b47 AddPieceDisplayObjectToUiScratch
+00:1b58 AccumulatePieceDisplayUiScratchCount
+00:1b69 ApplyAllForcedPieceDisplayStates
+00:1b73 ApplyAllForcedPieceDisplayStatesLoop
+00:1b79 AdvanceAllForcedPieceDisplayState
+00:1b7e TickTitleLevelDisplayDigits
+00:1b92 SelectEffectivePieceDisplayCount
+00:1b9c SelectTwoPlayerPieceDisplayCount
+00:1ba6 ConsumePendingFieldRiseForDisplayCount
+00:1bbe ApplyPartialPendingFieldRise
+00:1bc8 PlayPendingFieldRiseSound
 
-; --- Text / String ---
-00:1bd0 DrawTextBox
-00:1bec DrawTextString
-00:1bfd ClearTextArea
+; --- Piece Display Blink ---
+00:1bd0 UpdatePieceDisplayBlink
+00:1bdf ScanPieceDisplayBlinkSlotsLoop
+00:1be7 AdvancePieceDisplayBlinkSlot
+00:1bec TogglePieceDisplayFrame
+00:1bfa ReturnFromTogglePieceDisplayFrame
+00:1bfd ResetPieceDisplayBlinkTimer
+
+; --- Option UI ---
 00:1c03 InitTextSystem
-00:1c0d DrawLabel
+00:1c0d DrawOptionBoxLayout
 
-; --- Palette ---
-00:1c35 SetPalette
-00:1c4f UpdatePaletteFade
+00:1c35 DrawOptionLevelValueBoxes
+00:1c4f DrawOptionTextLabels
+00:1c9e DrawOptionDecorationTilesLoop
 
 ; --- BG Map ---
-00:1cae UpdateBGMap
+00:1cae DrawOptionBoxAtCoord
+00:1cce DrawBoxSideRowsLoop
 
-; --- Config Save ---
-00:2008 SaveConfig1
-00:2012 SaveConfig2
-00:201c SaveConfig3
+; --- Option Cursor Highlight ---
+00:2008 DrawLevelCursorHighlight
+00:2012 DrawSpeedCursorHighlight
+00:201c DrawBgmCursorHighlight
+00:2026 OptionCursorLevelHighlightTileTriplets
+00:202d OptionCursorSpeedHighlightTileTriplets
+00:2034 OptionCursorBgmHighlightTileTriplets
 
-; --- Tile Data Lookup ---
-00:1cfc TileDataLookup0
-00:1d02 TileDataLookup1
-00:1d0c TileDataLookup2
-00:1d16 TileDataLookup3
-00:1d20 TileDataLookup4
-00:1d2a TileDataLookup5
-00:1d34 TileDataLookup6
-00:1d3e TileDataLookup7
-00:1d48 TileDataLookup8
-00:1d52 TileDataLookup9
-00:1d5c TileDataLookupA
-00:1d66 TileDataLookupB
-00:1d70 TileDataLookupC
-00:1d7a TileDataLookupD
+; --- Option Box Frames ---
+00:1cfc FillOptionBoxHorizontalRun
+00:1cfd FillTileRunLoop
+00:1d02 DrawOptionAGameBox
+00:1d0c DrawOptionBGameBox
+00:1d16 DrawOptionLevelPanelBox
+00:1d20 DrawOptionLevelLabelBox
+00:1d2a DrawOptionLevel0ValueBox
+00:1d34 DrawOptionLevel1ValueBox
+00:1d3e DrawOptionLevel2ValueBox
+00:1d48 DrawOptionLevel3ValueBox
+00:1d52 DrawOptionLevel4ValueBox
+00:1d5c DrawOptionSpeedPanelBox
+00:1d66 DrawOptionSpeedLabelBox
+00:1d70 DrawOptionBgmPanelBox
+00:1d7a DrawOptionBgmLabelBox
+00:1d84 OptionTextAGame
+00:1d8b OptionTextBGame
+00:1d92 OptionTextLevel
+00:1d98 OptionTextSpeed
+00:1d9e OptionTextBgm
+00:1da2 OptionTextLow
+00:1da6 OptionTextHigh
+00:1dab OptionTextOff
+00:1daf OptionMarkerPositions
 
-; --- High Score ---
-00:1dbf UpdateHighScore
+; --- Option Markers ---
+00:1dbf DrawOptionMarkers
+00:1dc4 ClearOptionMarkerPositionsLoop
+00:1de2 DrawSelectedBGameMarker
+00:1de8 DrawSelectedSpeedMarker
+00:1df6 DrawSelectedHighSpeedMarker
+00:1dfc DrawSelectedBgmMarker
+00:1e09 CheckBgmOption1Marker
+00:1e14 CheckBgmOption2Marker
+00:1e1f DrawSelectedBgmOffMarker
 
 ; --- Settings ---
-00:1e26 LoadSettings
-00:1e2c SaveSettings
+00:1e26 DrawOptionMarker
+00:1e2c DrawTileTripletList
+00:1e3d OptionCursorInactiveTileTriplets
 00:1e50 ApplySettings
+00:1e75 SettingsCursorSpriteInit0
+00:1e7c SettingsCursorSpriteInit1
+00:1e83 SettingsCursorSpriteInit2
 00:1e8a ResetSettings
 
-; --- Options Screen (State 5) ---
-00:1e93 OptionsScreen
+; --- Preplay Dispatch (State 5) ---
+00:1e93 RunPreplayLoop
+00:1eb1 WaitDetachedPreplaySerialDoneLoop
+00:1ebe SendDetachedMasterPreplayJoypad
+00:1ec7 ReadDetachedLocalPreplayJoypad
+00:1ec9 HandleDetachedPreplayInputByte
+00:1ee7 EnterDetachedPreplayPlaySetup
+00:1eef HandleDetachedPreplayNonStartInput
+00:1f00 MoveDetachedPreplayCursorDown
+00:1f09 StoreDetachedPreplayCursorDown
+00:1f10 MoveDetachedPreplayCursorUp
+00:1f1a StoreDetachedPreplayCursorUp
+00:1f21 IncrementDetachedPreplaySelectedOption
+00:1f42 RedrawIncrementedDetachedPreplayOption
+00:1f4c DetachedPreplayOptionCountTable
+00:1f50 DecrementDetachedPreplaySelectedOption
+00:1f64 RedrawDecrementedDetachedPreplayOption
 
 ; --- Game Start ---
 00:1f6e ApplyGameSettings
+00:1f81 PlayLinkMasterSettingsSound
+00:1f87 ApplySinglePlayerSettings
+00:1fa5 CheckBgmOption1Settings
+00:1fbe CheckBgmOption2Settings
+00:1fd7 ApplyBgmOffSettings
 00:1fe2 UpdateCursorDisplay
 
 ; --- UI Drawing ---
 00:203c DrawOptionValues
+00:2053 DrawOptionLevel0Value
+00:2059 DrawOptionLevel1Value
+00:205f DrawOptionLevel2Value
+00:2065 DrawOptionLevel3Value
+00:206b DrawOptionLevel4Value
 00:2071 DrawOptionLabel
-00:208b DrawOptionItem
+00:208b ReturnFromDrawOptionGameTypeLabel
+00:208c DrawBGameOptionLabel
 
 ; --- Serial Communication ---
 00:2092 SerialHandler
+00:20b3 HandleUnassignedSerialRole
 00:20c3 WaitDIVTimer
+00:20cf ClearUnassignedSerialByte
+00:20d2 FinishSerialInterrupt
 00:20db InitTitleUI
 
 ; --- Title Screen State ---
 00:2121 ResetTitleState
 00:2147 DrawStringToGrid
-00:215b InitGameVars
+00:214b CopyStringToGridLoop
+00:2154 AdvanceStringGridRow
+00:215b RunTitleMenu
 
 ; --- Multiplayer Setup ---
 00:218a StartGameplay
-00:21c5 SetupMultiplayer
-00:21d2 Setup2PField
-00:21eb SetupLinkCable
+00:21ae InitTwoPlayerPreplayScreen
+00:21b9 UseSlavePreplayInitSound
+00:21bb PlayTwoPlayerPreplayInitSound
+00:21c5 UpdateFieldAnimationSlots
+00:21d2 UpdateFieldAnimSlot11
+00:21e4 UpdateFieldAnimSlot11BaseY
+00:21eb StepFieldAnimSlot11SideDelta
+00:2201 EndFieldAnimSlot11
 
 ; --- Field Drawing ---
-00:220f DrawField1
-00:222c DrawField2
-00:224f DrawField3
-00:2268 DrawField4
-00:228c DrawFieldBorder
-00:22a6 DrawFieldTile
-00:22a9 DrawFieldRow
+00:220f UpdateFieldAnimSlot10
+00:222c StepFieldAnimSlot10SideDelta
+00:2241 EndFieldAnimSlot10
+00:224f UpdateFieldAnimSlot13
+00:2268 StepFieldAnimSlot13RowDelta
+00:227e EndFieldAnimSlot13
+00:228c UpdateFieldAnimSlot12
+00:22a6 StoreFieldAnimCoordinate
+00:22a9 StepFieldAnimSlot12RowDelta
+00:22be EndFieldAnimSlot12
+00:22cc FieldSideDeltaTable
+00:230f FieldRowDeltaTable
 
 ; --- Timer System ---
-00:2361 ResetTimers
-00:2371 UpdateTimerDisplay
+00:234c UpdateFieldTimers
+00:2351 UpdateFieldColumnTimerLoop
+00:2359 AdvanceFieldColumnTimerSlot
+00:2361 ClearExpiredFieldColumnEffect
+00:2371 ClearSpriteObjectSlot
+00:2374 ClearSpriteObjectSlotLoop
 00:2379 TimerTick
 00:237a TimerTickCore
 
-; --- Bit Processing ---
-00:23e4 ProcessBit6
-00:23ef ProcessBit5
-00:2409 ProcessBit7
+; --- Link Packet Processing ---
+00:239b SendNextLinkQueueByte
+00:23a6 AdvanceLinkSendQueueIndex
+00:23af StoreNextLinkSendQueueIndex
+00:23c3 DispatchReceivedLinkPacket
+00:23d1 DispatchReceivedLinkFieldCountPacket
+00:23d8 DispatchReceivedLinkFieldRisePacket
+00:23de HandleReceivedLinkPausePacket
+00:23e4 ProcessLinkFieldRisePacket
+00:23ef ProcessLinkResultPacket
+00:2404 QueueLinkResultPacketOutcome
+00:2409 ProcessLinkFieldCountPacket
 
-; --- Difficulty / Speed Table ---
-00:2411 SpeedTable
-00:2424 CalcDifficulty
-00:245a UpdateDifficulty
-00:24a2 UpdateGameLoop
+; --- Link Field Occupancy ---
+00:2411 DrawTwoDigitLinkFieldCount
+00:2413 CountLinkFieldTensDigitLoop
+00:241c StoreTwoDigitLinkFieldCount
+00:2424 QueueLinkFieldOccupancyCount
+00:2434 ScanLinkFieldOccupancyRow
+00:2436 ScanLinkFieldOccupancyColumn
+00:2443 AdvanceLinkFieldOccupancyColumn
+00:245a Exchange2PResultCode
+00:246a WaitForPeerResultCodePacket
+00:249d ReturnFrom2PResultCodeExchange
+00:24a2 Run2PPreplayLoop
 
-; --- Scoring ---
-00:2562 DisplayP1Score
-00:2568 DisplayP2Score
-00:257e FormatNumber
-00:258b DrawDigitSprite
-00:25ad DrawScoreDigits
-00:25e1 CalcBonus
+; --- 2P Preplay Display ---
+00:2562 Init2PPreplayBlinkTimer
+00:2568 Draw2PPreplayScreen
+00:257e Draw2PPreplayDynamicSettings
+00:258b Draw2PPreplayBackground
+00:25ad Draw2PPreplayRoleHeader
+00:25b9 Use2PPreplayRole1HeaderText
+00:25bc Draw2PPreplayRoleHeaderText
+00:25c3 ScoreHeaderTextRole1
+00:25d2 ScoreHeaderTextRoleOther
+00:25e1 Draw2PPreplaySpeedText
+00:25f6 Select2PPreplayLocalSpeedTextBySetting
+00:2601 Use2PPreplayLocalHighSpeedText
+00:2604 Draw2PPreplayLocalSpeedTextLines
+00:2618 Use2PPreplayPeerHighSpeedText
+00:261b Draw2PPreplayPeerSpeedTextLines
+00:2622 ResultTextBlock0
+00:2638 ResultTextBlock1
+00:264e ResultTextBlock2
+00:2664 Draw2PPreplayRolePanels
+00:267c Draw2PPreplayRolePanelsForSlave
+00:268d Draw2PPreplayRolePanelAtCoord
+00:26a3 Draw2PPreplayLevelLabel
+00:26aa Draw2PPreplayLevelLabelAtCoord
+00:26b7 UseSelected2PPreplayLevelLabelTiles
+00:26ba Draw2PPreplayLevelLabelTiles
+00:26be Draw2PPreplaySpeedLabel
+00:26c5 Draw2PPreplaySpeedLabelAtCoord
+00:26d3 UseSelected2PPreplaySpeedLabelTiles
+00:26d6 Draw2PPreplaySpeedLabelTiles
+00:26da Draw2PPreplayLevelText
+00:26f9 Draw2PPreplayLocalLevelText
+00:270c Select2PPreplayLocalLevelTextBySetting
+00:270e Draw2PPreplayLevelTextAtIndex
+00:2722 Draw2PPreplayLevelTextLines
+00:2734 PiecePreviewTextTable
+00:2764 PiecePreviewText1
+00:2794 PiecePreviewText2
+00:27c4 PiecePreviewText3
+00:27f4 PiecePreviewText4
+00:2824 PiecePreviewBlankText
 
-; --- Level Display ---
-00:2664 DrawLevelDisplay
-00:268d DrawSpeedDisplay
-00:26a3 DrawLinesDisplay
-00:26aa DrawStatLabel
-00:26be DrawStatValue
-00:26c5 DrawStatRow
-00:26da DrawNextPiece
-00:26f9 DrawNextPieceSprite
-00:270e DrawPreview
+; --- 2P Settings / Result Records ---
+00:2854 Exchange2PPreplaySettings
+00:2866 Start2PPreplaySettingsExchange
+00:286c Wait2PPreplaySettingsSerialDone
+00:2889 InitResultRecordsIfNeeded
+00:2890 InitATypeResultRecord0
+00:2893 InitATypeResultRecord1
+00:2896 InitATypeResultRecord2
+00:2899 InitBTypeResultRecords
+00:28a6 ProcessCurrentResultRecordAndSetupScreen
+00:28cc CopyATypeEggCountRemainingDigits
+00:28d4 CopyBTypeResultTimerDigits
+00:28e0 MaskCurrentResultRecordDigits
+00:28e5 MaskCurrentResultRecordDigitsLoop
+00:28fb BeginResultRecordInsertScan
+00:28ff ScanResultRecordInsertPositionLoop
+00:2937 CompareBTypeResultTimerDigits
+00:293e AdvanceResultRecordScanSlot
+00:294a InsertCurrentResultRecordAtRank
+00:2978 ShiftBTypeResultRecordsForInsert
+00:2996 CopyCurrentResultRecordToRankSlot
+00:29a0 SetupResultRecordScreen
+00:29fc FillResultRecordBoxBodyRows
+00:2a6b DrawBTypeResultRecordDetailLayout
+00:2a91 RenderStoredResultRecords
+00:2aa0 RenderBTypeResultRecords
+00:2aa6 WaitResultRecordScreenInput
+00:2acd BlinkResultRecordLabelLoop
+00:2ad7 DrawResultRecordLabelBlinkState
+00:2aea PollResultRecordBlinkInput
+00:2afe FillResultRecordPlaceholderColumnLoop
+00:2b05 CompareResultRecordBytes
+00:2b06 CompareResultRecordBytesLoop
+00:2b10 ReturnResultRecordByteCompare
+00:2b12 DrawStoredResultRecords
+00:2b17 DrawStoredResultRecordLoop
+00:2b3d DrawStoredBTypeResultDetail
+00:2b4e AdvanceStoredResultRecordRow
+00:2b58 DrawResultRecordDigitRun
+00:2b5b DrawResultRecordDigitRunLoop
+00:2b6e AdvanceSuppressedResultRecordDigit
+00:2b71 DrawResultRecordNonzeroDigit
+00:2b7b AdvanceResultRecordDigitRun
+00:2b85 FillResultRecordBoxRowMiddleLoop
+00:2b8c FadeInResultRecordPalette
+00:2b91 FadeInResultRecordPaletteLoop
+00:2b9d ResultRecordPaletteSequence
 
-; --- Game Field Logic ---
-00:2854 UpdateGameField
-00:2889 RefreshField
-00:28a6 ClearField
-
-; --- Drawing Utilities ---
-00:3767 FillRect3x4
-00:3779 FillRect3x2
-00:378b FillRect2x2
-00:37e0 DrawSpriteAt
-00:381a SetupDrawCharacter
-00:3824 WaitFrames
-
-; --- Menu Input ---
-00:3487 PlayConfirmSound
-00:3451 MenuInputHandler
-00:34f8 ClearSerialState
-00:354f InitAnimFrame
-
-; --- Round / Game Flow Utilities ---
-00:3524 CheckLinkMode
-00:3539 FillScoreArea1
-00:3544 FillScoreArea2
-00:3653 ShowRoundComplete
-
-; --- Round Speed ---
-00:2aa6 ApplyRoundSpeed
+; --- 2P Preplay Input ---
+00:24d9 Check2PPreplayReceivedStartHandshake
+00:24e5 Poll2PPreplayNonMasterInput
+00:24ed Enter2PPreplayPlaySetup
+00:24ff Handle2PPreplayNonStartInput
+00:2510 Move2PPreplayCursorUp
+00:251f Move2PPreplayCursorDown
+00:252f Increment2PPreplaySelectedSetting
+00:254e LinkSettingsOptionCountTable
+00:2550 Decrement2PPreplaySelectedSetting
 
 ; --- Round / Stage ---
-00:2af9 NextRound
-00:2b05 InitRound
-00:2b12 SetupRound
-00:2b58 LoadRoundData
-00:2b81 ApplyRoundSettings
-00:2b8c SetRoundSpeed
-00:2ba1 InitP1Settings
-00:2ba7 InitP2Settings
-00:2bd4 ProcessRoundEnd
-00:2bed ProcessRoundEndLoop
+00:2af9 FillResultRecordPlaceholderColumn
+00:2b81 FillResultRecordBoxRow
+00:2ba1 InitPreplayBlinkTimer
+00:2ba7 Init1PPreplayScreen
+00:2bd4 Draw1PPreplayScreen
+00:2bed Run1PPreplayLoop
+00:2c17 Handle1PPreplayNonStartInput
+00:2c28 Move1PPreplayCursorUp
+00:2c32 Move1PPreplayCursorDown
+00:2c3d Increment1PPreplaySelectedOption
+00:2c60 PreplayLoopOptionCountTable
+00:2c64 Decrement1PPreplaySelectedOption
 
-; --- Win/Lose ---
-00:2c7a CheckWinCondition
-00:2cb2 ProcessWinLose
-00:2cd7 ShowWinScreen
-00:2d01 DrawWinMessage1
-00:2d08 DrawWinMessage2
-00:2d1d DrawLoseMessage1
-00:2d24 DrawLoseMessage2
-00:2d37 DrawResultMessage1
-00:2d3e DrawResultMessage2
-00:2d53 AnimateResult
-00:2d6a ShowFinalResult
-00:2d7b WaitForRestart
-00:2db7 ProcessRestart
-
-; --- Continue Screen ---
-00:2e2e DrawContinue
-00:2e3c UpdateContinue
-00:2ec7 ContinueCountdown
-00:2ed8 DrawCountdownNum
+; --- 1P Preplay Screen ---
+00:2c7a Draw1PPreplayBackground
+00:2cb2 Draw1PPreplayHeaderText
+00:2cbc ResultHeaderText
+00:2cd7 Draw1PPreplaySpeedText
+00:2cec Select1PPreplaySpeedTextByOption
+00:2cf7 Use1PPreplayHighSpeedText
+00:2cfa Draw1PPreplaySpeedTextLines
+00:2d01 Draw1PPreplayLevelLabel
+00:2d08 Draw1PPreplayLevelLabelAtCoord
+00:2d16 UseSelected1PPreplayLevelLabelTiles
+00:2d19 Draw1PPreplayLevelLabelTiles
+00:2d1d Draw1PPreplayBgmLabel
+00:2d24 Draw1PPreplayBgmLabelAtCoord
+00:2d30 UseSelected1PPreplayBgmLabelTiles
+00:2d33 Draw1PPreplayBgmLabelTiles
+00:2d37 Draw1PPreplaySpeedLabel
+00:2d3e Draw1PPreplaySpeedLabelAtCoord
+00:2d4c UseSelected1PPreplaySpeedLabelTiles
+00:2d4f Draw1PPreplaySpeedLabelTiles
+00:2d53 Draw1PPreplayGameTypeLabel
+00:2d63 UseSelected1PPreplayGameTypeLabelTiles
+00:2d66 Draw1PPreplayGameTypeLabelTiles
+00:2d6a Draw1PPreplayLevelText
+00:2d7b Draw1PPreplayLevelTextAtIndex
+00:2d8f Select1PPreplayLevelTextByOption
+00:2da5 Draw1PPreplayLevelTextLines
+00:2db7 Draw1PPreplayGameTypeText
+00:2dcb Select1PPreplayGameTypeTextByOption
+00:2dd6 Use1PPreplayBTypeGameText
+00:2dd9 Draw1PPreplayGameTypeTextLines
+00:2de0 RestartTextBlock0
+00:2dfa RestartTextBlock1
+00:2e14 RestartTextBlock2
+00:2e2e Draw1PPreplayBgmOffText
+00:2e38 ContinueOffText
+00:2e3c Draw1PPreplayBgmMarker
+00:2e58 Select1PPreplayBgmMarkerByOption
+00:2e6b Use1PPreplayBgmMarker2Text
+00:2e70 Use1PPreplayBgmMarker0Text
+00:2e75 Use1PPreplayBgmMarker1Text
+00:2e78 Draw1PPreplayBgmMarkerText
+00:2e7c BgmMarker0Text
+00:2e87 BgmMarker1Text
+00:2e92 BgmMarker2Text
+00:2e9d BgmMarker3Text
+00:2ea8 BgmMarkerNoneText
+00:2ec0 UseSelectedDetachedPreplayLabelTiles
+00:2ec3 DrawDetachedPreplayLabelTiles
+00:2ec7 TickSettingsBlink
+00:2ed8 ClearSettingsCursorFrameHighBits
+00:2ee0 ClearSettingsCursorFrameHighBitsLoop
 00:2ee9 UpdateCountdownTimer
+00:2f09 CopyCountdownPhase0Buffer2LeftPattern
+00:2f0e CopyCountdownPhase0Buffer2LeftLoop
+00:2f27 MergeCountdownPhase0Buffer2RightPattern
+00:2f2c MergeCountdownPhase0Buffer2RightLoop
+00:2f48 CopyCountdownPhase0Buffer3Pattern
+00:2f4d CopyCountdownPhase0Buffer3Loop
+00:2f54 BuildCountdownPhase1DigitBuffers
+00:2f65 CopyCountdownPhase1Buffer1LeftPattern
+00:2f6a CopyCountdownPhase1Buffer1LeftLoop
+00:2f83 MergeCountdownPhase1Buffer1RightPattern
+00:2f88 MergeCountdownPhase1Buffer1RightLoop
+00:2fa6 CopyCountdownPhase1Buffer0Pattern
+00:2fad CopyCountdownPhase1Buffer0Loop
+00:2fb5 StoreCountdownPhase1Buffer0Row
 
 ; --- Random Number ---
 00:2fba RandomNext
+00:2fd1 BlitCountdownPhase0Buffer2Loop
+00:2fda BlitCountdownPhase0Buffer3Loop
+00:2fe2 BlitCountdownPhase1DigitBuffers
+00:2fea BlitCountdownPhase1Buffer0Loop
+00:2ff3 BlitCountdownPhase1Buffer1Loop
+00:2ffb CountdownDigitPatternTable
+00:3003 CountdownDigitPattern1
+00:300b CountdownDigitPattern2
+00:3013 CountdownDigitPattern3
+00:301b CountdownDigitPattern4
+00:3023 CountdownDigitPattern5
+00:302b CountdownDigitPattern6
+00:3033 CountdownDigitPattern7
+00:303b CountdownDigitPattern8
+00:3043 CountdownDigitPattern9
 
 ; --- Round Complete ---
 00:304b ProcessRoundComplete
+00:3053 InitRoundCompleteTileSlotsFromBaseLoop
+00:3081 DrawSinglePlayerRoundEndRanking
 00:3086 HandleRoundEnd
+00:30a1 WaitRoundEndSoundFinishedLoop
+00:30a7 ContinueRoundEndFlow
+00:30b7 WaitTwoPlayerRoundEndDelayLoop
+00:30be WaitSinglePlayerRoundEndDelay
+00:30c2 WaitSinglePlayerRoundEndDelayLoop
+00:30c7 ContinueRoundEndAfterDelay
+00:30e0 HandleSinglePlayerRoundCompleteFlow
+00:30eb HandleBTypeRoundEndFlow
+00:3100 ClearRoundEndSpriteObjectsAndRecord
+00:3107 ClearRoundEndSpriteObjectsLoop
+00:310f ReturnRoundEndToTitle
 
 ; --- Score Ranking ---
 00:311a DrawScoreRanking
-00:3145 ProcessNewHighScore
+00:3128 NormalizeRankTopTileIndex
+00:313d NormalizeRankBottomTileIndex
+00:3145 ProcessRoundResultAndEnterRoundEnd
+00:315a ClearRoundCompleteObjectSlotsLoop
+00:3183 Play2PZeroResultSound
+00:3188 Finish2PRoundResult
+00:318a HandleSinglePlayerRoundResult
+00:31a1 PlaySinglePlayerNoRankResultSound
+00:31ab EnterRoundEndState
 00:31b9 DrawRankEntry
-00:31d1 FormatRankEntry
-00:31dd CalcRankPosition
-00:31ff CheckHighScoreTable
+00:31be DrawRankEntryTileRunLoop
+00:31c4 WaitStartPressedLoop
+00:31d1 QueueRoundResult
+00:31dd ResolveResultRankPosition
+00:31e6 ResolveTwoPlayerEqualResultRank
+00:31fd ReturnSlaveEqualResultRank
 
-; --- Data: Tilemap Data ---
-00:33f7 .data:9
+; --- Link Result ---
+00:31ff UpdateLinkResultMarksAndScreen
+00:3211 IncrementLinkZeroResultMarks
+00:3218 SetTerminalLinkResultFlagIfMarkLimitReached
+00:3220 BuildLinkResultScreen
+00:3264 SkipTerminalLinkResultOverlayTiles
+00:3282 FillLinkResultLeftHeader
+00:3297 FillLinkResultRightHeader
+00:32ac FillLinkResultLeftBadge
+00:32c1 FillLinkResultRightBadge
+00:3317 DrawFilledNonzeroResultMarksLoop
+00:3328 DrawZeroResultMarksIfAny
+00:3332 DrawFilledZeroResultMarksLoop
+00:3343 DispatchLinkResultScreenMode
+00:3352 LoadZeroTerminalLinkResultSound
+00:3354 PlayTerminalLinkResultSoundAndClearResultAreas
+00:339f DrawMasterZeroTerminalLinkResult
+00:33b8 DrawNonMasterTerminalLinkResult
+00:33de DrawNonMasterZeroTerminalLinkResult
+00:33f7 WaitLinkStartConfirm
+00:33fa ContinueLinkConfirmWait
+00:340d EnsureLinkConfirmSound
+00:3417 UseLinkConfirmBaseTile
+00:3419 DrawLinkConfirmWaitPanel
+00:342e CheckLinkConfirmRole
+00:3448 WaitForPeerLinkConfirm
+00:344f ReturnLinkConfirmWithCarry
+00:3451 WaitTerminalLinkResultMenuConfirm
+00:3464 CheckTerminalLinkResultMenuConfirmRole
+00:347e WaitTerminalLinkResultPeerConfirm
+00:3487 DrawLinkResultConfirmPanelsAndWait
+00:3495 DrawLinkResultConfirmMainPanel
+00:34af DrawNonMasterConfirmDetailPanel
+00:34b9 HandleLinkResultClearConfirmOutcome
+00:34c8 HandleLinkResultGameOverConfirmOutcome
+00:34d6 DrawLinkResultConfirmStatusStrip
+00:34e1 FillLinkResultConfirmStatusStrip
+00:34f5 FillLinkResultConfirmWideScoreArea
+00:34f8 WaitLinkResultConfirmAndReloadTiles
+00:3505 WaitLinkResultMasterConfirmBeforeReload
+00:3518 WaitLinkResultPeerConfirmBeforeReload
+00:351f ReloadGameTilesAfterLinkResultConfirm
+00:3524 DrawLinkResultRoleStatusStrip
+00:352f FillLinkModeStatusStrip
+00:3539 FillLinkResultWideScoreArea
+00:3544 FillLinkResultNarrowScoreArea
+
+; --- A-Type Round Complete Summary ---
+00:354f ShowATypeRoundCompleteSummary
+00:3572 UseMaxRoundCompleteSummaryIndex
+00:3576 BuildRoundCompleteSummaryScreen
+00:358f FillRoundCompleteSummaryRowsLoop
+00:3591 FillRoundCompleteSummaryColumnsLoop
+00:35ab FillRoundCompleteSummaryHeaderLoop
+00:35e6 CheckExcellentSummaryMessage
+00:35f2 UseVeryGoodSummaryMessage
+00:35f5 CopyRoundCompleteSummaryMessage
+00:364a WaitRoundCompleteSummaryInputLoop
+00:3653 ShowRoundComplete
+00:368c PollRoundCompleteRevealInputLoop
+00:36a1 AdvanceRoundCompleteRevealPoll
+00:36b3 UseCapturedRoundCompleteInputFrame
+00:36b6 SelectRoundCompleteRevealStage
+00:36ef CheckRoundComplete200PointReveal
+00:370e CheckRoundComplete100PointReveal
+00:372a CheckRoundComplete50PointReveal
+00:3743 DrawRoundCompleteFinalTile
+00:3754 WaitAfterRoundCompleteBonusReveal
+00:3756 WaitRoundCompleteRevealFramesLoop
+00:3767 RevealRoundComplete3x4Block
+00:3779 RevealRoundComplete3x2Block
+00:378b RevealRoundComplete2x2Block
+00:3799 RoundCompleteSummaryMessageVeryGood
+00:37a5 RoundCompleteSummaryMessageExcellent
+00:37b1 RoundCompleteSummaryMessageSuperPlayer
+00:37bd RoundCompleteFinalTileTable
+00:37c4 RoundCompleteRevealThresholdTable
+00:37e0 AddScoreAndAnimateManualOamPair
+00:3802 AnimateManualOamPairUpLoop
+00:381a ClearManualOamPair
+00:3824 WaitFramesSetTransitionOnInput
+00:3835 ContinueWaitFramesAfterInputCheck
+00:3839 RoundCompleteSummaryGraphicTileData
+00:3d39 RoundCompleteSummaryTextTileData
+00:3e49 Bank0TailPaddingData
 
 ; ============================================================
 ; Bank 1: VBlank, Sprites, Sound ($4000-$7FFF)
@@ -425,145 +1064,766 @@
 
 ; --- Sprite Update ---
 01:4000 UpdateSprites
+01:400f BeginSpriteOamExpansion
+01:4011 ScanSpriteObjectSlotLoop
+01:402a LoadSpriteFramePointer
+01:4036 DrawSpriteObjectFrame
+01:4052 DrawSpriteObjectOamEntryLoop
+01:406e StoreSpriteObjectOamAttributes
+01:407b AdvanceSpriteObjectSlot
+01:408d HideUnusedShadowOamLoop
 01:4094 InitSpriteBuffer
-01:41c2 SetupSpriteAnim
-01:42c3 ProcessSpriteFrame
-01:42f5 UpdateAnimFrame
-01:4310 LoadAnimData
+01:4097 ClearSpriteObjectSlotTypesLoop
+
+; --- Sprite Frame Data ---
+01:40a0 SpriteUpdatePointerTable
+01:40ae SpriteFrameTable_SettingsCursor
+01:40fa SpriteFrameTable_PlayerCursor
+01:411a SpriteFrameTable_PieceDisplay
+01:417e SpriteFrameTable_RoundTransition
+01:41d2 SpriteFrameTable_RoundCompleteTile
+01:41e2 SpriteFrameTable_FieldColumnEffect
+01:41ea SpriteFrameTable_ReservedObject7
+01:41ee SpriteTileList_ReservedObject7
+01:41f0 SpriteLayout_ReservedObject7
+01:41f6 SpriteTileList_FieldColumnEffect
+01:41fc SpriteLayout_FieldColumnEffectLower
+01:4205 SpriteLayout_FieldColumnEffectUpper
+01:420e SpriteTileList_PlayerCursorFrame0
+01:4214 SpriteTileList_PlayerCursorFrame1
+01:4218 SpriteTileList_PlayerCursorFrame2
+01:421c SpriteTileList_PlayerCursorFrame3
+01:4220 SpriteTileList_PlayerCursorFrame4
+01:4226 SpriteTileList_RoundCompleteTile
+01:4227 SpriteLayout_RoundCompleteTileNormal
+01:422a SpriteLayout_RoundCompleteTileXFlip
+01:422d SpriteLayout_RoundCompleteTileYFlip
+01:4230 SpriteLayout_RoundCompleteTileXYFlip
+01:4233 SpriteTileList_SettingsCursorFrame0
+01:4235 SpriteTileList_SettingsCursorFrame0Alt
+01:4237 SpriteTileList_SettingsCursorFrame1
+01:4239 SpriteTileList_SettingsCursorFrame1Alt
+01:423b SpriteTileList_SettingsCursorFrame2
+01:423d SpriteTileList_SettingsCursorFrame2Alt
+01:423f SpriteTileList_RoundTransitionFrame0
+01:4241 SpriteTileList_RoundTransitionFrame0Alt
+01:4243 SpriteTileList_RoundTransitionFrame1Alt
+01:4245 SpriteTileList_RoundTransitionFrame1
+01:4247 SpriteTileList_RoundTransitionFrame2Alt
+01:424b SpriteTileList_RoundTransitionFrame2
+01:424f SpriteTileList_RoundTransitionFrame3Alt
+01:4255 SpriteTileList_RoundTransitionFrame3
+01:425b SpriteTileList_RoundTransitionFrame4Alt
+01:4263 SpriteTileList_RoundTransitionFrame4
+01:426b SpriteLayout_RoundTransitionTwoTile
+01:4271 SpriteLayout_RoundTransitionFourTile
+01:427d SpriteLayout_RoundTransitionSixTile
+01:428f SpriteLayout_RoundTransitionEightTile
+01:42a7 SpriteTileList_PieceDisplayFrame0
+01:42a9 SpriteTileList_PieceDisplayFrame2
+01:42ab SpriteTileList_PieceDisplayFrame3
+01:42ad SpriteTileList_PieceDisplayFrame4
+01:42af SpriteTileList_PieceDisplayFrame5
+01:42b1 SpriteTileList_PieceDisplayFrame6
+01:42b3 SpriteTileList_PieceDisplayFrame8
+01:42b5 SpriteTileList_PieceDisplayFrame17
+01:42b7 SpriteTileList_PieceDisplayFrame18
+01:42b9 SpriteTileList_PieceDisplayFrame19
+01:42bb SpriteTileList_PieceDisplayFrame20
+01:42bd SpriteTileList_PieceDisplayFrame21
+01:42bf SpriteLayout_TwoTileRow
+01:42c5 SpriteLayout_PieceDisplayTwoTileRow
+01:42cb SpriteLayout_PlayerCursorSixTile
+01:42dd SpriteLayout_PlayerCursorFourTileForward
+01:42e9 SpriteLayout_PlayerCursorFourTileFlipped
+
+; --- Countdown Digits ---
+01:42f5 Draw1PCountdownDigitTileSlots
+01:4305 UseBTypeCountdownDigitSlotOrigin
+01:4308 DrawCountdownDigitTileSlotHead
+01:4310 DrawCountdownDigitTileSlotTail
+01:4321 UnusedDrawLowNibbleTileDigitsByCoord
+01:4324 UnusedDrawLowNibbleTileDigitsLoop
 
 ; --- Game Screen Setup ---
-01:437d InitGameScreen
-01:4394 DrawBCDNumber
-01:43ac GameMainUpdate
-01:43e5 Check2PGameState
-01:43f2 SetupGameBG
-01:4408 LoadGameBGTiles
+01:432f AddScore
+01:4353 StoreScoreDigitsFromBCD
+01:437d ResetScoreAccumulatorAndDigits
+01:4387 ClearScoreAccumulatorAndDigitsLoop
+01:4394 UnusedDrawTwoDigitBcdTilePair
+01:43a2 UseBlankUnusedBcdTensTile
+01:43a4 StoreUnusedBcdDigitTiles
+01:43ac RunGameplayFrame
+01:43dc ContinueGameMainAfterTimerDraw
+01:43e5 ProcessPending2PRoundResult
+01:43f1 ReturnFromGameplayFrame
+01:43f2 DrawGameplayBgTopRowIfNoResultFlow
+01:4401 FillGameplayBgTopRowLoop
+01:4408 DrawFieldColumnTilePattern
+01:4425 CopyFieldColumnTilePatternLoop
+01:442c FieldColumnTilePatternTable
+01:445c StartNextRound
+01:448c SetupNextRoundSinglePlayerSettings
+01:4495 SkipNextRoundActiveLevelIncrement
+01:449e ContinueNextRoundSetup
 
 ; --- Piece/Column Logic ---
-01:44d0 ProcessColumn
-01:44ea UpdateColumn
-01:4501 DrawColumnData
+01:44d0 InitPlayerCursorObject
+01:44ea FillTilemapRectByCoord
+01:44ef FillTilemapRectRowLoop
+01:44f0 FillTilemapRectColumnLoop
+01:44fd AdvanceTilemapRectRow
+01:4501 DrawSequentialTileRowByCoord
+01:4505 DrawSequentialTileRowLoop
 01:450b InitPlayfield
 
-; --- Sprite Animation Tables ---
-01:455f SpriteAnimTable
-01:4599 AnimFrameData
-01:45bd UpdateSpriteFrame
-01:45c2 GetFramePointer
-01:45f0 AnimateSprite
+; --- Level And Egg Display ---
+01:455f DrawLevelDisplayDigits
+01:4570 AdvanceATypeLevelDisplayDigits
+01:4588 IncrementATypeLevelDisplayDigits
+01:4595 StoreATypeLevelDisplayOnes
+01:4599 AdvanceLevelDisplayDigits
+01:45ac IncrementLevelDisplayDigits
+01:45b9 StoreLevelDisplayOnes
+01:45bd ClearLevelDisplayTickCounter
+01:45c2 DrawEggTextFrame0
+01:45c6 UnusedInlineEggTextFrame0Drawer
+01:45f0 DrawEggTextFrameByIndex
+01:4602 UseBTypeEggTextCoord
+01:4605 SelectEggTextFrame
+01:460f UseEggTextFrame0
+01:4614 UseEggTextFrame1
+01:4619 UseEggTextFrame2
+01:461c DrawEggTextFrameRows
+01:4629 ReturnFromEggTextFrameDrawIn2P
+01:462b EggTextFrame0TileRows
+01:4639 EggTextFrame1TileRows
+01:464b EggTextFrame2TileRows
+01:465d DrawPlayfieldEggCountDigits
+01:466d UseATypeEggCountCoord
+01:4670 DrawPlayfieldEggCountDigitsAtCoord
+01:4681 IncrementEggCountAndRefreshDisplay
+01:46ab RefreshEggCountDigitsAfterIncrement
+01:46af ClearEggCountDigitsAndUnusedByte
 
 ; --- Egg/Piece Logic ---
-01:465d ProcessEgg
-01:46af UpdateEggState
-01:46bd InitEggSystem
+01:46bd ClearLinkRoundState
 01:46d7 DrawTitleLabels
+01:46ed TitleLabelTextPlayer
+01:46f6 TitleLabelTextYoshi
 01:46ff ProcessTitleInput
+01:4713 SelectTitleTwoPlayerMode
+01:4721 SelectTitleOnePlayerMode
+01:472f ToggleTitlePlayerMode
 01:4763 ProcessOptionInput
+01:477f PollTitleStartOrReceivedLink
+01:4791 HandleTitleLinkHandshakeByte
+01:47a1 CheckTitleLinkMasterHandshake
+01:47a9 AcceptTitleLinkHandshake
+01:47ba EnterPreplayInitFromTitle
 
-; --- Next Piece ---
-01:473b GenerateNext
-01:47c3 DisplayNextPiece
-01:47e9 DrawNextTop
-01:47fe DrawNextBottom
+; --- Title Player Marker ---
+01:473b DrawTitlePlayerSelectionMarker
+01:475a DrawTitleTwoPlayerSelectionMarker
+01:47c3 TickTitlePlayerMarkerBlink
+01:47db DrawTitlePlayerMarkerTopPhase
+01:47e9 DrawTitlePlayerMarkerTop
+01:47fe DrawTitlePlayerMarkerBottom
 01:4813 UpdateNextDisplay
 
-; --- Column Drawing ---
-01:4873 DrawColumnBlock
-
 ; --- Game Field Update ---
-01:4854 FieldUpdate1
-01:485f FieldUpdate2
-01:487a FieldUpdate3
-01:489a FieldUpdate4
-01:48b7 FieldUpdate5
-01:48df FieldUpdate6
-01:48fb FieldUpdate7
-01:491f FieldUpdate8
-01:4938 FieldUpdate9
-01:495d FieldUpdate10
-01:4976 FieldUpdate11
-01:498d FieldUpdate12
-01:49b6 FieldUpdate13
-01:49e8 FieldUpdate14
-01:4a09 FieldUpdate15
-01:4a15 FieldUpdate16
-01:4a21 FieldUpdate17
-01:4a31 FieldUpdate18
-01:4a66 ToggleFieldAnim
-01:4a7b ResetFieldState
-01:4a81 ProcessFieldLogic
+01:484c UseBTypePlayfieldBlankRows
+01:4850 UseTwoPlayerPlayfieldBlankRows
+01:4854 ClearSpriteObjectBuffer
+01:485a ClearSpriteObjectBufferLoop
+01:485f Draw1PPlayfieldSidePanelLabelRow0
+01:4870 SelectBTypePlayfieldLabelRow0
+01:4873 DrawPlayfieldSidePanelLabelRow0AtCoord
+01:487a DrawPlayfieldSidePanelLabelRow1
+01:4885 Select1PPlayfieldLabelRow1
+01:4890 SelectBTypePlayfieldLabelRow1
+01:4893 DrawPlayfieldSidePanelLabelRow1AtCoord
+01:489a DrawPlayfieldLevelDigits
+01:48a5 Select1PPlayfieldLevelDigitsCoord
+01:48b0 SelectBTypePlayfieldLevelDigitsCoord
+01:48b3 DrawLevelDisplayDigitsAtPlayfieldCoord
+01:48b7 DrawPlayfieldSpeedValue
+01:48c2 Select1PPlayfieldSpeedValueCoord
+01:48cd SelectBTypePlayfieldSpeedValueCoord
+01:48d0 DrawSpeedValueAtPlayfieldCoord
+01:48df DrawPlayfieldEggDisplay
+01:48e6 Select1PPlayfieldEggDisplayCoord
+01:48f1 SelectBTypePlayfieldEggDisplayCoord
+01:48f4 DrawEggDisplayAtPlayfieldCoord
+01:48fb DrawPlayfieldBottomColumnMarkers
+01:491f BlankATypePlayfieldSidePanelRows
+01:4938 BlankBTypePlayfieldSidePanelRows
+01:495d BlankTwoPlayerPlayfieldSidePanelRows
+01:4976 DrawBTypeTimerHeaderAndDigits
+01:498d DrawPlayfieldRoundTimerDigits
+01:4994 UnusedDrawPlayfieldGameTypeHeader
+01:49a9 UseBTypePlayfieldGameTypeHeaderTile
+01:49ab DrawPlayfieldGameTypeHeaderText
+01:49b6 DrawTwoPlayerPlayfieldRoleHeaders
+01:49d5 DrawTwoPlayerRoleHeadersForSlave
+01:49e8 DrawRoundTimerDigits
+01:4a09 ClearRoundTimerDigitsAndResume
+01:4a15 ClearTotalTimerDigitsAndResume
+01:4a21 StartEggTextPulse
+01:4a31 UpdateEggTextAnimation
+01:4a57 DrawEggTextPulseFrame2
+01:4a5c ToggleEggTextPulseFrame
+01:4a65 ReturnAfterEggTextPulseComplete
+01:4a66 ToggleEggTextAltAnimation
+01:4a7b EnableEggTextAltAnimation
+01:4a81 CopyNextBgMapShadowSlice
+01:4a9f SelectBgMapShadowCopySlice0
+01:4aa9 SelectBgMapShadowCopySlice1
+01:4ab2 StoreNextBgMapShadowCopyPhase
+01:4ab6 CopyBgMapShadowSliceRowLoop
+01:4aee CountBgMapShadowCopySliceRow
 
 ; --- VRAM Copy ---
 01:4af9 VRAMCopyDMA
+01:4b18 CopyQueuedVram16ByteBlockLoop
 
 ; --- VBlank Handler ---
 01:4b59 VBlankHandler
+01:4b88 CheckVBlankBusyCounter
+01:4b90 ContinueVBlankRuntimeUpdates
+01:4ba2 ContinueVBlankAfterWaveUpdate
+01:4baa ReturnFromVBlankHandler
 
 ; --- Joypad Check ---
 01:4baf CheckJoypadRaw
 
 ; --- Wait for VBlank ---
 01:4bc5 WaitVBlank
+01:4bc9 WaitVBlankSyncLoop
+01:4bd0 UnusedWaitSelectThenStartOrSelectPress
+01:4bde WaitJoypadStartOrSelectPressLoop
 
 ; --- Wave RAM ---
-01:4bf8 LoadWavePattern
+01:4bf8 HandleWaveUpdate
+01:4bfe FillWaveRamWithFFLoop
+01:4c17 ReadWaveUpdateSourceByte
+01:4c21 WaveUpdateBitDelay
+01:4c2d OutputWaveUpdateBit
+01:4c3d FinishWavePatternUpdate
 
-; --- Link Cable ---
-01:4c48 ProcessLinkData
-01:4c61 SendLinkByte
-01:4c91 UpdateLinkState
-01:4cc6 SyncLinkPlayers
+; --- Timers ---
+01:4c48 UpdateElapsedTimers
+01:4c59 CheckTotalElapsedTimer
+01:4c61 TickElapsedTimerDigits
+01:4c87 ReturnFromTickElapsedTimerDigits
+01:4c88 ClampElapsedTimerDigits
 
-; --- Sound Sequence ---
+; --- Sound Channel Updates ---
+01:4c91 UpdateSoundChannels
+01:4c93 UpdateSoundChannelLoop
+01:4cbc TickActiveSoundChannel
+01:4cbf AdvanceSoundChannelIndex
+01:4cc6 TickSoundChannel
+01:4ce2 UpdateSoundChannelModulation
+01:4ced CheckSoundPitchSlideFlag
+01:4cfa CheckSoundChannelDelay
+01:4d04 CheckSoundVibratoDepth
+01:4d0d CheckSoundVibratoPhase
+01:4d1a ApplySoundVibratoStep
+01:4d38 UseSoundVibratoSubtractedFrequency
+01:4d3a ApplySoundVibratoPositiveStep
+01:4d46 StoreSoundVibratoFrequency
+
+; --- Sound Sequence Parser ---
 01:4d4e SoundSequenceStep
-
-; --- Countdown ---
 01:4d64 CountdownSequence
+01:4d7e EndSoundSequenceChannel3Plus
+01:4d92 CheckChannel6DeferredSoundEnd
+01:4da0 SkipSoundChannelMuteOnEnd
+01:4da2 ReturnFromSoundSubsequence
+01:4dbd DisableSoundChannelOutputOnEnd
+01:4dc8 ClearSoundChannelAfterEnd
+01:4dd1 CheckSoundBgmActiveIdForNr50Restore
+01:4ddc RestoreSoundNr50AfterBgmEnd
+01:4de5 RestoreSoundNr50FromBackup
+01:4dee ClearSoundChannelActiveId
+01:4df4 DispatchSoundNonEndCommand
+01:4e29 CheckSoundLoopJumpCommand
+01:4e4b IncrementSoundLoopCounter
+01:4e4d JumpSoundSequenceToLoopTarget
+01:4e64 CheckSoundLengthEnvelopeCommand
+01:4e8c UseMainWavePatternSelector
+01:4e8f StoreWavePatternSelectorAndEnvelope
+01:4e99 StoreSoundEnvelope
+01:4ea0 ContinueSoundCommandParsing
+01:4ea3 CheckSoundExtendedCommand
+01:4eb5 CheckSoundVibratoCommand
+01:4eed CheckSoundPitchSlideCommand
+01:4f25 CheckSoundDutyLengthCommand
+01:4f3a CheckSoundTempoCommand
+01:4f5e StoreSfxTempo
+01:4f77 ContinueAfterSoundTempoCommand
+01:4f7a CheckSoundOutputMaskCommand
+01:4f87 CheckNestedSoundCommand
+01:4fa3 ContinueAfterNestedSoundCommand
+01:4fa6 CheckSoundDutyRotateCommand
+01:4fc4 CheckSoundMasterVolumeCommand
 
-; --- Stage Intro ---
-01:4fc4 StageIntroAnim
-
-; --- Object Flags ---
-01:52d9 ClearObjectFlags
-01:52e2 UpdateObjectData
-
-; --- 2P Display ---
-01:509c Display2PStatus
-01:50b3 Draw2PField
-
-; --- Music Data ---
-01:5187 MusicDataInit
-01:51b2 LoadMusicTrack
-01:51b8 GetMusicPointer
-01:51c2 ParseMusicCommand
+; --- Sound Note Processing ---
+01:4fd0 CheckSoundVisualUpdateCommand
+01:4fe2 CheckSoundGateFlagCommand
+01:4ff1 CheckSoundOctaveCommand
+01:5004 CheckSoundExtendedNoteCommand
+01:5044 ContinueExtendedSoundNoteCommand
+01:5051 CheckSoundSweepCommand
+01:506d CheckChannel3NestedSoundCommand
+01:5087 ReadChannel3NestedSoundOperand
+01:508f TriggerChannel3NestedSoundIfAllowed
+01:509a ContinueAfterChannel3NestedSound
+01:509c ProcessSoundNoteCommand
+01:50b3 UseMainSoundTempo
+01:50bd UseSfxOrFixedSoundTempo
+01:50cd StoreScaledSoundNoteLength
+01:50f7 ProcessSoundNoteHighNibble
+01:510b CheckSoundRestWaveChannel
+01:5114 MuteWaveChannelForRest
+01:5121 TriggerSoundRestHardwareWrite
+01:512d ReturnFromSoundNoteCommand
+01:512e ProcessPitchedSoundNote
+01:5147 ContinueAfterPitchSlideNoteInit
+01:515a ReturnIfPrimaryBgmAlreadyActive
+01:515c WriteSoundEnvelopeAndEnableOutput
+01:517e StoreSoundNoteBaseFrequency
+01:5187 UpdateSoundChannelOutputMask
+01:51a2 ApplySoundOutputMask
+01:51b2 StoreSoundChannelOutputMask
+01:51b4 WriteSoundChannelOutputMask
+01:51b8 WriteSoundChannelLengthRegister
+01:51c2 CheckWaveChannelLengthRegisterWrite
+01:51d3 WriteSoundLengthRegister
 01:51da ProcessNote
+01:51e3 LoadWavePatternForSoundNote
+01:51ee LookupSoundWavePatternPointer
+01:5203 CopySoundWavePatternToWaveRamLoop
+01:5210 WriteSoundFrequencyAndTrigger
 01:521f UpdateChannel
+01:5228 CheckBgmActiveIdForSequenceRewind
+01:5233 RewindSoundSequencePointerAndReturnCarry
+01:5249 ReturnNoSoundSequenceRewind
 
-; --- Sound Engine ---
-01:53c9 SoundEngine
+; --- Sound Pitch Slide ---
+01:524c UpdateSoundPitchSlide
+01:5293 UpdateSoundPitchSlideDescending
+01:52c6 StoreSoundPitchSlideFrequency
+01:52d9 ClearSoundPitchSlideFlags
+01:52e2 InitSoundPitchSlideForNote
+01:52fa StoreSoundPitchSlideTickCount
+01:5316 InitSoundPitchSlideAscending
+01:5339 CalculateSoundPitchSlideStep
+01:533d DivideSoundPitchSlideDeltaLoop
+01:534b StoreSoundPitchSlideStep
+
+; --- Sound Engine Helpers ---
 01:5360 SoundUpdate1
 01:5378 SoundUpdate2
 01:538b SoundUpdate3
+01:5393 ReadSoundRegisterBaseOffset
 01:539a SoundUpdate4
+01:539c MultiplySoundValueLoop
+01:53a1 DoubleSoundMultiplyAddend
+01:53aa ReturnFromSoundMultiply
 01:53ab SoundUpdate5
+01:53b9 ShiftSoundPitchBaseLoop
+01:53c4 ReturnShiftedSoundPitchBase
+
+; --- Sound Engine ---
+01:53c9 SoundEngine
+01:53e0 ResetSoundStateForBgmCommand
 01:54a1 SoundLookupIndex
+01:54ba ExpandSoundIndexChannelEntryLoop
+01:54e6 CheckSoundChannel7PriorityGate
+01:54ed CheckSoundCommandPriorityAgainstActiveId
+01:54f6 ClearSoundChannelStateForNewEntry
+01:557e ContinueSoundIndexChannelExpansion
 01:5587 StopAllSoundHW
 01:55dc StopAllSound
+01:55dd FillSoundStateRangeLoop
 
-; --- Sound Data ---
-01:55e2 .data:a01
-01:5fe3 .code:100
+; --- Sound Setup Code And Tables ---
+01:55e2 StartSoundSequence
+01:55e2 .code:87
+01:5604 FindSoundSequencePointerSlot
+01:560c InstallSoundSequenceChannelEntry
+01:5625 StoreSoundSequencePointerForChannel
+01:563e CheckSoundCommandForBgmActiveState
+01:5649 StoreSoundBgmActiveState
+01:5668 ReturnFromStartSoundSequence
+01:5669 SoundWaveDutyData
+01:5669 .data:1
+01:566a SoundRegisterOffsetTable
+01:566a .data:8
+01:5672 SoundChannelDisableMaskTable
+01:5672 .data:8
+01:567a SoundChannelEnableMaskTable
+01:567a .data:8
+01:5682 SoundPitchBaseTable
+01:5682 .data:18
 
-01:7c08 CheckGameStateUpdate
-
-; --- Music Sequence Data ---
+; --- Sound Sequence Data ---
+01:569a TitleBgmChannel0Sequence
+01:569a .data:949
+01:569c SoundSequenceData_569c
+01:56c7 SoundSequenceData_56c7
+01:5764 TitleBgmChannel1Sequence
+01:5792 SoundSequenceData_5792
+01:580b TitleBgmChannel2Sequence
+01:5819 SoundSequenceData_5819
+01:5a34 SoundSequenceData_5a34
+01:5a6f TitleBgmChannel3Sequence
+01:5a89 SoundSequenceData_5a89
+01:5ad4 BgmOption0Channel0Sequence
+01:5af3 BgmPreview0Channel0Sequence
+01:5afd SoundSequenceData_5afd
+01:5ccf BgmOption0Channel1Sequence
+01:5ce5 BgmPreview0Channel1Sequence
+01:5ce9 SoundSequenceData_5ce9
+01:5f1f BgmOption0Channel2Sequence
+01:5f2e BgmPreview0Channel2Sequence
+01:5f30 SoundSequenceData_5f30
+01:5fe3 MusicSequenceData_5fe3
+01:5fe3 .data:11ae
+01:60c0 BgmOption0Channel3Sequence
+01:60c5 BgmPreview0Channel3Sequence
+01:60ce MusicSequenceData_60ce
+01:60da MusicSequenceData_60da
+01:60e2 MusicSequenceData_60e2
+01:60ee MusicSequenceData_60ee
+01:6101 MusicSequenceData_6101
+01:6116 MusicSequenceData_6116
+01:6122 MusicSequenceData_6122
+01:612a MusicSequenceData_612a
+01:6136 MusicSequenceData_6136
+01:6144 MusicSequenceData_6144
+01:6150 MusicSequenceData_6150
+01:6158 MusicSequenceData_6158
+01:6170 BgmOption1Channel0Sequence
+01:6183 BgmPreview1Channel0Sequence
+01:61a9 MusicSequenceData_61a9
+01:625c BgmOption1Channel1Sequence
+01:6273 BgmPreview1Channel1Sequence
+01:629f MusicSequenceData_629f
+01:63e3 BgmOption1Channel2Sequence
+01:63eb BgmPreview1Channel2Sequence
+01:63fb MusicSequenceData_63fb
+01:64d1 BgmOption1Channel3Sequence
+01:64d5 BgmPreview1Channel3Sequence
+01:64f0 MusicSequenceData_64f0
+01:64fc MusicSequenceData_64fc
+01:6504 MusicSequenceData_6504
+01:6536 MusicSequenceData_6536
+01:6552 MusicSequenceData_6552
+01:655a MusicSequenceData_655a
+01:656e MusicSequenceData_656e
+01:6586 BgmOption2Channel0Sequence
+01:65ac BgmPreview2Channel0Sequence
+01:65b7 MusicSequenceData_65b7
+01:66e3 BgmOption2Channel1Sequence
+01:66f9 BgmPreview2Channel1Sequence
+01:6700 MusicSequenceData_6700
+01:68b5 BgmOption2Channel2Sequence
+01:68c1 BgmPreview2Channel2Sequence
+01:68c3 MusicSequenceData_68c3
+01:6b16 BgmOption2Channel3Sequence
+01:6b19 BgmPreview2Channel3Sequence
+01:6b2a MusicSequenceData_6b2a
+01:6b42 MusicSequenceData_6b42
+01:6b98 MusicSequenceData_6b98
+01:6bac MusicSequenceData_6bac
+01:6bcc MusicSequenceData_6bcc
+01:6bda MusicSequenceData_6bda
+01:6bef MusicSequenceData_6bef
+01:6bfb MusicSequenceData_6bfb
+01:6c0f MusicSequenceData_6c0f
+01:6c1b MusicSequenceData_6c1b
+01:6c27 MusicSequenceData_6c27
+01:6c3b MusicSequenceData_6c3b
+01:6c47 MusicSequenceData_6c47
+01:6c5b MusicSequenceData_6c5b
+01:6c67 MusicSequenceData_6c67
+01:6c7b MusicSequenceData_6c7b
+01:6c9b MusicSequenceData_6c9b
+01:6cc8 LinkRoleSharedChannel0Sequence
+01:6cec MusicSequenceData_6cec
+01:6db3 LinkMasterChannel1Sequence
+01:6db6 MusicSequenceData_6db6
+01:6dc6 LinkSlaveChannel1Sequence
+01:6dcd MusicSequenceData_6dcd
+01:6ddd MusicSequenceData_6ddd
+01:6e00 MusicSequenceData_6e00
+01:6f22 MusicSequenceData_6f22
+01:6f38 MusicSequenceData_6f38
+01:6f4e MusicSequenceData_6f4e
+01:6f59 MusicSequenceData_6f59
+01:6f66 MusicSequenceData_6f66
+01:6f7d LinkMasterChannel2Sequence
+01:6f7e LinkSlaveChannel2Sequence
+01:6f92 MusicSequenceData_6f92
+01:7191 MusicSequenceData_7191
 01:7191 .data:30
-01:71c1 .code:2f
-01:71e4 .data:1d2
-01:73b3 .code:50
-01:77b6 .code:50
-01:7c08 .code:100
-01:7f9d .code:63
+01:71c1 MusicSequenceData_71c1
+01:71c1 .data:23
+01:71c2 MusicSequenceData_71c2
+01:71d2 LinkMasterChannel3Sequence
+01:71d5 MusicSequenceData_71d5
+01:71e2 LinkSlaveChannel3Sequence
+01:71e4 MusicSequenceData_71e4
+01:71e4 .data:5d2
+01:71e5 MusicSequenceData_71e5
+01:71f2 MusicSequenceData_71f2
+01:7217 MusicSequenceData_7217
+01:73b3 MusicSequenceData_73b3
+01:73c1 MusicSequenceData_73c1
+01:74f0 MusicSequenceData_74f0
+01:7516 MusicSequenceData_7516
+01:753c MusicSequenceData_753c
+01:753e ConfirmChannel0Sequence
+01:7562 ConfirmChannel1Sequence
+01:7580 ConfirmChannel2Sequence
+01:759c ConfirmChannel3Sequence
+01:75d9 LinkResultNonzeroChannel0Sequence
+01:75f5 LinkResultNonzeroChannel1Sequence
+01:760b LinkResultNonzeroChannel2Sequence
+01:761c LinkResultZeroChannel0Sequence
+01:763a LinkResultZeroChannel1Sequence
+01:7654 LinkResultZeroChannel2Sequence
+01:7668 LinkResultConfirmWaitChannel0Sequence
+01:7671 MusicSequenceData_7671
+01:7690 MusicSequenceData_7690
+01:76a6 LinkResultConfirmWaitChannel1Sequence
+01:76ab MusicSequenceData_76ab
+01:76d5 MusicSequenceData_76d5
+01:76f4 MusicSequenceData_76f4
+01:7702 MusicSequenceData_7702
+01:7719 LinkResultConfirmWaitChannel2Sequence
+01:7760 MusicSequenceData_7760
+01:7782 LinkResultConfirmWaitChannel3Sequence
+01:7783 MusicSequenceData_7783
+01:779b MusicSequenceData_779b
+01:77b6 MusicSequenceData_77b6
+01:77b6 .data:50
+01:77c5 MusicSequenceData_77c5
+01:77ca MusicSequenceData_77ca
+01:77e1 LinkResultMenuWaitChannel0Sequence
+01:77eb MusicSequenceData_77eb
+01:7806 MusicSequenceData_7806
+01:7806 .data:3fc
+01:781c LinkResultMenuWaitChannel1Sequence
+01:7822 MusicSequenceData_7822
+01:784c MusicSequenceData_784c
+01:786b MusicSequenceData_786b
+01:7879 MusicSequenceData_7879
+01:7890 LinkResultMenuWaitChannel2Sequence
+01:78d7 MusicSequenceData_78d7
+01:78f9 LinkResultMenuWaitChannel3Sequence
+01:78fa MusicSequenceData_78fa
+01:7912 MusicSequenceData_7912
+01:792d MusicSequenceData_792d
+01:7941 MusicSequenceData_7941
+01:7958 TwoPlayerPreplayMasterInitChannel0Sequence
+01:7965 MusicSequenceData_7965
+01:79bf TwoPlayerPreplayMasterInitChannel1Sequence
+01:79c3 MusicSequenceData_79c3
+01:7a1d TwoPlayerPreplaySlaveInitChannel0Sequence
+01:7a2b MusicSequenceData_7a2b
+01:7a87 TwoPlayerPreplaySlaveInitChannel1Sequence
+01:7a8c MusicSequenceData_7a8c
+01:7ae8 Result1PNoRankChannel0Sequence
+01:7b0d Result1PNoRankChannel1Sequence
+01:7b2c Result1PNoRankChannel2Sequence
+01:7b3d Result1PRankedChannel0Sequence
+01:7b5e Result1PRankedChannel1Sequence
+01:7b79 Result2PNonzeroRankChannel0Sequence
+01:7b8f Result2PNonzeroRankChannel1Sequence
+01:7b9f Result2PZeroRankChannel0Sequence
+01:7bc2 Result2PZeroRankChannel1Sequence
+01:7bdf MusicSequenceData_7bdf
+01:7c02 TickBgmPreviewTimer
+01:7c02 .code:6
+01:7c08 ApplySoundVisualUpdateCommand
+01:7c08 .code:24
+
+; --- Sound Index And Tail Data ---
+01:7c2c SoundIndexTable
+01:7c2c .data:159
+01:7c2f SoundIndexEntry_01
+01:7c32 SoundIndexEntry_02
+01:7c35 SoundIndexEntry_03
+01:7c38 SoundIndexEntry_04
+01:7c3b SoundIndexEntry_05
+01:7c3e SoundIndexEntry_06
+01:7c41 SoundIndexEntry_07
+01:7c44 SoundIndexEntry_08
+01:7c47 SoundIndexEntry_09
+01:7c4a SoundIndexEntry_0a
+01:7c4d SoundIndexEntry_0b
+01:7c50 SoundIndexEntry_0c
+01:7c53 SoundIndexEntry_0d
+01:7c56 SoundIndexEntry_0e
+01:7c59 SoundIndexEntry_0f
+01:7c5c SoundIndexEntry_10
+01:7c5f SoundIndexEntry_LinkFieldRise
+01:7c62 SoundIndexEntry_RoundCompleteReveal
+01:7c65 SoundIndexEntry_13
+01:7c68 SoundIndexEntry_14
+01:7c6b SoundIndexEntry_15
+01:7c6e SoundIndexEntry_RoundCompleteMajorReveal
+01:7c71 SoundIndexEntry_17
+01:7c74 SoundIndexEntry_18
+01:7c77 SoundIndexEntry_19
+01:7c7a SoundIndexEntry_1a
+01:7c7d SoundIndexEntry_DropStart
+01:7c80 SoundIndexEntry_PlacePiece
+01:7c83 SoundIndexEntry_1d
+01:7c86 SoundIndexEntry_BoardScanStep7
+01:7c89 SoundIndexEntry_BoardScanStep6
+01:7c8c SoundIndexEntry_BoardScanStep5
+01:7c8f SoundIndexEntry_BoardScanStep4
+01:7c92 SoundIndexEntry_BoardScanStep3
+01:7c95 SoundIndexEntry_BoardScanStep2
+01:7c98 SoundIndexEntry_BoardScanStep1
+01:7c9b SoundIndexEntry_BoardScanStepBase
+01:7c9e SoundIndexEntry_CommitPiece
+01:7ca1 SoundIndexEntry_PieceLand
+01:7ca4 SoundIndexEntry_CursorMove
+01:7ca7 SoundIndexEntry_MatchingOamSlide
+01:7caa SoundIndexEntry_2a
+01:7cad SoundIndexEntry_MatchingIntroBlink
+01:7cb0 SoundIndexEntry_MatchingResultPanelBlink
+01:7cb3 SoundIndexEntry_RoundComplete
+01:7cb6 SoundIndexEntry_Pause
+01:7cb9 SoundIndexEntry_2f
+01:7cbc SoundIndexEntry_TitleBgm
+01:7cbf SoundIndexEntry_31
+01:7cc2 SoundIndexEntry_32
+01:7cc5 SoundIndexEntry_33
+01:7cc8 SoundIndexEntry_BgmOption0
+01:7ccb SoundIndexEntry_35
+01:7cce SoundIndexEntry_36
+01:7cd1 SoundIndexEntry_37
+01:7cd4 SoundIndexEntry_BgmPreview0
+01:7cd7 SoundIndexEntry_39
+01:7cda SoundIndexEntry_3a
+01:7cdd SoundIndexEntry_3b
+01:7ce0 SoundIndexEntry_BgmOption1
+01:7ce3 SoundIndexEntry_3d
+01:7ce6 SoundIndexEntry_3e
+01:7ce9 SoundIndexEntry_3f
+01:7cec SoundIndexEntry_BgmPreview1
+01:7cef SoundIndexEntry_41
+01:7cf2 SoundIndexEntry_42
+01:7cf5 SoundIndexEntry_43
+01:7cf8 SoundIndexEntry_BgmOption2
+01:7cfb SoundIndexEntry_45
+01:7cfe SoundIndexEntry_46
+01:7d01 SoundIndexEntry_47
+01:7d04 SoundIndexEntry_BgmPreview2
+01:7d07 SoundIndexEntry_49
+01:7d0a SoundIndexEntry_4a
+01:7d0d SoundIndexEntry_4b
+01:7d10 SoundIndexEntry_LinkMaster
+01:7d13 SoundIndexEntry_4d
+01:7d16 SoundIndexEntry_4e
+01:7d19 SoundIndexEntry_4f
+01:7d1c SoundIndexEntry_LinkSlave
+01:7d1f SoundIndexEntry_51
+01:7d22 SoundIndexEntry_52
+01:7d25 SoundIndexEntry_53
+01:7d28 SoundIndexEntry_Confirm
+01:7d2b SoundIndexEntry_55
+01:7d2e SoundIndexEntry_56
+01:7d31 SoundIndexEntry_57
+01:7d34 SoundIndexEntry_LinkResultNonzero
+01:7d37 SoundIndexEntry_59
+01:7d3a SoundIndexEntry_5a
+01:7d3d SoundIndexEntry_LinkResultZero
+01:7d40 SoundIndexEntry_5c
+01:7d43 SoundIndexEntry_5d
+01:7d46 SoundIndexEntry_LinkResultConfirmWait
+01:7d49 SoundIndexEntry_5f
+01:7d4c SoundIndexEntry_60
+01:7d4f SoundIndexEntry_61
+01:7d52 SoundIndexEntry_LinkResultMenuWait
+01:7d55 SoundIndexEntry_63
+01:7d58 SoundIndexEntry_64
+01:7d5b SoundIndexEntry_65
+01:7d5e SoundIndexEntry_Result1PNoRank
+01:7d61 SoundIndexEntry_67
+01:7d64 SoundIndexEntry_68
+01:7d67 SoundIndexEntry_Result1PRanked
+01:7d6a SoundIndexEntry_6a
+01:7d6d SoundIndexEntry_TwoPlayerPreplayMasterInit
+01:7d70 SoundIndexEntry_6c
+01:7d73 SoundIndexEntry_TwoPlayerPreplaySlaveInit
+01:7d76 SoundIndexEntry_6e
+01:7d79 SoundIndexEntry_Result2PNonzeroRank
+01:7d7c SoundIndexEntry_70
+01:7d7f SoundIndexEntry_Result2PZeroRank
+01:7d82 SoundIndexEntry_72
+01:7d85 SoundSequenceData_7d85
+01:7d85 .data:38
+01:7d89 SoundSequenceData_7d89
+01:7d8d SoundSequenceData_7d8d
+01:7d91 SoundSequenceData_7d91
+01:7d95 SoundSequenceData_7d95
+01:7d99 SoundSequenceData_7d99
+01:7d9d SoundSequenceData_7d9d
+01:7da1 SoundSequenceData_7da1
+01:7da5 SoundSequenceData_7da5
+01:7da9 SoundSequenceData_7da9
+01:7dad SoundSequenceData_7dad
+01:7db1 SoundSequenceData_7db1
+01:7db5 SoundSequenceData_7db5
+01:7db9 SoundSequenceData_7db9
+01:7dbd SoundWavePatternPointerTable
+01:7dbd .data:12
+01:7dcf SoundWavePatternData_0
+01:7dcf .data:227
+01:7ddf SoundWavePatternData_1
+01:7def SoundWavePatternData_2
+01:7dff SoundSequenceData_7dff
+01:7e15 SoundSequenceData_7e15
+01:7e2c SoundSequenceData_7e2c
+01:7e4b SoundSequenceData_7e4b
+01:7e5c SoundSequenceData_7e5c
+01:7e67 SoundSequenceData_7e67
+01:7e72 SoundSequenceData_7e72
+01:7e7d SoundSequenceData_7e7d
+01:7e88 SoundSequenceData_7e88
+01:7e93 SoundSequenceData_7e93
+01:7e9e SoundSequenceData_7e9e
+01:7ea9 SoundSequenceData_7ea9
+01:7eb4 SoundSequenceData_7eb4
+01:7ec7 SoundSequenceData_7ec7
+01:7eda SoundSequenceData_7eda
+01:7eeb SoundSequenceData_7eeb
+01:7ef6 SoundSequenceData_7ef6
+01:7f0d SoundSequenceData_7f0d
+01:7f1b SoundSequenceData_7f1b
+01:7f1c SoundSequenceData_7f1c
+01:7f29 SoundSequenceData_7f29
+01:7f34 SoundSequenceData_7f34
+01:7f43 SoundSequenceData_7f43
+01:7f52 SoundSequenceData_7f52
+01:7f65 SoundSequenceData_7f65
+01:7f80 SoundSequenceData_7f80
+01:7f9d SoundSequenceData_7f9d
+01:7fb4 SoundSequenceData_7fb4
+01:7fc2 SoundSequenceData_7fc2
+01:7fc3 SoundSequenceData_7fc3
+01:7fd0 SoundSequenceData_7fd0
+01:7fe3 SoundSequenceData_7fe3
+01:7ff6 Bank1TailPaddingData
+01:7ff6 .data:a
 
 ; ============================================================
 ; Bank 2: Graphics Data ($4000-$7FFF)
@@ -573,20 +1833,28 @@
 02:4000 .data:800
 02:4800 CommonTileSet
 02:4800 .data:1000
-02:5800 ExtraTiles
+02:5800 PreplayMenuOverlayTiles
 02:5800 .data:800
 02:6000 TitleTileSet
-02:6000 .data:1000
-02:6F70 TwoPlayerTiles1
+02:6000 .data:f70
+02:6F70 TwoPlayerNonMasterTiles
 02:6F70 .data:260
-02:71D0 TwoPlayerTiles2
+02:71D0 TwoPlayerSharedTiles
 02:71D0 .data:200
-02:73D0 UnusedTileData
+02:73D0 Bank2UnusedTailTileData
 02:73D0 .data:c30
 
 ; ============================================================
 ; Bank 3: Graphics Data ($4000-$7FFF)
 ; ============================================================
 
-03:4000 TileGraphicsData2
+03:4000 Bank3MatchingTilesTo9000
 03:4000 .data:4000
+03:4800 Bank3MatchingTilesTo8800
+03:4E40 Bank3MatchingTilesTo8000
+03:5400 Bank3ResultRecordTilesTo9000
+03:5C00 Bank3ResultRecordTilesTo8800
+03:5DD0 Bank3LinkResultTilesTo9000
+03:65D0 Bank3LinkResultTilesTo8800
+03:6AB0 Bank3LinkResultOverlayTilesTo9470
+03:6E40 Bank3LinkResultOverlayTilesTo8800

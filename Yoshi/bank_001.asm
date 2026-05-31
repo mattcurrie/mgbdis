@@ -8,51 +8,53 @@ SECTION "ROM Bank $001", ROMX[$4000], BANK[$1]
 UpdateSprites::
     ld a, [LCD_REDRAW]
     dec a
-    jr z, jr_001_400f
+    jr z, BeginSpriteOamExpansion
 
-    cp $ff
+    cp LCD_REDRAW_HIDE_ALL_SENTINEL
     ret nz
 
     ld [LCD_REDRAW], a
     jp HideAllSprites
 
 
-jr_001_400f:
+BeginSpriteOamExpansion:
     ldh [SHADOW_OAM_WRITE_OFFSET], a
 
-jr_001_4011:
+ScanSpriteObjectSlotLoop:
     ldh [SPRITE_SCAN_SLOT_OFFSET], a
     ld d, SPRITE_OBJECTS_HI
     ld e, a
     ld a, [de]
     and a
-    jr z, jr_001_407b
+    jr z, AdvanceSpriteObjectSlot
 
     and SPRITE_OBJECT_ATTR_MASK
     ldh [SPRITE_OBJECT_ATTR_TMP], a
     ld a, [de]
     dec a
     ld hl, SpriteUpdatePointerTable
+    ; Types $81-$87 preserve bit 7 for inherited OAM attributes while sharing
+    ; the same frame-table entries as $01-$07.
     sla a
     add l
     ld l, a
-    jr nc, jr_001_402a
+    jr nc, LoadSpriteFramePointer
 
     inc h
 
-jr_001_402a:
+LoadSpriteFramePointer:
     ld c, [hl]
     inc hl
     ld b, [hl]
     inc e
     inc e
     ld a, [de]
-    cp $ff
-    jr nz, jr_001_4036
+    cp SPRITE_OBJECT_FRAME_DISABLED
+    jr nz, DrawSpriteObjectFrame
 
-    jr jr_001_407b
+    jr AdvanceSpriteObjectSlot
 
-jr_001_4036:
+DrawSpriteObjectFrame:
     ld l, a
     ld h, $00
     add hl, hl
@@ -77,7 +79,7 @@ jr_001_4036:
     ld e, a
     ld d, SHADOW_OAM_HI
 
-jr_001_4052:
+DrawSpriteObjectOamEntryLoop:
     ldh a, [SPRITE_BASE_Y_TMP]
     add OAM_Y_BIAS
     add [hl]
@@ -96,28 +98,28 @@ jr_001_4052:
     inc e
     ld a, [hl]
     bit SPRITE_ATTR_INHERIT_BIT, a
-    jr z, jr_001_406e
+    jr z, StoreSpriteObjectOamAttributes
 
     ldh a, [SPRITE_OBJECT_ATTR_TMP]
     or [hl]
 
-jr_001_406e:
+StoreSpriteObjectOamAttributes:
     inc hl
     ld [de], a
     inc e
     bit SPRITE_ATTR_END_BIT, a
-    jr z, jr_001_4052
+    jr z, DrawSpriteObjectOamEntryLoop
 
     ld a, e
     ldh [SHADOW_OAM_WRITE_OFFSET], a
     cp SHADOW_OAM_SIZE
     ret z
 
-jr_001_407b:
+AdvanceSpriteObjectSlot:
     ldh a, [SPRITE_SCAN_SLOT_OFFSET]
     add SPRITE_OBJECT_SLOT_SIZE
-    cp $00
-    jr nz, jr_001_4011
+    cp SPRITE_OBJECT_SCAN_END_OFFSET
+    jr nz, ScanSpriteObjectSlotLoop
 
     ldh a, [SHADOW_OAM_WRITE_OFFSET]
     ld l, a
@@ -125,377 +127,405 @@ jr_001_407b:
     ld de, OAM_ENTRY_SIZE
     ld a, SHADOW_OAM_HIDE_LIMIT
 
-jr_001_408d:
+HideUnusedShadowOamLoop:
     cp l
     ret z
 
     ld [hl], OAM_HIDDEN_Y
     add hl, de
-    jr jr_001_408d
+    jr HideUnusedShadowOamLoop
 
 InitSpriteBuffer::
     ld hl, SPRITE_OBJECTS
 
-jr_001_4097:
+ClearSpriteObjectSlotTypesLoop:
     xor a
     ld [hl], a
     ld a, l
     add SPRITE_OBJECT_SLOT_SIZE
     ld l, a
-    jr nc, jr_001_4097
+    jr nc, ClearSpriteObjectSlotTypesLoop
 
     ret
 
 
+MACRO SPRITE_OBJECT_FRAME_TABLE
+    dw \2
+ENDM
+
+MACRO SPRITE_FRAME_RECORD
+    dw \1, \2
+ENDM
+
+MACRO SPRITE_TILE_LIST_1
+    db \1
+ENDM
+
+MACRO SPRITE_TILE_LIST_2
+    db \1, \2
+ENDM
+
+MACRO SPRITE_TILE_LIST_4
+    db \1, \2, \3, \4
+ENDM
+
+MACRO SPRITE_TILE_LIST_6
+    db \1, \2, \3, \4, \5, \6
+ENDM
+
+MACRO SPRITE_TILE_LIST_8
+    db \1, \2, \3, \4, \5, \6, \7, \8
+ENDM
+
+MACRO SPRITE_LAYOUT_ENTRY
+    db \1, \2, \3
+ENDM
+
 SpriteUpdatePointerTable::
-    dw SpriteFrameTable_PlayerCursor
-    dw SpriteFrameTable_GameOverPiece
-    dw SpriteFrameTable_RoundTransition
-    dw SpriteFrameTable_RoundCompleteTile
-    dw SpriteFrameTable_SettingsCursor
-    dw SpriteFrameTable_Object6
-    dw SpriteFrameTable_Object7
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_PLAYER_CURSOR, SpriteFrameTable_PlayerCursor
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_PIECE_DISPLAY, SpriteFrameTable_PieceDisplay
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_ROUND_TRANSITION, SpriteFrameTable_RoundTransition
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_ROUND_COMPLETE_TILE, SpriteFrameTable_RoundCompleteTile
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_SETTINGS_CURSOR, SpriteFrameTable_SettingsCursor
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_FIELD_COLUMN_EFFECT, SpriteFrameTable_FieldColumnEffect
+    SPRITE_OBJECT_FRAME_TABLE SPRITE_OBJECT_TYPE_RESERVED_7, SpriteFrameTable_ReservedObject7
 
 SpriteFrameTable_SettingsCursor::
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4237, SpriteLayout_42bf
-    dw SpriteTileList_423b, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4237, SpriteLayout_42bf
-    dw SpriteTileList_423b, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4237, SpriteLayout_42bf
-    dw SpriteTileList_423b, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4237, SpriteLayout_42bf
-    dw SpriteTileList_423b, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4233, SpriteLayout_42bf
-    dw SpriteTileList_4235, SpriteLayout_42bf
-    dw SpriteTileList_4239, SpriteLayout_42bf
-    dw SpriteTileList_423d, SpriteLayout_42bf
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame1, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame2, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame1, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame2, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame1, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame2, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame1, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame2, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame0Alt, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame1Alt, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_SettingsCursorFrame2Alt, SpriteLayout_TwoTileRow
 
 SpriteFrameTable_PlayerCursor::
-    dw SpriteTileList_420e, SpriteLayout_42cb
-    dw SpriteTileList_4214, SpriteLayout_42dd
-    dw SpriteTileList_4218, SpriteLayout_42dd
-    dw SpriteTileList_421c, SpriteLayout_42dd
-    dw SpriteTileList_4220, SpriteLayout_42cb
-    dw SpriteTileList_421c, SpriteLayout_42e9
-    dw SpriteTileList_4218, SpriteLayout_42e9
-    dw SpriteTileList_4214, SpriteLayout_42e9
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame0, SpriteLayout_PlayerCursorSixTile
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame1, SpriteLayout_PlayerCursorFourTileForward
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame2, SpriteLayout_PlayerCursorFourTileForward
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame3, SpriteLayout_PlayerCursorFourTileForward
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame4, SpriteLayout_PlayerCursorSixTile
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame3, SpriteLayout_PlayerCursorFourTileFlipped
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame2, SpriteLayout_PlayerCursorFourTileFlipped
+    SPRITE_FRAME_RECORD SpriteTileList_PlayerCursorFrame1, SpriteLayout_PlayerCursorFourTileFlipped
 
-SpriteFrameTable_GameOverPiece::
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42c5
-    dw SpriteTileList_42a9, SpriteLayout_42c5
-    dw SpriteTileList_42ab, SpriteLayout_42c5
-    dw SpriteTileList_42ad, SpriteLayout_42c5
-    dw SpriteTileList_42af, SpriteLayout_42c5
-    dw SpriteTileList_42b1, SpriteLayout_42c5
-    dw SpriteTileList_42b1, SpriteLayout_42c5
-    dw SpriteTileList_42b3, SpriteLayout_42c5
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42a7, SpriteLayout_42bf
-    dw SpriteTileList_42b5, SpriteLayout_42c5
-    dw SpriteTileList_42b7, SpriteLayout_42c5
-    dw SpriteTileList_42b9, SpriteLayout_42c5
-    dw SpriteTileList_42bb, SpriteLayout_42c5
-    dw SpriteTileList_42bd, SpriteLayout_42c5
-    dw SpriteTileList_42bf, SpriteLayout_42c5
-    dw SpriteTileList_42bf, SpriteLayout_42c5
-    dw SpriteTileList_42bf, SpriteLayout_42c5
+SpriteFrameTable_PieceDisplay::
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame2, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame3, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame4, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame5, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame6, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame6, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame8, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame0, SpriteLayout_TwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame17, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame18, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame19, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame20, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame21, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame22, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame22, SpriteLayout_PieceDisplayTwoTileRow
+    SPRITE_FRAME_RECORD SpriteTileList_PieceDisplayFrame22, SpriteLayout_PieceDisplayTwoTileRow
 
 SpriteFrameTable_RoundTransition::
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_4245, SpriteLayout_426b
-    dw SpriteTileList_424b, SpriteLayout_4271
-    dw SpriteTileList_4255, SpriteLayout_427d
-    dw SpriteTileList_4263, SpriteLayout_428f
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_423f, SpriteLayout_426b
-    dw SpriteTileList_4241, SpriteLayout_426b
-    dw SpriteTileList_4243, SpriteLayout_426b
-    dw SpriteTileList_4247, SpriteLayout_4271
-    dw SpriteTileList_424f, SpriteLayout_427d
-    dw SpriteTileList_425b, SpriteLayout_428f
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame1, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame2, SpriteLayout_RoundTransitionFourTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame3, SpriteLayout_RoundTransitionSixTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame4, SpriteLayout_RoundTransitionEightTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame0Alt, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame1Alt, SpriteLayout_RoundTransitionTwoTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame2Alt, SpriteLayout_RoundTransitionFourTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame3Alt, SpriteLayout_RoundTransitionSixTile
+    SPRITE_FRAME_RECORD SpriteTileList_RoundTransitionFrame4Alt, SpriteLayout_RoundTransitionEightTile
 
 SpriteFrameTable_RoundCompleteTile::
-    dw SpriteTileList_4226, SpriteLayout_4227
-    dw SpriteTileList_4226, SpriteLayout_422a
-    dw SpriteTileList_4226, SpriteLayout_422d
-    dw SpriteTileList_4226, SpriteLayout_4230
+    SPRITE_FRAME_RECORD SpriteTileList_RoundCompleteTile, SpriteLayout_RoundCompleteTileNormal
+    SPRITE_FRAME_RECORD SpriteTileList_RoundCompleteTile, SpriteLayout_RoundCompleteTileXFlip
+    SPRITE_FRAME_RECORD SpriteTileList_RoundCompleteTile, SpriteLayout_RoundCompleteTileYFlip
+    SPRITE_FRAME_RECORD SpriteTileList_RoundCompleteTile, SpriteLayout_RoundCompleteTileXYFlip
 
-SpriteFrameTable_Object6::
-    dw SpriteTileList_41f6, SpriteLayout_41fc
-    dw SpriteTileList_41f6, SpriteLayout_4205
+SpriteFrameTable_FieldColumnEffect::
+    SPRITE_FRAME_RECORD SpriteTileList_FieldColumnEffect, SpriteLayout_FieldColumnEffectLower
+    SPRITE_FRAME_RECORD SpriteTileList_FieldColumnEffect, SpriteLayout_FieldColumnEffectUpper
 
-SpriteFrameTable_Object7::
-    dw SpriteTileList_41ee, SpriteLayout_41f0
+SpriteFrameTable_ReservedObject7::
+    SPRITE_FRAME_RECORD SpriteTileList_ReservedObject7, SpriteLayout_ReservedObject7
 
-SpriteTileList_41ee::
-    db $e0, $e0
+SpriteTileList_ReservedObject7::
+    SPRITE_TILE_LIST_2 $e0, $e0
 
-SpriteLayout_41f0::
-    db $00, $08, $00
-    db $00, $10, $21
+SpriteLayout_ReservedObject7::
+    SPRITE_LAYOUT_ENTRY $00, $08, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $10, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_END
 
-SpriteTileList_41f6::
-    db $da, $dc, $de, $da, $dc, $de
+SpriteTileList_FieldColumnEffect::
+    SPRITE_TILE_LIST_6 $da, $dc, $de, $da, $dc, $de
 
-SpriteLayout_41fc::
-    db $10, $04, $00
-    db $10, $0c, $00
-    db $10, $14, $00
+SpriteLayout_FieldColumnEffectLower::
+    SPRITE_LAYOUT_ENTRY $10, $04, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $10, $0c, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $10, $14, OAM_ATTR_NONE
 
-; Also the tail of SpriteLayout_41fc; the terminator is in the final triple.
-SpriteLayout_4205::
-    db $00, $04, $00
-    db $00, $0c, $00
-    db $00, $14, $01
+; Also the tail of SpriteLayout_FieldColumnEffectLower; the terminator is in the final triple.
+SpriteLayout_FieldColumnEffectUpper::
+    SPRITE_LAYOUT_ENTRY $00, $04, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $0c, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $14, SPRITE_LAYOUT_ATTR_END
 
-SpriteTileList_420e::
-    db $1c, $1e, $20, $20, $1e, $1c
+SpriteTileList_PlayerCursorFrame0::
+    SPRITE_TILE_LIST_6 $1c, $1e, $20, $20, $1e, $1c
 
-SpriteTileList_4214::
-    db $24, $26, $28, $2a
+SpriteTileList_PlayerCursorFrame1::
+    SPRITE_TILE_LIST_4 $24, $26, $28, $2a
 
-SpriteTileList_4218::
-    db $2c, $2e, $30, $32
+SpriteTileList_PlayerCursorFrame2::
+    SPRITE_TILE_LIST_4 $2c, $2e, $30, $32
 
-SpriteTileList_421c::
-    db $34, $36, $38, $3a
+SpriteTileList_PlayerCursorFrame3::
+    SPRITE_TILE_LIST_4 $34, $36, $38, $3a
 
-SpriteTileList_4220::
-    db $3c, $3e, $40, $40, $3e, $3c
+SpriteTileList_PlayerCursorFrame4::
+    SPRITE_TILE_LIST_6 $3c, $3e, $40, $40, $3e, $3c
 
-SpriteTileList_4226::
-    db $80
+SpriteTileList_RoundCompleteTile::
+    SPRITE_TILE_LIST_1 $80
 
-SpriteLayout_4227::
-    db $f0, $f8, $01
+SpriteLayout_RoundCompleteTileNormal::
+    SPRITE_LAYOUT_ENTRY $f0, $f8, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_422a::
-    db $f0, $00, $21
+SpriteLayout_RoundCompleteTileXFlip::
+    SPRITE_LAYOUT_ENTRY $f0, $00, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_422d::
-    db $f0, $f8, $41
+SpriteLayout_RoundCompleteTileYFlip::
+    SPRITE_LAYOUT_ENTRY $f0, $f8, OAMF_YFLIP | SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_4230::
-    db $f0, $00, $61
+SpriteLayout_RoundCompleteTileXYFlip::
+    SPRITE_LAYOUT_ENTRY $f0, $00, OAMF_XFLIP | OAMF_YFLIP | SPRITE_LAYOUT_ATTR_END
 
-SpriteTileList_4233::
-    db $60, $62
+SpriteTileList_SettingsCursorFrame0::
+    SPRITE_TILE_LIST_2 $60, $62
 
-SpriteTileList_4235::
-    db $64, $66
+SpriteTileList_SettingsCursorFrame0Alt::
+    SPRITE_TILE_LIST_2 $64, $66
 
-SpriteTileList_4237::
-    db $68, $6a
+SpriteTileList_SettingsCursorFrame1::
+    SPRITE_TILE_LIST_2 $68, $6a
 
-SpriteTileList_4239::
-    db $6c, $6e
+SpriteTileList_SettingsCursorFrame1Alt::
+    SPRITE_TILE_LIST_2 $6c, $6e
 
-SpriteTileList_423b::
-    db $70, $72
+SpriteTileList_SettingsCursorFrame2::
+    SPRITE_TILE_LIST_2 $70, $72
 
-SpriteTileList_423d::
-    db $74, $76
+SpriteTileList_SettingsCursorFrame2Alt::
+    SPRITE_TILE_LIST_2 $74, $76
 
-SpriteTileList_423f::
-    db $82, $84
+SpriteTileList_RoundTransitionFrame0::
+    SPRITE_TILE_LIST_2 $82, $84
 
-SpriteTileList_4241::
-    db $86, $88
+SpriteTileList_RoundTransitionFrame0Alt::
+    SPRITE_TILE_LIST_2 $86, $88
 
-SpriteTileList_4243::
-    db $8a, $8c
+SpriteTileList_RoundTransitionFrame1Alt::
+    SPRITE_TILE_LIST_2 $8a, $8c
 
-SpriteTileList_4245::
-    db $8e, $90
+SpriteTileList_RoundTransitionFrame1::
+    SPRITE_TILE_LIST_2 $8e, $90
 
-SpriteTileList_4247::
-    db $92, $94, $96, $98
+SpriteTileList_RoundTransitionFrame2Alt::
+    SPRITE_TILE_LIST_4 $92, $94, $96, $98
 
-SpriteTileList_424b::
-    db $9a, $9c, $9e, $a0
+SpriteTileList_RoundTransitionFrame2::
+    SPRITE_TILE_LIST_4 $9a, $9c, $9e, $a0
 
-SpriteTileList_424f::
-    db $a2, $a4, $a6, $a8, $aa, $ac
+SpriteTileList_RoundTransitionFrame3Alt::
+    SPRITE_TILE_LIST_6 $a2, $a4, $a6, $a8, $aa, $ac
 
-SpriteTileList_4255::
-    db $ae, $b0, $b2, $b4, $b6, $b8
+SpriteTileList_RoundTransitionFrame3::
+    SPRITE_TILE_LIST_6 $ae, $b0, $b2, $b4, $b6, $b8
 
-SpriteTileList_425b::
-    db $ba, $bc, $be, $c0, $c2, $c4, $c6, $c8
+SpriteTileList_RoundTransitionFrame4Alt::
+    SPRITE_TILE_LIST_8 $ba, $bc, $be, $c0, $c2, $c4, $c6, $c8
 
-SpriteTileList_4263::
-    db $ca, $cc, $ce, $d0, $d2, $d4, $d6, $d8
+SpriteTileList_RoundTransitionFrame4::
+    SPRITE_TILE_LIST_8 $ca, $cc, $ce, $d0, $d2, $d4, $d6, $d8
 
-SpriteLayout_426b::
-    db $f0, $f8, $00
-    db $f0, $00, $01
+SpriteLayout_RoundTransitionTwoTile::
+    SPRITE_LAYOUT_ENTRY $f0, $f8, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f0, $00, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_4271::
-    db $e8, $f8, $00
-    db $f8, $f8, $00
-    db $e8, $00, $00
-    db $f8, $00, $01
+SpriteLayout_RoundTransitionFourTile::
+    SPRITE_LAYOUT_ENTRY $e8, $f8, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f8, $f8, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e8, $00, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f8, $00, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_427d::
-    db $e8, $f4, $00
-    db $f8, $f4, $00
-    db $e8, $fc, $00
-    db $f8, $fc, $00
-    db $e8, $04, $00
-    db $f8, $04, $01
+SpriteLayout_RoundTransitionSixTile::
+    SPRITE_LAYOUT_ENTRY $e8, $f4, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f8, $f4, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e8, $fc, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f8, $fc, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e8, $04, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f8, $04, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_428f::
-    db $e0, $f0, $00
-    db $f0, $f0, $00
-    db $e0, $f8, $00
-    db $f0, $f8, $00
-    db $e0, $00, $00
-    db $f0, $00, $00
-    db $e0, $08, $00
-    db $f0, $08, $01
+SpriteLayout_RoundTransitionEightTile::
+    SPRITE_LAYOUT_ENTRY $e0, $f0, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f0, $f0, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e0, $f8, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f0, $f8, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e0, $00, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f0, $00, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $e0, $08, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $f0, $08, SPRITE_LAYOUT_ATTR_END
 
-SpriteTileList_42a7::
-    db $00, $02
+SpriteTileList_PieceDisplayFrame0::
+    SPRITE_TILE_LIST_2 $00, $02
 
-SpriteTileList_42a9::
-    db $04, $06
+SpriteTileList_PieceDisplayFrame2::
+    SPRITE_TILE_LIST_2 $04, $06
 
-SpriteTileList_42ab::
-    db $08, $0a
+SpriteTileList_PieceDisplayFrame3::
+    SPRITE_TILE_LIST_2 $08, $0a
 
-SpriteTileList_42ad::
-    db $0c, $0e
+SpriteTileList_PieceDisplayFrame4::
+    SPRITE_TILE_LIST_2 $0c, $0e
 
-SpriteTileList_42af::
-    db $10, $12
+SpriteTileList_PieceDisplayFrame5::
+    SPRITE_TILE_LIST_2 $10, $12
 
-SpriteTileList_42b1::
-    db $18, $1a
+SpriteTileList_PieceDisplayFrame6::
+    SPRITE_TILE_LIST_2 $18, $1a
 
-SpriteTileList_42b3::
-    db $14, $16
+SpriteTileList_PieceDisplayFrame8::
+    SPRITE_TILE_LIST_2 $14, $16
 
-SpriteTileList_42b5::
-    db $4c, $4e
+SpriteTileList_PieceDisplayFrame17::
+    SPRITE_TILE_LIST_2 $4c, $4e
 
-SpriteTileList_42b7::
-    db $50, $52
+SpriteTileList_PieceDisplayFrame18::
+    SPRITE_TILE_LIST_2 $50, $52
 
-SpriteTileList_42b9::
-    db $54, $56
+SpriteTileList_PieceDisplayFrame19::
+    SPRITE_TILE_LIST_2 $54, $56
 
-SpriteTileList_42bb::
-    db $58, $5a
+SpriteTileList_PieceDisplayFrame20::
+    SPRITE_TILE_LIST_2 $58, $5a
 
-SpriteTileList_42bd::
-    db $5c, $5e
+SpriteTileList_PieceDisplayFrame21::
+    SPRITE_TILE_LIST_2 $5c, $5e
 
-SpriteTileList_42bf::
-SpriteLayout_42bf::
-    db $00, $08, $00
-    db $00, $10, $01
+SpriteTileList_PieceDisplayFrame22::
+SpriteLayout_TwoTileRow::
+    SPRITE_LAYOUT_ENTRY $00, $08, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $10, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_42c5::
-    db $00, $08, $10
-    db $00, $10, $11
+SpriteLayout_PieceDisplayTwoTileRow::
+    SPRITE_LAYOUT_ENTRY $00, $08, OAM_ATTR_DMG_PALETTE_1
+    SPRITE_LAYOUT_ENTRY $00, $10, OAM_ATTR_DMG_PALETTE_1 | SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_42cb::
-    db $00, $08, $00
-    db $00, $10, $00
-    db $00, $18, $00
-    db $00, $20, $20
-    db $00, $28, $20
-    db $00, $30, $21
+SpriteLayout_PlayerCursorSixTile::
+    SPRITE_LAYOUT_ENTRY $00, $08, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $10, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $18, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $20, OAMF_XFLIP
+    SPRITE_LAYOUT_ENTRY $00, $28, OAMF_XFLIP
+    SPRITE_LAYOUT_ENTRY $00, $30, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_42dd::
-    db $00, $10, $00
-    db $00, $18, $00
-    db $00, $20, $00
-    db $00, $28, $01
+SpriteLayout_PlayerCursorFourTileForward::
+    SPRITE_LAYOUT_ENTRY $00, $10, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $18, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $20, OAM_ATTR_NONE
+    SPRITE_LAYOUT_ENTRY $00, $28, SPRITE_LAYOUT_ATTR_END
 
-SpriteLayout_42e9::
-    db $00, $28, $22
-    db $00, $20, $22
-    db $00, $18, $22
-    db $00, $10, $23
+SpriteLayout_PlayerCursorFourTileFlipped::
+    SPRITE_LAYOUT_ENTRY $00, $28, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_INHERIT
+    SPRITE_LAYOUT_ENTRY $00, $20, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_INHERIT
+    SPRITE_LAYOUT_ENTRY $00, $18, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_INHERIT
+    SPRITE_LAYOUT_ENTRY $00, $10, OAMF_XFLIP | SPRITE_LAYOUT_ATTR_INHERIT | SPRITE_LAYOUT_ATTR_END
 
-UpdateAnimFrame::
+Draw1PCountdownDigitTileSlots::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
-jr_001_42fa:
     ld a, [GAME_TYPE]
     and a
 
-jr_001_42fe:
-    jr nz, jr_001_4305
+    jr nz, UseBTypeCountdownDigitSlotOrigin
 
-    ld hl, $0310
-    jr jr_001_4308
+    ld hl, COUNTDOWN_TILE_SLOT_A_TYPE_COORD
+    jr DrawCountdownDigitTileSlotHead
 
-jr_001_4305:
-    ld hl, $0210
+UseBTypeCountdownDigitSlotOrigin:
+    ld hl, COUNTDOWN_TILE_SLOT_B_TYPE_COORD
 
-jr_001_4308:
+DrawCountdownDigitTileSlotHead:
     call CalcTilemapAddress
-    ld [hl], $12
+    ld [hl], COUNTDOWN_TILE_SLOT_0
     inc hl
 
-jr_001_430e:
-    ld [hl], $13
+    ld [hl], COUNTDOWN_TILE_SLOT_1
 
-LoadAnimData::
+DrawCountdownDigitTileSlotTail:
     inc hl
 
-jr_001_4311:
-    ld [hl], $02
+    ld [hl], COUNTDOWN_TILE_SLOT_2
     inc hl
 
-jr_001_4314:
-    ld [hl], $03
+    ld [hl], COUNTDOWN_TILE_SLOT_3
     ld a, [COUNTDOWN_BLIT_TIMER]
     and a
     ret nz
 
-    ld a, $02
+    ld a, COUNTDOWN_BLIT_TIMER_RELOAD
     ld [COUNTDOWN_BLIT_TIMER], a
     ret
 
 
+UnusedDrawLowNibbleTileDigitsByCoord::
     call CalcTilemapAddress
 
-jr_001_4324:
+UnusedDrawLowNibbleTileDigitsLoop:
     ld a, [de]
-    and $0f
+    and PLAYFIELD_DIGIT_MASK
     inc de
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl+], a
     dec b
-    jr nz, jr_001_4324
+    jr nz, UnusedDrawLowNibbleTileDigitsLoop
 
     ret
 
@@ -510,15 +540,15 @@ AddScore::
     daa
     ld [SCORE_BCD_MID], a
     ld a, [SCORE_BCD_HIGH]
-    adc $00
+    adc SCORE_BCD_HIGH_ADDEND
     daa
-    cp $10
+    cp SCORE_BCD_HIGH_OVERFLOW_LIMIT
     jr c, StoreScoreDigitsFromBCD
 
-    ld a, $99
+    ld a, SCORE_BCD_LOW_MID_MAX
     ld [SCORE_BCD_LOW], a
     ld [SCORE_BCD_MID], a
-    ld a, $09
+    ld a, SCORE_BCD_HIGH_MAX
 
 StoreScoreDigitsFromBCD:
     ld [SCORE_BCD_HIGH], a
@@ -535,149 +565,154 @@ StoreScoreDigitsFromBCD:
     ld [hl+], a
     ld a, [SCORE_BCD_LOW]
     ld [hl+], a
-    ld a, [$c672]
-    ld [$c629], a
+    ld a, [SCORE_UNUSED_TILE_BASE_SOURCE]
+    ld [SCORE_UNUSED_TILE_BASE_COPY], a
     swap a
-    ld [$c628], a
+    ld [SCORE_UNUSED_TILE_BASE_SWAPPED], a
     ret
 
 
-InitGameScreen::
-    ld a, [$c620]
+ResetScoreAccumulatorAndDigits::
+    ld a, [SCORE_PRESERVED_UNUSED_BYTE]
     ld c, a
     xor a
     ld hl, SCORE_BCD_LOW
-    ld b, $09
+    ld b, SCORE_CLEAR_BYTE_COUNT
 
-jr_001_4387:
+ClearScoreAccumulatorAndDigitsLoop:
     ld [hl+], a
     dec b
-    jr nz, jr_001_4387
+    jr nz, ClearScoreAccumulatorAndDigitsLoop
 
     ld a, c
-    ld [$c620], a
+    ld [SCORE_PRESERVED_UNUSED_BYTE], a
     ret
 
 
     ld b, a
     call CalcTilemapAddress
 
-DrawBCDNumber::
+UnusedDrawTwoDigitBcdTilePair::
     xor a
     add b
     daa
     ld b, a
     swap a
-    and $0f
-    jr z, jr_001_43a2
+    and PLAYFIELD_DIGIT_MASK
+    jr z, UseBlankUnusedBcdTensTile
 
-    add $40
-    jr jr_001_43a4
+    add PLAYFIELD_DIGIT_TILE_BASE
+    jr StoreUnusedBcdDigitTiles
 
-jr_001_43a2:
-    ld a, $4a
+UseBlankUnusedBcdTensTile:
+    ld a, PLAYFIELD_BLANK_DIGIT_TILE
 
-jr_001_43a4:
+StoreUnusedBcdDigitTiles:
     ld [hl+], a
     ld a, b
-    and $0f
-    add $40
+    and PLAYFIELD_DIGIT_MASK
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl], a
     ret
 
 
-GameMainUpdate::
-    call CheckMatch
-    call DrawBox
-    call InitGameState2
-    call UpdateAnimFrame
+RunGameplayFrame::
+    call HandlePlayfieldInput
+    call UpdateGameplayObjectsAndCheckBTypeClear
+    call UpdateDropCursorAnimation
+    call Draw1PCountdownDigitTileSlots
     call ShufflePieceDisplaySlotOrder
     call ShufflePieceDisplayCodePool
-    call SetupGameBG
+    call DrawGameplayBgTopRowIfNoResultFlow
     call UpdatePieceDisplayBlink
     call UpdateFieldTimers
     call AnimateDropping
-    call LoadGameBGTiles
+    call DrawFieldColumnTilePattern
     call UpdateEggTextAnimation
     call CheckPause2P
     ld a, [GAME_TYPE]
     and a
-    jr z, jr_001_43dc
+    jr z, ContinueGameMainAfterTimerDraw
 
-    call FieldUpdate12
+    call DrawPlayfieldRoundTimerDigits
 
-jr_001_43dc:
+ContinueGameMainAfterTimerDraw:
     call TimerTick
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_43f1
+    jr z, ReturnFromGameplayFrame
 
-Check2PGameState::
+ProcessPending2PRoundResult::
     ld a, [ROUND_RESULT_PENDING]
     and a
-    jr z, jr_001_43f1
+    jr z, ReturnFromGameplayFrame
 
     ld a, [ROUND_RESULT_CODE]
-    jp ProcessNewHighScore
+    jp ProcessRoundResultAndEnterRoundEnd
 
 
-jr_001_43f1:
+ReturnFromGameplayFrame:
     ret
 
 
-SetupGameBG::
+DrawGameplayBgTopRowIfNoResultFlow::
     ld hl, RESULT_FLOW_ACTIVE
     ld a, [hl]
     and a
     ret nz
 
-    ld b, $10
-    ld h, $01
-    ld l, $00
+    ld b, GAMEPLAY_BG_TOP_ROW_WIDTH
+    ld h, HIGH(GAMEPLAY_BG_TOP_ROW_COORD)
+    ld l, LOW(GAMEPLAY_BG_TOP_ROW_COORD)
     call CalcTilemapAddress
 
-jr_001_4401:
-    ld [hl], $4d
+FillGameplayBgTopRowLoop:
+    ld [hl], GAMEPLAY_BG_TOP_ROW_TILE
     inc hl
     dec b
-    jr nz, jr_001_4401
+    jr nz, FillGameplayBgTopRowLoop
 
     ret
 
 
-LoadGameBGTiles::
+DrawFieldColumnTilePattern::
     ld a, [FIELD_COLUMN_TILE_PATTERN_INDEX]
-    sla a
-    sla a
-    sla a
-    sla a
+    REPT FIELD_COLUMN_TILE_PATTERN_INDEX_SHIFT
+        sla a
+    ENDR
     ld hl, FieldColumnTilePatternTable
     call GetArrayElement
     ld d, h
     ld e, l
-    ld hl, $1000
+    ld hl, FIELD_COLUMN_TILE_PATTERN_DEST_COORD
     push de
     call CalcTilemapAddress
     pop de
-    ld b, $10
+    ld b, FIELD_COLUMN_TILE_PATTERN_RECORD_SIZE
 
-jr_001_4425:
+CopyFieldColumnTilePatternLoop:
     ld a, [de]
     ld [hl+], a
     inc de
     dec b
-    jr nz, jr_001_4425
+    jr nz, CopyFieldColumnTilePatternLoop
 
     ret
 
+MACRO FIELD_COLUMN_TILE_PATTERN_ROW
+    db FIELD_COLUMN_TILE_PATTERN_TILE_\1, FIELD_COLUMN_TILE_PATTERN_TILE_\2
+    db FIELD_COLUMN_TILE_PATTERN_TILE_\3, FIELD_COLUMN_TILE_PATTERN_TILE_\4
+    db FIELD_COLUMN_TILE_PATTERN_TILE_\5, FIELD_COLUMN_TILE_PATTERN_TILE_\6
+    db FIELD_COLUMN_TILE_PATTERN_TILE_\7, FIELD_COLUMN_TILE_PATTERN_TILE_\8
+ENDM
 
 FieldColumnTilePatternTable::
-    db $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a
-    db $4a, $fb, $fc, $4a, $4a, $fb, $fc, $4a
-    db $4a, $fb, $fc, $4a, $4a, $4a, $4a, $4a
-    db $4a, $4a, $4a, $4a, $4a, $fb, $fc, $4a
-    db $4a, $fb, $fc, $4a, $4a, $fb, $fc, $4a
-    db $4a, $4a, $4a, $4a, $4a, $4a, $4a, $4a
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK, BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK, BLANK, BLANK, BLANK, BLANK
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, BLANK, BLANK, BLANK, BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK, BLANK, LEFT_MARKER, RIGHT_MARKER, BLANK
+    FIELD_COLUMN_TILE_PATTERN_ROW BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK, BLANK
 
 StartNextRound::
     xor a
@@ -686,7 +721,7 @@ StartNextRound::
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
-    ld [EGG_COUNT_RESERVED], a
+    ld [EGG_COUNT_UNUSED_BYTE], a
     ld [RESULT_CLEAR_FLAG], a
     ld [RESULT_GAME_OVER_FLAG], a
     ld [LINK_PENDING_FIELD_RISE], a
@@ -695,102 +730,102 @@ StartNextRound::
     ld [EGG_TEXT_ALT_ANIM_PHASE], a
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_448c
+    jr z, SetupNextRoundSinglePlayerSettings
 
     call ApplyGameSettings
-    jr jr_001_449e
+    jr ContinueNextRoundSetup
 
-jr_001_448c:
+SetupNextRoundSinglePlayerSettings:
     ld hl, ACTIVE_LEVEL
     ld a, [hl]
-    cp $04
-    jr z, jr_001_4495
+    cp ACTIVE_LEVEL_MAX
+    jr z, SkipNextRoundActiveLevelIncrement
 
     inc [hl]
 
-jr_001_4495:
+SkipNextRoundActiveLevelIncrement:
     ld a, [BGM_INDEX]
     call PlaySound
     call AdvanceLevelDisplayDigits
 
-jr_001_449e:
+ContinueNextRoundSetup:
     call UpdateNextDisplay
-    call HandleDrop
-    call ProcessColumn
+    call InitPlayfieldBoardAndPieceState
+    call InitPlayerCursorObject
     call DrawAllColumns
-    call SetupGameBG
-    call UpdateAnimFrame
-    call InitGameBoard
+    call DrawGameplayBgTopRowIfNoResultFlow
+    call Draw1PCountdownDigitTileSlots
+    call InitDropCursorAnimationState
     call InitBlinkState
-    call ClearAnimState
+    call ClearDropAnimationState
     call ResetPieceDisplayBlinkTimer
     call ClearLevelDisplayTickCounter
-    call InitEggSystem
-    call CalcDifficulty
-    call FieldUpdate15
+    call ClearLinkRoundState
+    call QueueLinkFieldOccupancyCount
+    call ClearRoundTimerDigitsAndResume
     xor a
     ld [ROUND_TIMER_STOPPED], a
     ld [TOTAL_TIMER_STOPPED], a
     ret
 
 
-ProcessColumn::
-    ld a, $01
+InitPlayerCursorObject::
+    ld a, FIELD_COLUMN_TILE_PATTERN_INITIAL_INDEX
     ld [FIELD_COLUMN_TILE_PATTERN_INDEX], a
     ld hl, SPRITE_OBJECT_SLOT_0
     ld [hl], SPRITE_OBJECT_TYPE_PLAYER_CURSOR
     inc hl
     inc hl
-    ld [hl], $00
+    ld [hl], PLAYER_CURSOR_INITIAL_FRAME
     inc hl
     inc hl
-    ld [hl], $80
+    ld [hl], PLAYER_CURSOR_INITIAL_BASE_Y
     inc hl
     inc hl
-    ld [hl], $20
+    ld [hl], PLAYER_CURSOR_INITIAL_BASE_X
     ret
 
 
-    call SetupGameBG
+    call DrawGameplayBgTopRowIfNoResultFlow
 
-UpdateColumn::
+FillTilemapRectByCoord::
     ld e, a
     call CalcTilemapAddress
     ld d, b
 
-jr_001_44ef:
+FillTilemapRectRowLoop:
     ld a, e
 
-jr_001_44f0:
+FillTilemapRectColumnLoop:
     ld [hl+], a
     dec b
-    jr nz, jr_001_44f0
+    jr nz, FillTilemapRectColumnLoop
 
     ld b, d
-    ld a, $14
+    ld a, BG_MAP_ROW_STRIDE
     sub d
     add l
     ld l, a
-    jr nc, jr_001_44fd
+    jr nc, AdvanceTilemapRectRow
 
     inc h
 
-jr_001_44fd:
+AdvanceTilemapRectRow:
     dec c
-    jr nz, jr_001_44ef
+    jr nz, FillTilemapRectRowLoop
 
     ret
 
 
-DrawColumnData::
+DrawSequentialTileRowByCoord::
     call CalcTilemapAddress
     ld a, c
 
-jr_001_4505:
+DrawSequentialTileRowLoop:
     ld [hl+], a
     inc a
     dec b
-    jr nz, jr_001_4505
+    jr nz, DrawSequentialTileRowLoop
 
     ret
 
@@ -803,25 +838,25 @@ InitPlayfield::
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
-    ld [EGG_COUNT_RESERVED], a
+    ld [EGG_COUNT_UNUSED_BYTE], a
     call UpdateNextDisplay
-    call HandleDrop
-    call ProcessColumn
+    call InitPlayfieldBoardAndPieceState
+    call InitPlayerCursorObject
     call DrawAllColumns
-    call SetupGameBG
-    call InitGameScreen
-    call UpdateAnimFrame
-    call InitGameBoard
+    call DrawGameplayBgTopRowIfNoResultFlow
+    call ResetScoreAccumulatorAndDigits
+    call Draw1PCountdownDigitTileSlots
+    call InitDropCursorAnimationState
     call InitBlinkState
-    call ClearAnimState
+    call ClearDropAnimationState
     call ResetPieceDisplayBlinkTimer
     call ClearLevelDisplayTickCounter
-    call ClearEggCount
-    call CalcDifficulty
-    call RefreshField
-    call FieldUpdate16
-    call FieldUpdate15
-    call InitEggSystem
+    call ClearEggCountDigitsAndUnusedByte
+    call QueueLinkFieldOccupancyCount
+    call InitResultRecordsIfNeeded
+    call ClearTotalTimerDigitsAndResume
+    call ClearRoundTimerDigitsAndResume
+    call ClearLinkRoundState
     xor a
     ld [ROUND_TIMER_STOPPED], a
     ld [TOTAL_TIMER_STOPPED], a
@@ -831,11 +866,11 @@ InitPlayfield::
 DrawLevelDisplayDigits::
     call CalcTilemapAddress
     ld a, [LEVEL_DISPLAY_ONES]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl], a
     dec hl
     ld a, [LEVEL_DISPLAY_TENS]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl], a
     ret
 
@@ -848,27 +883,27 @@ AdvanceATypeLevelDisplayDigits::
     ld hl, PROGRESSION_LEVEL
     inc [hl]
     ld a, [LEVEL_DISPLAY_TENS]
-    cp $09
-    jr nz, jr_001_4588
+    cp LEVEL_DISPLAY_MAX_DIGIT
+    jr nz, IncrementATypeLevelDisplayDigits
 
     ld a, [LEVEL_DISPLAY_ONES]
-    cp $09
-    jr nz, jr_001_4588
+    cp LEVEL_DISPLAY_MAX_DIGIT
+    jr nz, IncrementATypeLevelDisplayDigits
 
     ret
 
 
-jr_001_4588:
+IncrementATypeLevelDisplayDigits:
     ld a, [LEVEL_DISPLAY_ONES]
     inc a
-    cp $0a
-    jr c, jr_001_4595
+    cp LEVEL_DISPLAY_DIGIT_LIMIT
+    jr c, StoreATypeLevelDisplayOnes
 
     ld hl, LEVEL_DISPLAY_TENS
     inc [hl]
     xor a
 
-jr_001_4595:
+StoreATypeLevelDisplayOnes:
     ld [LEVEL_DISPLAY_ONES], a
     ret
 
@@ -877,27 +912,27 @@ AdvanceLevelDisplayDigits::
     ld hl, PROGRESSION_LEVEL
     inc [hl]
     ld a, [LEVEL_DISPLAY_TENS]
-    cp $09
-    jr nz, jr_001_45ac
+    cp LEVEL_DISPLAY_MAX_DIGIT
+    jr nz, IncrementLevelDisplayDigits
 
     ld a, [LEVEL_DISPLAY_ONES]
-    cp $09
-    jr nz, jr_001_45ac
+    cp LEVEL_DISPLAY_MAX_DIGIT
+    jr nz, IncrementLevelDisplayDigits
 
     ret
 
 
-jr_001_45ac:
+IncrementLevelDisplayDigits:
     ld a, [LEVEL_DISPLAY_ONES]
     inc a
-    cp $0a
-    jr c, jr_001_45b9
+    cp LEVEL_DISPLAY_DIGIT_LIMIT
+    jr c, StoreLevelDisplayOnes
 
     ld hl, LEVEL_DISPLAY_TENS
     inc [hl]
     xor a
 
-jr_001_45b9:
+StoreLevelDisplayOnes:
     ld [LEVEL_DISPLAY_ONES], a
     ret
 
@@ -908,78 +943,79 @@ ClearLevelDisplayTickCounter::
     ret
 
 
-GetFramePointer::
+DrawEggTextFrame0::
     xor a
-    jr AnimateSprite
+    jr DrawEggTextFrameByIndex
 
     ret
 
 
+UnusedInlineEggTextFrame0Drawer:
     call CalcTilemapAddress
-    ld [hl], $f0
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE
     inc hl
-    ld [hl], $f1
-    ld de, $0013
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $01
+    ld de, EGG_TEXT_INLINE_TWO_TILE_ROW_DELTA
     add hl, de
-    ld [hl], $f2
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $02
     inc hl
-    ld [hl], $f3
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $03
     inc hl
-    ld [hl], $f4
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $04
     add hl, de
-    ld [hl], $f5
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $05
     inc hl
-    ld [hl], $f6
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $06
     inc hl
-    ld [hl], $f7
-    ld de, $0012
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $07
+    ld de, EGG_TEXT_INLINE_THREE_TILE_ROW_DELTA
     add hl, de
-    ld [hl], $f8
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $08
     inc hl
-    ld [hl], $f9
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $09
     inc hl
-    ld [hl], $fa
+    ld [hl], EGG_TEXT_FRAME0_TILE_BASE + $0a
     ret
 
 
-AnimateSprite::
+DrawEggTextFrameByIndex::
     push af
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr nz, jr_001_4629
+    jr nz, ReturnFromEggTextFrameDrawIn2P
 
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_4602
+    jr nz, UseBTypeEggTextCoord
 
-    ld hl, $0d10
-    jr jr_001_4605
+    ld hl, PLAYFIELD_EGG_DISPLAY_A_TYPE_COORD
+    jr SelectEggTextFrame
 
-jr_001_4602:
-    ld hl, $0e10
+UseBTypeEggTextCoord:
+    ld hl, PLAYFIELD_EGG_DISPLAY_B_TYPE_COORD
 
-jr_001_4605:
+SelectEggTextFrame:
     pop af
     and a
-    jr z, jr_001_460f
+    jr z, UseEggTextFrame0
 
-    cp $01
-    jr z, jr_001_4614
+    cp EGG_TEXT_FRAME_1
+    jr z, UseEggTextFrame1
 
-    jr jr_001_4619
+    jr UseEggTextFrame2
 
-jr_001_460f:
-    ld de, SpriteAnimTextFrame0
-    jr jr_001_461c
+UseEggTextFrame0:
+    ld de, EggTextFrame0TileRows
+    jr DrawEggTextFrameRows
 
-jr_001_4614:
-    ld de, SpriteAnimTextFrame1
-    jr jr_001_461c
+UseEggTextFrame1:
+    ld de, EggTextFrame1TileRows
+    jr DrawEggTextFrameRows
 
-jr_001_4619:
-    ld de, SpriteAnimTextFrame2
+UseEggTextFrame2:
+    ld de, EggTextFrame2TileRows
 
-jr_001_461c:
+DrawEggTextFrameRows:
     call DrawStringToGrid
     call DrawStringToGrid
     call DrawStringToGrid
@@ -987,45 +1023,56 @@ jr_001_461c:
     ret
 
 
-jr_001_4629:
+ReturnFromEggTextFrameDrawIn2P:
     pop af
     ret
 
+MACRO EGG_TEXT_TILE_ROW_2
+    db \1, \2, DRAW_STRING_ROW_END
+ENDM
 
-SpriteAnimTextFrame0::
-    db $f0, $f1, $ff
-    db $f2, $f3, $ff
-    db $f5, $f6, $f7, $ff
-    db $f8, $f9, $fa, $ff
+MACRO EGG_TEXT_TILE_ROW_3
+    db \1, \2, \3, DRAW_STRING_ROW_END
+ENDM
 
-SpriteAnimTextFrame1::
-    db $e0, $e1, $ff
-    db $e2, $e3, $e4, $4c, $ff
-    db $e5, $e6, $e7, $4c, $ff
-    db $e8, $e9, $ea, $4c, $ff
+MACRO EGG_TEXT_TILE_ROW_4
+    db \1, \2, \3, \4, DRAW_STRING_ROW_END
+ENDM
 
-SpriteAnimTextFrame2::
-    db $f0, $f1, $ff
-    db $f2, $f3, $f4, $4c, $ff
-    db $eb, $ec, $ed, $4c, $ff
-    db $ee, $ef, $fd, $4c, $ff
+EggTextFrame0TileRows::
+    EGG_TEXT_TILE_ROW_2 EGG_TEXT_FRAME0_TILE_BASE, EGG_TEXT_FRAME0_TILE_BASE + $01
+    EGG_TEXT_TILE_ROW_2 EGG_TEXT_FRAME0_TILE_BASE + $02, EGG_TEXT_FRAME0_TILE_BASE + $03
+    EGG_TEXT_TILE_ROW_3 EGG_TEXT_FRAME0_TILE_BASE + $05, EGG_TEXT_FRAME0_TILE_BASE + $06, EGG_TEXT_FRAME0_TILE_BASE + $07
+    EGG_TEXT_TILE_ROW_3 EGG_TEXT_FRAME0_TILE_BASE + $08, EGG_TEXT_FRAME0_TILE_BASE + $09, EGG_TEXT_FRAME0_TILE_BASE + $0a
 
-DrawEggCount::
+EggTextFrame1TileRows::
+    EGG_TEXT_TILE_ROW_2 EGG_TEXT_FRAME1_TILE_BASE, EGG_TEXT_FRAME1_TILE_BASE + $01
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME1_TILE_BASE + $02, EGG_TEXT_FRAME1_TILE_BASE + $03, EGG_TEXT_FRAME1_TILE_BASE + $04, EGG_TEXT_ROW_FILL_TILE
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME1_TILE_BASE + $05, EGG_TEXT_FRAME1_TILE_BASE + $06, EGG_TEXT_FRAME1_TILE_BASE + $07, EGG_TEXT_ROW_FILL_TILE
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME1_TILE_BASE + $08, EGG_TEXT_FRAME1_TILE_BASE + $09, EGG_TEXT_FRAME1_TILE_BASE + $0a, EGG_TEXT_ROW_FILL_TILE
+
+EggTextFrame2TileRows::
+    EGG_TEXT_TILE_ROW_2 EGG_TEXT_FRAME0_TILE_BASE, EGG_TEXT_FRAME0_TILE_BASE + $01
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME0_TILE_BASE + $02, EGG_TEXT_FRAME0_TILE_BASE + $03, EGG_TEXT_FRAME0_TILE_BASE + $04, EGG_TEXT_ROW_FILL_TILE
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME2_ALT_TILE_BASE, EGG_TEXT_FRAME2_ALT_TILE_BASE + $01, EGG_TEXT_FRAME2_ALT_TILE_BASE + $02, EGG_TEXT_ROW_FILL_TILE
+    EGG_TEXT_TILE_ROW_4 EGG_TEXT_FRAME2_ALT_TILE_BASE + $03, EGG_TEXT_FRAME2_ALT_TILE_BASE + $04, EGG_TEXT_FRAME2_ALT_LAST_TILE, EGG_TEXT_ROW_FILL_TILE
+
+DrawPlayfieldEggCountDigits::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
     ld a, [GAME_TYPE]
     and a
-    jr z, jr_001_466d
+    jr z, UseATypeEggCountCoord
 
-    ld hl, $0e13
-    jr jr_001_4670
+    ld hl, PLAYFIELD_EGG_COUNT_B_TYPE_COORD
+    jr DrawPlayfieldEggCountDigitsAtCoord
 
-jr_001_466d:
-    ld hl, $0c13
+UseATypeEggCountCoord:
+    ld hl, PLAYFIELD_EGG_COUNT_A_TYPE_COORD
 
-jr_001_4670:
+DrawPlayfieldEggCountDigitsAtCoord:
     call CalcTilemapAddress
     ld a, [EGG_COUNT_ONES]
     add EGG_COUNT_TILE_BASE
@@ -1037,12 +1084,12 @@ jr_001_4670:
     ret
 
 
-IncrementEggCounter::
+IncrementEggCountAndRefreshDisplay::
     ld hl, EGG_COUNT_ONES
     inc [hl]
     ld a, [hl]
     cp EGG_COUNT_DIGIT_LIMIT
-    jr c, jr_001_46ab
+    jr c, RefreshEggCountDigitsAfterIncrement
 
     xor a
     ld [hl], a
@@ -1051,7 +1098,7 @@ IncrementEggCounter::
     inc [hl]
     ld a, [hl]
     cp EGG_COUNT_DIGIT_LIMIT
-    jr c, jr_001_46ab
+    jr c, RefreshEggCountDigitsAfterIncrement
 
     xor a
     ld [hl], a
@@ -1060,34 +1107,34 @@ IncrementEggCounter::
     inc [hl]
     ld a, [hl]
     cp EGG_COUNT_DIGIT_LIMIT
-    jr c, jr_001_46ab
+    jr c, RefreshEggCountDigitsAfterIncrement
 
     ld a, EGG_COUNT_MAX_DIGIT
     ld [hl-], a
     ld [hl-], a
     ld [hl], a
 
-jr_001_46ab:
-    call DrawEggCount
+RefreshEggCountDigitsAfterIncrement:
+    call DrawPlayfieldEggCountDigits
     ret
 
 
-ClearEggCount::
+ClearEggCountDigitsAndUnusedByte::
     xor a
     ld [EGG_COUNT_ONES], a
     ld [EGG_COUNT_TENS], a
     ld [EGG_COUNT_HUNDREDS], a
-    ld [EGG_COUNT_RESERVED], a
+    ld [EGG_COUNT_UNUSED_BYTE], a
     ret
 
 
-InitEggSystem::
+ClearLinkRoundState::
     xor a
     ld [LINK_SEND_QUEUE_INDEX], a
     ld [LINK_PENDING_FIELD_RISE], a
     ld [LINK_SEND], a
     ld [LINK_RECV], a
-    ld [LINK_STAGING_BYTE], a
+    ld [LINK_UNUSED_STAGING_BYTE], a
     ld [LINK_SEND_QUEUE_0], a
     ld [LINK_SEND_QUEUE_1], a
     ld [LINK_FIELD_EVENT_PAYLOAD], a
@@ -1101,139 +1148,146 @@ DrawTitleLabels::
     ld hl, TITLE_LABEL_YOSHI_COORD
     ld de, TitleLabelTextYoshi
     call DrawStringToGrid
-    call GenerateNext
+    call DrawTitlePlayerSelectionMarker
     ret
 
+MACRO TITLE_LABEL_TEXT_ROW
+    db \1, TITLE_LABEL_TEXT_SEPARATOR_TILE
+    db TITLE_LABEL_TEXT_SHARED_TILE_BASE, TITLE_LABEL_TEXT_SHARED_TILE_BASE + $01
+    db TITLE_LABEL_TEXT_SHARED_TILE_BASE + $02, TITLE_LABEL_TEXT_SHARED_TILE_BASE + $03
+    db TITLE_LABEL_TEXT_SHARED_TILE_BASE + $04, TITLE_LABEL_TEXT_SHARED_TILE_BASE + $05
+    db DRAW_STRING_ROW_END
+ENDM
 
 TitleLabelTextPlayer::
-    db $62, $e0, $64, $65, $66, $67, $68, $69, $ff
+    TITLE_LABEL_TEXT_ROW TITLE_LABEL_PLAYER_PREFIX_TILE
 
 TitleLabelTextYoshi::
-    db $52, $e0, $64, $65, $66, $67, $68, $69, $ff
+    TITLE_LABEL_TEXT_ROW TITLE_LABEL_YOSHI_PREFIX_TILE
 
 ProcessTitleInput::
-    call DisplayNextPiece
+    call TickTitlePlayerMarkerBlink
     ldh a, [JOYPAD_PRESSED]
     and a
     ret z
 
-    bit 7, a
-    jr nz, jr_001_4713
+    bit PADB_DOWN, a
+    jr nz, SelectTitleTwoPlayerMode
 
-    bit 6, a
-    jr nz, jr_001_4721
+    bit PADB_UP, a
+    jr nz, SelectTitleOnePlayerMode
 
-    bit 2, a
-    jr nz, jr_001_472f
+    bit PADB_SELECT, a
+    jr nz, ToggleTitlePlayerMode
 
     ret
 
 
-jr_001_4713:
+SelectTitleTwoPlayerMode:
     ld a, [TWO_PLAYER_FLAG]
     inc a
-    cp $02
+    cp TITLE_PLAYER_MODE_COUNT
     ret nc
 
     ld [TWO_PLAYER_FLAG], a
-    call GenerateNext
+    call DrawTitlePlayerSelectionMarker
     ret
 
 
-jr_001_4721:
+SelectTitleOnePlayerMode:
     ld a, [TWO_PLAYER_FLAG]
     dec a
-    cp $ff
+    cp TITLE_PLAYER_MODE_UNDERFLOW_SENTINEL
     ret z
 
     ld [TWO_PLAYER_FLAG], a
-    call GenerateNext
+    call DrawTitlePlayerSelectionMarker
     ret
 
 
-jr_001_472f:
+ToggleTitlePlayerMode:
     ld a, [TWO_PLAYER_FLAG]
-    xor $01
+    xor TITLE_PLAYER_MODE_TOGGLE_MASK
     ld [TWO_PLAYER_FLAG], a
-    call GenerateNext
+    call DrawTitlePlayerSelectionMarker
     ret
 
 
-GenerateNext::
-    ld hl, $0f05
+DrawTitlePlayerSelectionMarker::
+    ld hl, TITLE_LABEL_PLAYER_MARKER_COORD
     call CalcTilemapAddress
-    ld [hl], $e0
-    ld hl, $1005
+    ld [hl], TITLE_LABEL_MARKER_CLEAR_TILE
+    ld hl, TITLE_LABEL_YOSHI_MARKER_COORD
     call CalcTilemapAddress
-    ld [hl], $e0
+    ld [hl], TITLE_LABEL_MARKER_CLEAR_TILE
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr nz, jr_001_475a
+    jr nz, DrawTitleTwoPlayerSelectionMarker
 
-    ld hl, $0f05
+    ld hl, TITLE_LABEL_PLAYER_MARKER_COORD
     call CalcTilemapAddress
-    ld [hl], $60
+    ld [hl], TITLE_LABEL_MARKER_SELECTED_TILE
     ret
 
 
-jr_001_475a:
-    ld hl, $1005
+DrawTitleTwoPlayerSelectionMarker:
+    ld hl, TITLE_LABEL_YOSHI_MARKER_COORD
     call CalcTilemapAddress
-    ld [hl], $60
+    ld [hl], TITLE_LABEL_MARKER_SELECTED_TILE
     ret
 
 
 ProcessOptionInput::
-    ld a, $02
+    ld a, TITLE_LINK_READY_BYTE
     ldh [rSB], a
-    ld a, $80
+    ld a, SERIAL_TRANSFER_EXTERNAL_CLOCK
     ldh [rSC], a
     ldh a, [JOYPAD_PRESSED]
-    bit 3, a
-    jr z, jr_001_477f
+    bit PADB_START, a
+    jr z, PollTitleStartOrReceivedLink
 
     xor a
     ld [LINK_RECV], a
     ldh [SERIAL_DONE], a
-    ld a, $01
+    ld a, TITLE_LINK_START_BYTE
     ldh [rSB], a
-    ld a, $81
+    ld a, SERIAL_TRANSFER_INTERNAL_CLOCK
     ldh [rSC], a
 
-jr_001_477f:
+PollTitleStartOrReceivedLink:
     ld a, [LINK_RECV]
     and a
-    jr nz, jr_001_4791
+    jr nz, HandleTitleLinkHandshakeByte
 
     ldh a, [JOYPAD_PRESSED]
-    bit 3, a
+    bit PADB_START, a
     ret z
 
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_47ba
+    jr z, EnterPreplayInitFromTitle
 
     ret
 
 
-jr_001_4791:
-    cp $01
-    jr nz, jr_001_47a1
+HandleTitleLinkHandshakeByte:
+    cp TITLE_LINK_START_BYTE
+    jr nz, CheckTitleLinkMasterHandshake
 
-    ld a, $02
+    ld a, LINK_ROLE_SLAVE
     ld [LINK_ROLE], a
-    ld a, $01
+    ld a, TITLE_PLAYER_MODE_2P
     ld [TWO_PLAYER_FLAG], a
-    jr jr_001_47a9
+    jr AcceptTitleLinkHandshake
 
-jr_001_47a1:
-    cp $02
+CheckTitleLinkMasterHandshake:
+    cp TITLE_LINK_READY_BYTE
     ret nz
 
-    ld a, $01
+    ld a, LINK_ROLE_MASTER
     ld [LINK_ROLE], a
 
-jr_001_47a9:
+AcceptTitleLinkHandshake:
     xor a
     ld [LINK_RECV], a
     ld [LINK_SEND], a
@@ -1242,7 +1296,7 @@ jr_001_47a9:
     ld [LINK_RECV], a
     ld [LINK_SEND], a
 
-jr_001_47ba:
+EnterPreplayInitFromTitle:
     xor a
     ldh [rSB], a
     ld a, GAME_STATE_PREPLAY_INIT
@@ -1250,295 +1304,270 @@ jr_001_47ba:
     ret
 
 
-DisplayNextPiece::
+TickTitlePlayerMarkerBlink::
     ld hl, TITLE_PLAYER_MARKER_TIMER
     dec [hl]
     ret nz
 
     ld a, [TITLE_PLAYER_MARKER_PHASE]
     and a
-    jr z, jr_001_47db
+    jr z, DrawTitlePlayerMarkerTopPhase
 
-    ld a, $0a
+    ld a, TITLE_PLAYER_MARKER_BOTTOM_DURATION
     ld [TITLE_PLAYER_MARKER_TIMER], a
     xor a
     ld [TITLE_PLAYER_MARKER_PHASE], a
-    call DrawNextBottom
+    call DrawTitlePlayerMarkerBottom
     ret
 
 
-jr_001_47db:
-    ld a, $d0
+DrawTitlePlayerMarkerTopPhase:
+    ld a, TITLE_PLAYER_MARKER_TOP_DURATION
     ld [TITLE_PLAYER_MARKER_TIMER], a
-    ld a, $01
+    ld a, TITLE_PLAYER_MARKER_TOP_PHASE
     ld [TITLE_PLAYER_MARKER_PHASE], a
-    call DrawNextTop
+    call DrawTitlePlayerMarkerTop
     ret
 
 
-DrawNextTop::
+DrawTitlePlayerMarkerTop::
     ld hl, TITLE_PLAYER_MARKER_ROW0_COORD
     ld b, TITLE_PLAYER_MARKER_WIDTH
     ld c, TITLE_PLAYER_MARKER_TOP_ROW0_TILE
-    call DrawColumnData
+    call DrawSequentialTileRowByCoord
     ld hl, TITLE_PLAYER_MARKER_ROW1_COORD
     ld b, TITLE_PLAYER_MARKER_WIDTH
     ld c, TITLE_PLAYER_MARKER_TOP_ROW1_TILE
-    call DrawColumnData
+    call DrawSequentialTileRowByCoord
     ret
 
 
-DrawNextBottom::
+DrawTitlePlayerMarkerBottom::
     ld hl, TITLE_PLAYER_MARKER_ROW0_COORD
     ld b, TITLE_PLAYER_MARKER_WIDTH
     ld c, TITLE_PLAYER_MARKER_BOTTOM_ROW0_TILE
-    call DrawColumnData
+    call DrawSequentialTileRowByCoord
     ld hl, TITLE_PLAYER_MARKER_ROW1_COORD
     ld b, TITLE_PLAYER_MARKER_WIDTH
     ld c, TITLE_PLAYER_MARKER_BOTTOM_ROW1_TILE
-    call DrawColumnData
+    call DrawSequentialTileRowByCoord
     ret
 
 
 UpdateNextDisplay::
     call FillGameTilemap
-    call FieldUpdate1
-    ld hl, $0010
-    ld bc, $0412
-    ld a, $4c
-    call UpdateColumn
-    call FieldUpdate2
-    call FieldUpdate3
-    call FieldUpdate4
-    call FieldUpdate5
-    call FieldUpdate6
-    call FieldUpdate7
-    call FieldUpdate11
-    call FieldUpdate13
+    call ClearSpriteObjectBuffer
+    ld hl, PLAYFIELD_SIDE_PANEL_TOP_LEFT_COORD
+    ld bc, PLAYFIELD_SIDE_PANEL_RECT_SIZE
+    ld a, PLAYFIELD_SIDE_PANEL_FILL_TILE
+    call FillTilemapRectByCoord
+    call Draw1PPlayfieldSidePanelLabelRow0
+    call DrawPlayfieldSidePanelLabelRow1
+    call DrawPlayfieldLevelDigits
+    call DrawPlayfieldSpeedValue
+    call DrawPlayfieldEggDisplay
+    call DrawPlayfieldBottomColumnMarkers
+    call DrawBTypeTimerHeaderAndDigits
+    call DrawTwoPlayerPlayfieldRoleHeaders
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr nz, jr_001_4850
+    jr nz, UseTwoPlayerPlayfieldBlankRows
 
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_484c
+    jr nz, UseBTypePlayfieldBlankRows
 
-    call FieldUpdate8
+    call BlankATypePlayfieldSidePanelRows
     ret
 
 
-jr_001_484c:
-    call FieldUpdate9
+UseBTypePlayfieldBlankRows:
+    call BlankBTypePlayfieldSidePanelRows
     ret
 
 
-jr_001_4850:
-    call FieldUpdate10
+UseTwoPlayerPlayfieldBlankRows:
+    call BlankTwoPlayerPlayfieldSidePanelRows
     ret
 
 
-FieldUpdate1::
+ClearSpriteObjectBuffer::
     ld hl, SPRITE_OBJECTS
-    ld b, $ff
+    ld b, SPRITE_OBJECT_BUFFER_CLEAR_BYTES
     xor a
 
-jr_001_485a:
+ClearSpriteObjectBufferLoop:
     ld [hl+], a
     dec b
-    jr nz, jr_001_485a
+    jr nz, ClearSpriteObjectBufferLoop
 
     ret
 
 
-FieldUpdate2::
+Draw1PPlayfieldSidePanelLabelRow0::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_4870
+    jr nz, SelectBTypePlayfieldLabelRow0
 
-    ld hl, $0210
-    jp DrawColumnBlock
+    ld hl, PLAYFIELD_LABEL_ROW0_A_TYPE_COORD
+    jp DrawPlayfieldSidePanelLabelRow0AtCoord
 
 
-jr_001_4870:
-    ld hl, $0110
+SelectBTypePlayfieldLabelRow0:
+    ld hl, PLAYFIELD_LABEL_ROW0_B_TYPE_COORD
 
-DrawColumnBlock::
-    ld bc, $0430
-    call DrawColumnData
+DrawPlayfieldSidePanelLabelRow0AtCoord::
+    ld bc, PLAYFIELD_LABEL_ROW0_TILE_ROW
+    call DrawSequentialTileRowByCoord
     ret
 
 
-FieldUpdate3::
+DrawPlayfieldSidePanelLabelRow1::
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_4885
+    jr z, Select1PPlayfieldLabelRow1
 
-    ld hl, $0210
-    jr jr_001_4893
+    ld hl, PLAYFIELD_LABEL_ROW1_2P_COORD
+    jr DrawPlayfieldSidePanelLabelRow1AtCoord
 
-jr_001_4885:
+Select1PPlayfieldLabelRow1:
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_4890
+    jr nz, SelectBTypePlayfieldLabelRow1
 
-    ld hl, $0710
-    jr jr_001_4893
+    ld hl, PLAYFIELD_LABEL_ROW1_A_TYPE_COORD
+    jr DrawPlayfieldSidePanelLabelRow1AtCoord
 
-jr_001_4890:
-    ld hl, $0910
+SelectBTypePlayfieldLabelRow1:
+    ld hl, PLAYFIELD_LABEL_ROW1_B_TYPE_COORD
 
-jr_001_4893:
-    ld bc, $0438
-    call DrawColumnData
+DrawPlayfieldSidePanelLabelRow1AtCoord:
+    ld bc, PLAYFIELD_LABEL_ROW1_TILE_ROW
+    call DrawSequentialTileRowByCoord
     ret
 
 
-FieldUpdate4::
+DrawPlayfieldLevelDigits::
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_48a5
+    jr z, Select1PPlayfieldLevelDigitsCoord
 
-    ld hl, $0312
-    jr jr_001_48b3
+    ld hl, PLAYFIELD_LEVEL_DIGITS_2P_COORD
+    jr DrawLevelDisplayDigitsAtPlayfieldCoord
 
-jr_001_48a5:
+Select1PPlayfieldLevelDigitsCoord:
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_48b0
+    jr nz, SelectBTypePlayfieldLevelDigitsCoord
 
-    ld hl, $0812
-    jr jr_001_48b3
+    ld hl, PLAYFIELD_LEVEL_DIGITS_A_TYPE_COORD
+    jr DrawLevelDisplayDigitsAtPlayfieldCoord
 
-jr_001_48b0:
-    ld hl, $0a12
+SelectBTypePlayfieldLevelDigitsCoord:
+    ld hl, PLAYFIELD_LEVEL_DIGITS_B_TYPE_COORD
 
-jr_001_48b3:
+DrawLevelDisplayDigitsAtPlayfieldCoord:
     call DrawLevelDisplayDigits
     ret
 
 
-FieldUpdate5::
+DrawPlayfieldSpeedValue::
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_48c2
+    jr z, Select1PPlayfieldSpeedValueCoord
 
-    ld hl, $0411
-    jr jr_001_48d0
+    ld hl, PLAYFIELD_SPEED_VALUE_2P_COORD
+    jr DrawSpeedValueAtPlayfieldCoord
 
-jr_001_48c2:
+Select1PPlayfieldSpeedValueCoord:
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_48cd
+    jr nz, SelectBTypePlayfieldSpeedValueCoord
 
-    ld hl, $0911
-    jr jr_001_48d0
+    ld hl, PLAYFIELD_SPEED_VALUE_A_TYPE_COORD
+    jr DrawSpeedValueAtPlayfieldCoord
 
-jr_001_48cd:
-    ld hl, $0b11
+SelectBTypePlayfieldSpeedValueCoord:
+    ld hl, PLAYFIELD_SPEED_VALUE_B_TYPE_COORD
 
-jr_001_48d0:
-    ld b, $02
-    ld c, $3c
+DrawSpeedValueAtPlayfieldCoord:
+    ld b, PLAYFIELD_SPEED_VALUE_WIDTH
+    ld c, PLAYFIELD_SPEED_VALUE_TILE_BASE
     ld a, [ACTIVE_SPEED]
     sla a
     add c
     ld c, a
-    call DrawColumnData
+    call DrawSequentialTileRowByCoord
     ret
 
 
-FieldUpdate6::
+DrawPlayfieldEggDisplay::
     ld a, [TWO_PLAYER_FLAG]
     and a
-    jr z, jr_001_48e6
+    jr z, Select1PPlayfieldEggDisplayCoord
 
     ret
 
 
-jr_001_48e6:
+Select1PPlayfieldEggDisplayCoord:
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_48f1
+    jr nz, SelectBTypePlayfieldEggDisplayCoord
 
-    ld hl, $0d10
-    jr jr_001_48f4
+    ld hl, PLAYFIELD_EGG_DISPLAY_A_TYPE_COORD
+    jr DrawEggDisplayAtPlayfieldCoord
 
-jr_001_48f1:
-    ld hl, $0e10
+SelectBTypePlayfieldEggDisplayCoord:
+    ld hl, PLAYFIELD_EGG_DISPLAY_B_TYPE_COORD
 
-jr_001_48f4:
-    call GetFramePointer
-    call DrawEggCount
+DrawEggDisplayAtPlayfieldCoord:
+    call DrawEggTextFrame0
+    call DrawPlayfieldEggCountDigits
     ret
 
 
-FieldUpdate7::
-    ld hl, $1001
+DrawPlayfieldBottomColumnMarkers::
+    ld hl, PLAYFIELD_BOTTOM_COLUMN_MARKERS_COORD
     call CalcTilemapAddress
-    ld [hl], $fb
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_LEFT_TILE
     inc l
-    ld [hl], $fc
-    inc l
-    inc l
-    inc l
-    ld [hl], $fb
-    inc l
-    ld [hl], $fc
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_RIGHT_TILE
     inc l
     inc l
     inc l
-    ld [hl], $fb
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_LEFT_TILE
     inc l
-    ld [hl], $fc
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_RIGHT_TILE
     inc l
     inc l
     inc l
-    ld [hl], $fb
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_LEFT_TILE
     inc l
-    ld [hl], $fc
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_RIGHT_TILE
+    inc l
+    inc l
+    inc l
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_LEFT_TILE
+    inc l
+    ld [hl], PLAYFIELD_BOTTOM_COLUMN_MARKER_RIGHT_TILE
     ret
 
 
-FieldUpdate8::
-    ld hl, $0510
+BlankATypePlayfieldSidePanelRows::
+    ld hl, PLAYFIELD_A_TYPE_BLANK_ROW0_COORD
     call CalcTilemapAddress
-    ld a, $4b
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
-    ld hl, $0b10
+    ld hl, PLAYFIELD_A_TYPE_BLANK_ROW1_COORD
     call CalcTilemapAddress
-    ld a, $4b
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ret
-
-
-FieldUpdate9::
-    ld hl, $0410
-    call CalcTilemapAddress
-    ld a, $4b
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld hl, $0810
-    call CalcTilemapAddress
-    ld a, $4b
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld [hl+], a
-    ld hl, $0d10
-    call CalcTilemapAddress
-    ld a, $4b
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
@@ -1546,17 +1575,24 @@ FieldUpdate9::
     ret
 
 
-FieldUpdate10::
-    ld hl, $0610
+BlankBTypePlayfieldSidePanelRows::
+    ld hl, PLAYFIELD_B_TYPE_BLANK_ROW0_COORD
     call CalcTilemapAddress
-    ld a, $4b
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
-    ld hl, $0c10
+    ld hl, PLAYFIELD_B_TYPE_BLANK_ROW1_COORD
     call CalcTilemapAddress
-    ld a, $4b
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld hl, PLAYFIELD_B_TYPE_BLANK_ROW2_COORD
+    call CalcTilemapAddress
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
@@ -1564,7 +1600,25 @@ FieldUpdate10::
     ret
 
 
-FieldUpdate11::
+BlankTwoPlayerPlayfieldSidePanelRows::
+    ld hl, TWO_PLAYER_BLANK_ROW0_COORD
+    call CalcTilemapAddress
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld hl, TWO_PLAYER_BLANK_ROW1_COORD
+    call CalcTilemapAddress
+    ld a, PLAYFIELD_SIDE_PANEL_BLANK_TILE
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ld [hl+], a
+    ret
+
+
+DrawBTypeTimerHeaderAndDigits::
     ld a, [GAME_TYPE]
     and a
     ret z
@@ -1573,72 +1627,73 @@ FieldUpdate11::
     and a
     ret nz
 
-    ld hl, $0510
-    ld bc, $047c
-    call DrawColumnData
-    call FieldUpdate12
+    ld hl, PLAYFIELD_B_TYPE_TIMER_HEADER_COORD
+    ld bc, PLAYFIELD_B_TYPE_TIMER_HEADER_TILE_ROW
+    call DrawSequentialTileRowByCoord
+    call DrawPlayfieldRoundTimerDigits
     ret
 
 
-FieldUpdate12::
-    ld hl, $0610
-    call FieldUpdate14
+DrawPlayfieldRoundTimerDigits::
+    ld hl, PLAYFIELD_ROUND_TIMER_COORD
+    call DrawRoundTimerDigits
     ret
 
 
+UnusedDrawPlayfieldGameTypeHeader:
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
 
-    ld hl, $0110
+    ld hl, PLAYFIELD_GAME_TYPE_HEADER_COORD
     call CalcTilemapAddress
     ld a, [GAME_TYPE]
     and a
-    jr nz, jr_001_49a9
+    jr nz, UseBTypePlayfieldGameTypeHeaderTile
 
-    ld a, $34
-    jr jr_001_49ab
+    ld a, PLAYFIELD_GAME_TYPE_A_TILE
+    jr DrawPlayfieldGameTypeHeaderText
 
-jr_001_49a9:
-    ld a, $4e
+UseBTypePlayfieldGameTypeHeaderTile:
+    ld a, PLAYFIELD_GAME_TYPE_B_TILE
 
-jr_001_49ab:
+DrawPlayfieldGameTypeHeaderText:
     ld [hl], a
-    ld hl, $0111
-    ld bc, $0335
-    call DrawColumnData
+    ld hl, PLAYFIELD_GAME_TYPE_HEADER_TEXT_COORD
+    ld bc, PLAYFIELD_GAME_TYPE_HEADER_TILE_ROW
+    call DrawSequentialTileRowByCoord
     ret
 
 
-FieldUpdate13::
+DrawTwoPlayerPlayfieldRoleHeaders::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret z
 
     ld a, [LINK_ROLE]
-    cp $02
-    jr z, jr_001_49d5
+    cp LINK_ROLE_SLAVE
+    jr z, DrawTwoPlayerRoleHeadersForSlave
 
-    ld hl, $0810
-    ld bc, $0470
-    call DrawColumnData
-    ld hl, $0e10
-    ld bc, $0474
-    call DrawColumnData
+    ld hl, TWO_PLAYER_ROLE_HEADER_TOP_COORD
+    ld bc, TWO_PLAYER_ROLE_HEADER_TILE_ROW_0
+    call DrawSequentialTileRowByCoord
+    ld hl, TWO_PLAYER_ROLE_HEADER_BOTTOM_COORD
+    ld bc, TWO_PLAYER_ROLE_HEADER_TILE_ROW_1
+    call DrawSequentialTileRowByCoord
     ret
 
 
-jr_001_49d5:
-    ld hl, $0e10
-    ld bc, $0470
-    call DrawColumnData
-    ld hl, $0810
-    ld bc, $0474
-    call DrawColumnData
+DrawTwoPlayerRoleHeadersForSlave:
+    ld hl, TWO_PLAYER_ROLE_HEADER_BOTTOM_COORD
+    ld bc, TWO_PLAYER_ROLE_HEADER_TILE_ROW_0
+    call DrawSequentialTileRowByCoord
+    ld hl, TWO_PLAYER_ROLE_HEADER_TOP_COORD
+    ld bc, TWO_PLAYER_ROLE_HEADER_TILE_ROW_1
+    call DrawSequentialTileRowByCoord
     ret
 
 
-FieldUpdate14::
+DrawRoundTimerDigits::
     ld a, [TWO_PLAYER_FLAG]
     and a
     ret nz
@@ -1646,25 +1701,25 @@ FieldUpdate14::
     call CalcTilemapAddress
     ld de, ROUND_TIMER_DIGITS
     ld a, [de]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     inc de
     ld a, [de]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl+], a
     inc de
-    ld a, $4f
+    ld a, PLAYFIELD_ROUND_TIMER_SEPARATOR_TILE
     ld [hl+], a
     ld a, [de]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl+], a
     inc de
     ld a, [de]
-    add $40
+    add PLAYFIELD_DIGIT_TILE_BASE
     ld [hl], a
     ret
 
 
-FieldUpdate15::
+ClearRoundTimerDigitsAndResume::
     ld hl, ROUND_TIMER_DIGITS
     xor a
     ld [hl+], a
@@ -1675,7 +1730,7 @@ FieldUpdate15::
     ret
 
 
-FieldUpdate16::
+ClearTotalTimerDigitsAndResume::
     ld hl, TOTAL_TIMER_DIGITS
     xor a
     ld [hl+], a
@@ -1711,36 +1766,36 @@ UpdateEggTextAnimation::
 
     ld hl, EGG_TEXT_PULSE_STEPS
     dec [hl]
-    jr z, jr_001_4a65
+    jr z, ReturnAfterEggTextPulseComplete
 
     ld a, EGG_TEXT_PULSE_RELOAD
     ld [EGG_TEXT_PULSE_TIMER], a
     ld a, [EGG_TEXT_PULSE_FRAME]
-    cp $01
-    jr z, jr_001_4a57
+    cp EGG_TEXT_FRAME_1
+    jr z, DrawEggTextPulseFrame2
 
-    ld a, $01
-    call AnimateSprite
-    jr jr_001_4a5c
+    ld a, EGG_TEXT_FRAME_1
+    call DrawEggTextFrameByIndex
+    jr ToggleEggTextPulseFrame
 
-jr_001_4a57:
-    ld a, $02
-    call AnimateSprite
+DrawEggTextPulseFrame2:
+    ld a, EGG_TEXT_FRAME_2
+    call DrawEggTextFrameByIndex
 
-jr_001_4a5c:
+ToggleEggTextPulseFrame:
     ld a, [EGG_TEXT_PULSE_FRAME]
-    xor $03
+    xor EGG_TEXT_FRAME_TOGGLE_MASK
     ld [EGG_TEXT_PULSE_FRAME], a
     ret
 
 
-jr_001_4a65:
+ReturnAfterEggTextPulseComplete:
     ret
 
 
 ToggleEggTextAltAnimation::
     ld a, [EGG_TEXT_ALT_ANIM_PHASE]
-    xor $01
+    xor EGG_TEXT_ALT_PHASE_TOGGLE_MASK
     ld [EGG_TEXT_ALT_ANIM_PHASE], a
     ld a, [EGG_TEXT_ALT_ANIM_ACTIVE]
     and a
@@ -1748,57 +1803,57 @@ ToggleEggTextAltAnimation::
 
     ld a, [EGG_TEXT_ALT_ANIM_PHASE]
     inc a
-    call AnimateSprite
+    call DrawEggTextFrameByIndex
     ret
 
 
 EnableEggTextAltAnimation::
-    ld a, $01
+    ld a, EGG_TEXT_ALT_ANIM_ACTIVE_VALUE
     ld [EGG_TEXT_ALT_ANIM_ACTIVE], a
     ret
 
 
-ProcessFieldLogic::
-    ldh a, [GAME_ACTIVE]
+CopyNextBgMapShadowSlice::
+    ldh a, [BG_MAP_SHADOW_COPY_ENABLE_FLAG]
     and a
     ret z
 
     ld hl, sp+$00
     ld a, h
-    ldh [$ffa7], a
+    ldh [VBLANK_SAVED_SP_HI], a
     ld a, l
-    ldh [$ffa8], a
-    ldh a, [$ffa6]
+    ldh [VBLANK_SAVED_SP_LO], a
+    ldh a, [BG_MAP_COPY_PHASE]
     and a
-    jr z, jr_001_4a9f
+    jr z, SelectBgMapShadowCopySlice0
 
     dec a
-    jr z, jr_001_4aa9
+    jr z, SelectBgMapShadowCopySlice1
 
-    ld hl, $c590
+    ld hl, BG_MAP_SHADOW_COPY_SLICE_2
     ld sp, hl
-    ld hl, $9d80
+    ld hl, BG_MAP_VRAM_COPY_SLICE_2
     xor a
-    jr jr_001_4ab2
+    jr StoreNextBgMapShadowCopyPhase
 
-jr_001_4a9f:
-    ld hl, BG_MAP_SHADOW
+SelectBgMapShadowCopySlice0:
+    ld hl, BG_MAP_SHADOW_COPY_SLICE_0
     ld sp, hl
-    ld hl, $9c00
+    ld hl, BG_MAP_VRAM_COPY_SLICE_0
     inc a
-    jr jr_001_4ab2
+    jr StoreNextBgMapShadowCopyPhase
 
-jr_001_4aa9:
-    ld hl, $c518
+SelectBgMapShadowCopySlice1:
+    ld hl, BG_MAP_SHADOW_COPY_SLICE_1
     ld sp, hl
-    ld hl, $9cc0
-    ld a, $02
+    ld hl, BG_MAP_VRAM_COPY_SLICE_1
+    ld a, BG_MAP_COPY_PHASE_SLICE_2
 
-jr_001_4ab2:
-    ldh [$ffa6], a
-    ld b, $06
+StoreNextBgMapShadowCopyPhase:
+    ldh [BG_MAP_COPY_PHASE], a
+    ld b, BG_MAP_COPY_SLICE_ROWS
 
-jr_001_4ab6:
+CopyBgMapShadowSliceRowLoop:
     pop de
     ld [hl], e
     inc l
@@ -1848,20 +1903,20 @@ jr_001_4ab6:
     ld [hl], e
     inc l
     ld [hl], d
-    ld a, $0d
+    ld a, BG_MAP_COPY_NEXT_ROW_DELTA
     add l
     ld l, a
-    jr nc, jr_001_4aee
+    jr nc, CountBgMapShadowCopySliceRow
 
     inc h
 
-jr_001_4aee:
+CountBgMapShadowCopySliceRow:
     dec b
-    jr nz, jr_001_4ab6
+    jr nz, CopyBgMapShadowSliceRowLoop
 
-    ldh a, [$ffa7]
+    ldh a, [VBLANK_SAVED_SP_HI]
     ld h, a
-    ldh a, [$ffa8]
+    ldh a, [VBLANK_SAVED_SP_LO]
     ld l, a
     ld sp, hl
     ret
@@ -1874,9 +1929,9 @@ VRAMCopyDMA::
 
     ld hl, sp+$00
     ld a, h
-    ldh [$ffa7], a
+    ldh [VBLANK_SAVED_SP_HI], a
     ld a, l
-    ldh [$ffa8], a
+    ldh [VBLANK_SAVED_SP_LO], a
     ldh a, [VRAM_SRC_LO]
     ld l, a
     ldh a, [VRAM_SRC_HI]
@@ -1891,7 +1946,7 @@ VRAMCopyDMA::
     xor a
     ldh [VRAM_COPY_BLOCKS], a
 
-jr_001_4b18:
+CopyQueuedVram16ByteBlockLoop:
     pop de
     ld [hl], e
     inc l
@@ -1933,7 +1988,7 @@ jr_001_4b18:
     ld [hl], d
     inc hl
     dec b
-    jr nz, jr_001_4b18
+    jr nz, CopyQueuedVram16ByteBlockLoop
 
     ld a, l
     ldh [VRAM_DST_LO], a
@@ -1944,9 +1999,9 @@ jr_001_4b18:
     ldh [VRAM_SRC_LO], a
     ld a, h
     ldh [VRAM_SRC_HI], a
-    ldh a, [$ffa7]
+    ldh a, [VBLANK_SAVED_SP_HI]
     ld h, a
-    ldh a, [$ffa8]
+    ldh a, [VBLANK_SAVED_SP_LO]
     ld l, a
     ld sp, hl
     ret
@@ -1957,7 +2012,7 @@ VBlankHandler::
     push bc
     push de
     push hl
-    call ProcessFieldLogic
+    call CopyNextBgMapShadowSlice
     call RandomNext
     call VRAMCopyDMA
     call OAM_DMA_HRAM
@@ -1967,43 +2022,43 @@ VBlankHandler::
     call UpdateSprites
     ldh a, [SCX_SHADOW]
     ldh [rSCX], a
-    ldh a, [$ff9d]
+    ldh a, [SCY_SHADOW]
     ldh [rSCY], a
-    ldh a, [$ff9e]
+    ldh a, [WY_SHADOW]
     ldh [rWY], a
     ldh a, [VBLANK_SYNC]
     and a
-    jr z, jr_001_4b88
+    jr z, CheckVBlankBusyCounter
 
     xor a
     ldh [VBLANK_SYNC], a
 
-jr_001_4b88:
+CheckVBlankBusyCounter:
     ldh a, [VBLANK_BUSY]
     and a
-    jr z, jr_001_4b90
+    jr z, ContinueVBlankRuntimeUpdates
 
     dec a
     ldh [VBLANK_BUSY], a
 
-jr_001_4b90:
-    call UpdateLinkState
+ContinueVBlankRuntimeUpdates:
+    call UpdateSoundChannels
     call UpdateCountdownTimer
     call UpdateElapsedTimers
     ld a, [WAVE_UPDATE]
     and a
-    jr z, jr_001_4ba2
+    jr z, ContinueVBlankAfterWaveUpdate
 
-    call LoadWavePattern
+    call HandleWaveUpdate
 
-jr_001_4ba2:
+ContinueVBlankAfterWaveUpdate:
     call CheckJoypadRaw
-    jr nz, jr_001_4baa
+    jr nz, ReturnFromVBlankHandler
 
-    jp Jump_000_019d
+    jp ResetJoypadStateAndReinitOnRelease
 
 
-jr_001_4baa:
+ReturnFromVBlankHandler:
     pop hl
     pop de
     pop bc
@@ -2012,35 +2067,36 @@ jr_001_4baa:
 
 
 CheckJoypadRaw::
-    ld a, $30
+    ld a, P1F_GET_NONE
     ldh [rP1], a
     ld b, a
-    ld a, $10
+    ld a, P1F_GET_BTN
     ldh [rP1], a
     ldh a, [rP1]
     ldh a, [rP1]
     ldh a, [rP1]
     ldh a, [rP1]
     ldh a, [rP1]
-    and $0f
+    and P1_INPUT_BITS_MASK
     ret
 
 
 WaitVBlank::
-    ld a, $01
+    ld a, VBLANK_SYNC_REQUESTED
     ldh [VBLANK_SYNC], a
 
-jr_001_4bc9:
-    db $76
+WaitVBlankSyncLoop:
+    halt
     ldh a, [VBLANK_SYNC]
     and a
-    jr nz, jr_001_4bc9
+    jr nz, WaitVBlankSyncLoop
 
     ret
 
 
+UnusedWaitSelectThenStartOrSelectPress::
     ldh a, [JOYPAD_PRESSED]
-    and $04
+    and PADF_SELECT
     ret z
 
     ldh a, [JOYPAD_HELD]
@@ -2050,56 +2106,56 @@ jr_001_4bc9:
     ldh a, [JOYPAD_PRESSED]
     push af
 
-jr_001_4bde:
-    db $76
+WaitJoypadStartOrSelectPressLoop:
+    halt
     call ReadJoypad
     ldh a, [JOYPAD_PRESSED]
-    and $0c
-    jr z, jr_001_4bde
+    and PADF_START_OR_SELECT
+    jr z, WaitJoypadStartOrSelectPressLoop
 
     pop af
-    and $fb
+    and PADF_SELECT_CLEAR_MASK
     ldh [JOYPAD_PRESSED], a
     pop af
-    and $fb
+    and PADF_SELECT_CLEAR_MASK
     ldh [JOYPAD_RAW], a
     pop af
-    and $fb
+    and PADF_SELECT_CLEAR_MASK
     ldh [JOYPAD_HELD], a
     ret
 
 
-LoadWavePattern::
+HandleWaveUpdate::
     xor a
     ldh [rNR30], a
-    ld hl, $ff30
+    ld hl, _AUD3WAVERAM
 
-jr_001_4bfe:
-    ld a, $ff
+FillWaveRamWithFFLoop:
+    ld a, SOUND_WAVE_RAM_FILL_VALUE
     ld [hl+], a
     ld a, l
-    cp $40
-    jr nz, jr_001_4bfe
+    cp SOUND_WAVE_RAM_END_LOW
+    jr nz, FillWaveRamWithFFLoop
 
-    ld a, $80
+    ld a, AUD3ENA_ON
     ldh [rNR30], a
     ldh a, [rNR51]
-    or $44
+    or SOUND_WAVE_OUTPUT_TERMINAL_BITS
     ldh [rNR51], a
-    ld a, $c0
+    ld a, SOUND_WAVE_TRIGGER_VALUE
     ldh [rNR34], a
-    ld hl, UpdateLinkState
+    ld hl, UpdateSoundChannels
 
-jr_001_4c17:
-    ld b, $08
+ReadWaveUpdateSourceByte:
+    ld b, WAVE_UPDATE_BITS_PER_SOURCE_BYTE
     ld a, [hl]
-    cp $aa
-    jr z, jr_001_4c3d
+    cp SOUND_WAVE_UPDATE_END_MARKER
+    jr z, FinishWavePatternUpdate
 
     ld d, a
-    jr jr_001_4c2d
+    jr OutputWaveUpdateBit
 
-jr_001_4c21:
+WaveUpdateBitDelay:
     nop
     nop
     nop
@@ -2113,7 +2169,7 @@ jr_001_4c21:
     nop
     nop
 
-jr_001_4c2d:
+OutputWaveUpdateBit:
     push hl
     pop hl
     xor a
@@ -2123,16 +2179,16 @@ jr_001_4c2d:
     rra
     ldh [rNR32], a
     dec b
-    jr nz, jr_001_4c21
+    jr nz, WaveUpdateBitDelay
 
     inc hl
-    jr jr_001_4c17
+    jr ReadWaveUpdateSourceByte
 
-jr_001_4c3d:
+FinishWavePatternUpdate:
     xor a
     ld [WAVE_UPDATE], a
     ldh a, [rNR51]
-    and $bb
+    and SOUND_WAVE_OUTPUT_TERMINAL_CLEAR_MASK
     ldh [rNR51], a
     ret
 
@@ -2144,12 +2200,12 @@ UpdateElapsedTimers::
 
     ld a, [ROUND_TIMER_STOPPED]
     and a
-    jr nz, jr_001_4c59
+    jr nz, CheckTotalElapsedTimer
 
     ld hl, ROUND_TIMER_FRAME_COUNTER
     call TickElapsedTimerDigits
 
-jr_001_4c59:
+CheckTotalElapsedTimer:
     ld a, [TOTAL_TIMER_STOPPED]
     and a
     ret nz
@@ -2159,170 +2215,170 @@ jr_001_4c59:
 TickElapsedTimerDigits::
     inc [hl]
     ld a, [hl]
-    cp $3c
-    jr c, jr_001_4c87
+    cp ELAPSED_TIMER_FRAMES_PER_SECOND
+    jr c, ReturnFromTickElapsedTimerDigits
 
     xor a
     ld [hl-], a
     inc [hl]
     ld a, [hl]
-    cp $0a
-    jr c, jr_001_4c87
+    cp ELAPSED_TIMER_DECIMAL_DIGIT_LIMIT
+    jr c, ReturnFromTickElapsedTimerDigits
 
     xor a
     ld [hl-], a
     inc [hl]
     ld a, [hl]
-    cp $06
-    jr c, jr_001_4c87
+    cp ELAPSED_TIMER_SECONDS_TENS_LIMIT
+    jr c, ReturnFromTickElapsedTimerDigits
 
     xor a
     ld [hl-], a
     inc [hl]
     ld a, [hl]
-    cp $0a
-    jr c, jr_001_4c87
+    cp ELAPSED_TIMER_DECIMAL_DIGIT_LIMIT
+    jr c, ReturnFromTickElapsedTimerDigits
 
     xor a
     ld [hl-], a
     inc [hl]
     ld a, [hl]
-    cp $0a
-    jr nc, jr_001_4c88
+    cp ELAPSED_TIMER_DECIMAL_DIGIT_LIMIT
+    jr nc, ClampElapsedTimerDigits
 
-jr_001_4c87:
+ReturnFromTickElapsedTimerDigits:
     ret
 
 
-jr_001_4c88:
-    ld a, $09
+ClampElapsedTimerDigits:
+    ld a, ELAPSED_TIMER_MAX_ONES
     ld [hl+], a
     ld [hl+], a
-    ld [hl], $05
+    ld [hl], ELAPSED_TIMER_MAX_SECONDS_TENS
     inc hl
     ld [hl], a
     ret
 
 
-UpdateLinkState::
+UpdateSoundChannels::
     ld c, $00
 
-jr_001_4c93:
+UpdateSoundChannelLoop:
     ld b, $00
     ld hl, SOUND_CH_ACTIVE_ID
     add hl, bc
     ld a, [hl]
     and a
-    jr z, jr_001_4cbf
+    jr z, AdvanceSoundChannelIndex
 
     ld a, c
-    cp $04
-    jr nc, jr_001_4cbc
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, TickActiveSoundChannel
 
     ld a, [SOUND_PAUSE_FLAG]
     and a
-    jr z, jr_001_4cbc
+    jr z, TickActiveSoundChannel
 
-    bit 7, a
-    jr nz, jr_001_4cbf
+    bit SOUND_PAUSE_MUTE_APPLIED_BIT, a
+    jr nz, AdvanceSoundChannelIndex
 
-    set 7, a
+    set SOUND_PAUSE_MUTE_APPLIED_BIT, a
     ld [SOUND_PAUSE_FLAG], a
     xor a
     ldh [rNR51], a
     ldh [rNR30], a
-    ld a, $80
+    ld a, AUD3ENA_ON
     ldh [rNR30], a
-    jr jr_001_4cbf
+    jr AdvanceSoundChannelIndex
 
-jr_001_4cbc:
-    call SyncLinkPlayers
+TickActiveSoundChannel:
+    call TickSoundChannel
 
-jr_001_4cbf:
+AdvanceSoundChannelIndex:
     ld a, c
     inc c
-    cp $07
-    jr nz, jr_001_4c93
+    cp SOUND_LAST_CHANNEL_INDEX
+    jr nz, UpdateSoundChannelLoop
 
     ret
 
 
-SyncLinkPlayers::
+TickSoundChannel::
     ld b, $00
     ld hl, SOUND_CH_NOTE_LENGTH
     add hl, bc
     ld a, [hl]
-    cp $01
+    cp SOUND_NOTE_LENGTH_SEQUENCE_STEP_VALUE
     jp z, SoundSequenceStep
 
     dec a
     ld [hl], a
     ld a, c
-    cp $04
-    jr nc, jr_001_4ce2
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, UpdateSoundChannelModulation
 
     ld hl, SOUND_BGM_ACTIVE_ID
     add hl, bc
     ld a, [hl]
     and a
-    jr z, jr_001_4ce2
+    jr z, UpdateSoundChannelModulation
 
     ret
 
 
-jr_001_4ce2:
+UpdateSoundChannelModulation:
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 6, [hl]
-    jr z, jr_001_4ced
+    bit SOUND_CH_DUTY_ROTATE_ACTIVE_BIT, [hl]
+    jr z, CheckSoundPitchSlideFlag
 
     call SoundUpdate1
 
-jr_001_4ced:
+CheckSoundPitchSlideFlag:
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 4, [hl]
-    jr z, jr_001_4cfa
+    bit SOUND_CH_PITCH_SLIDE_ACTIVE_BIT, [hl]
+    jr z, CheckSoundChannelDelay
 
-    jp Jump_001_524c
+    jp UpdateSoundPitchSlide
 
 
-jr_001_4cfa:
+CheckSoundChannelDelay:
     ld hl, SOUND_CH_DELAY
     add hl, bc
     ld a, [hl]
     and a
-    jr z, jr_001_4d04
+    jr z, CheckSoundVibratoDepth
 
     dec [hl]
     ret
 
 
-jr_001_4d04:
+CheckSoundVibratoDepth:
     ld hl, SOUND_CH_VIBRATO_DEPTH
     add hl, bc
     ld a, [hl]
     and a
-    jr nz, jr_001_4d0d
+    jr nz, CheckSoundVibratoPhase
 
     ret
 
 
-jr_001_4d0d:
+CheckSoundVibratoPhase:
     ld d, a
     ld hl, SOUND_CH_VIBRATO_PHASE
     add hl, bc
     ld a, [hl]
-    and $0f
+    and SOUND_VIBRATO_PHASE_COUNTER_MASK
     and a
-    jr z, jr_001_4d1a
+    jr z, ApplySoundVibratoStep
 
     dec [hl]
     ret
 
 
-jr_001_4d1a:
+ApplySoundVibratoStep:
     ld a, [hl]
     swap [hl]
     or [hl]
@@ -2332,35 +2388,35 @@ jr_001_4d1a:
     ld e, [hl]
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 3, [hl]
-    jr z, jr_001_4d3a
+    bit SOUND_CH_VIBRATO_SUBTRACT_BIT, [hl]
+    jr z, ApplySoundVibratoPositiveStep
 
-    res 3, [hl]
+    res SOUND_CH_VIBRATO_SUBTRACT_BIT, [hl]
     ld a, d
-    and $0f
+    and SOUND_VIBRATO_DEPTH_SUBTRACT_MASK
     ld d, a
     ld a, e
     sub d
-    jr nc, jr_001_4d38
+    jr nc, UseSoundVibratoSubtractedFrequency
 
     ld a, $00
 
-jr_001_4d38:
-    jr jr_001_4d46
+UseSoundVibratoSubtractedFrequency:
+    jr StoreSoundVibratoFrequency
 
-jr_001_4d3a:
-    set 3, [hl]
+ApplySoundVibratoPositiveStep:
+    set SOUND_CH_VIBRATO_SUBTRACT_BIT, [hl]
     ld a, d
-    and $f0
+    and SOUND_VIBRATO_DEPTH_ADD_MASK
     swap a
     add e
-    jr nc, jr_001_4d46
+    jr nc, StoreSoundVibratoFrequency
 
-    ld a, $ff
+    ld a, SOUND_VIBRATO_FREQ_MAX
 
-jr_001_4d46:
+StoreSoundVibratoFrequency:
     ld d, a
-    ld b, $03
+    ld b, SOUND_REGISTER_FREQ_LO_OFFSET
     call SoundUpdate3
     ld [hl], d
     ret
@@ -2375,8 +2431,8 @@ SoundSequenceStep::
     ld [hl], a
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    res 4, [hl]
-    res 5, [hl]
+    res SOUND_CH_PITCH_SLIDE_ACTIVE_BIT, [hl]
+    res SOUND_CH_PITCH_SLIDE_DESCENDING_BIT, [hl]
     call CountdownSequence
     ret
 
@@ -2384,50 +2440,50 @@ SoundSequenceStep::
 CountdownSequence::
     call SoundUpdate2
     ld d, a
-    cp $ff
-    jp nz, Jump_001_4df4
+    cp SOUND_SEQUENCE_END_COMMAND
+    jp nz, DispatchSoundNonEndCommand
 
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 1, [hl]
-    jr nz, jr_001_4da2
+    bit SOUND_CH_RETURN_PENDING_BIT, [hl]
+    jr nz, ReturnFromSoundSubsequence
 
     ld a, c
-    cp $03
-    jr nc, jr_001_4d7e
+    cp SOUND_CHANNEL3_INDEX
+    jr nc, EndSoundSequenceChannel3Plus
 
-    jr jr_001_4dbd
+    jr DisableSoundChannelOutputOnEnd
 
-jr_001_4d7e:
-    res 2, [hl]
+EndSoundSequenceChannel3Plus:
+    res SOUND_CH_NOTE_OUTPUT_GATE_BIT, [hl]
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, bc
-    res 0, [hl]
-    cp $06
-    jr nz, jr_001_4d92
+    res SOUND_CH_GATE_SUPPRESS_BIT, [hl]
+    cp SOUND_SECONDARY_WAVE_CHANNEL_INDEX
+    jr nz, CheckChannel6DeferredSoundEnd
 
-    ld a, $00
+    ld a, AUD3ENA_OFF
     ldh [rNR30], a
-    ld a, $80
+    ld a, AUD3ENA_ON
     ldh [rNR30], a
 
-jr_001_4d92:
-    jr nz, jr_001_4da0
+CheckChannel6DeferredSoundEnd:
+    jr nz, SkipSoundChannelMuteOnEnd
 
     ld a, [SOUND_DEFERRED_ID]
     and a
-    jr z, jr_001_4da0
+    jr z, SkipSoundChannelMuteOnEnd
 
     xor a
     ld [SOUND_DEFERRED_ID], a
-    jr jr_001_4dbd
+    jr DisableSoundChannelOutputOnEnd
 
-jr_001_4da0:
-    jr jr_001_4dc8
+SkipSoundChannelMuteOnEnd:
+    jr ClearSoundChannelAfterEnd
 
-jr_001_4da2:
-    res 1, [hl]
+ReturnFromSoundSubsequence:
+    res SOUND_CH_RETURN_PENDING_BIT, [hl]
     ld d, $00
     ld a, c
     add a
@@ -2448,7 +2504,7 @@ jr_001_4da2:
     jp CountdownSequence
 
 
-jr_001_4dbd:
+DisableSoundChannelOutputOnEnd:
     ld b, $00
     ld hl, SoundChannelDisableMaskTable
     add hl, bc
@@ -2456,46 +2512,46 @@ jr_001_4dbd:
     and [hl]
     ldh [rNR51], a
 
-jr_001_4dc8:
+ClearSoundChannelAfterEnd:
     ld a, [SOUND_BGM_ACTIVE_ID]
-    cp $0f
-    jr nc, jr_001_4dd1
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr nc, CheckSoundBgmActiveIdForNr50Restore
 
-    jr jr_001_4dee
+    jr ClearSoundChannelActiveId
 
-jr_001_4dd1:
+CheckSoundBgmActiveIdForNr50Restore:
     ld a, [SOUND_BGM_ACTIVE_ID]
-    cp $0f
-    jr z, jr_001_4dee
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr z, ClearSoundChannelActiveId
 
-    jr c, jr_001_4ddc
+    jr c, RestoreSoundNr50AfterBgmEnd
 
-    jr jr_001_4dee
+    jr ClearSoundChannelActiveId
 
-jr_001_4ddc:
+RestoreSoundNr50AfterBgmEnd:
     ld a, c
-    cp $04
-    jr z, jr_001_4de5
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr z, RestoreSoundNr50FromBackup
 
     call UpdateChannel
     ret c
 
-jr_001_4de5:
+RestoreSoundNr50FromBackup:
     ld a, [SOUND_NR50_BACKUP]
     ldh [rNR50], a
     xor a
     ld [SOUND_NR50_BACKUP], a
 
-jr_001_4dee:
+ClearSoundChannelActiveId:
     ld hl, SOUND_CH_ACTIVE_ID
     add hl, bc
     ld [hl], b
     ret
 
 
-Jump_001_4df4:
-    cp $fd
-    jp nz, Jump_001_4e29
+DispatchSoundNonEndCommand:
+    cp SOUND_SUBSEQUENCE_CALL_COMMAND
+    jp nz, CheckSoundLoopJumpCommand
 
     call SoundUpdate2
     push af
@@ -2528,38 +2584,38 @@ Jump_001_4df4:
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    set 1, [hl]
+    set SOUND_CH_RETURN_PENDING_BIT, [hl]
     jp CountdownSequence
 
 
-Jump_001_4e29:
-    cp $fe
-    jp nz, Jump_001_4e64
+CheckSoundLoopJumpCommand:
+    cp SOUND_LOOP_JUMP_COMMAND
+    jp nz, CheckSoundLengthEnvelopeCommand
 
     call SoundUpdate2
     ld e, a
     and a
-    jr z, jr_001_4e4d
+    jr z, JumpSoundSequenceToLoopTarget
 
     ld b, $00
     ld hl, SOUND_CH_LOOP_COUNTER
     add hl, bc
     ld a, [hl]
     cp e
-    jr nz, jr_001_4e4b
+    jr nz, IncrementSoundLoopCounter
 
-    ld a, $01
+    ld a, SOUND_COUNTER_INIT_VALUE
     ld [hl], a
     call SoundUpdate2
     call SoundUpdate2
     jp CountdownSequence
 
 
-jr_001_4e4b:
+IncrementSoundLoopCounter:
     inc a
     ld [hl], a
 
-jr_001_4e4d:
+JumpSoundSequenceToLoopTarget:
     call SoundUpdate2
     push af
     call SoundUpdate2
@@ -2576,72 +2632,72 @@ jr_001_4e4d:
     jp CountdownSequence
 
 
-Jump_001_4e64:
-    and $f0
-    cp $d0
-    jp nz, Jump_001_4ea3
+CheckSoundLengthEnvelopeCommand:
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
+    cp SOUND_LENGTH_ENVELOPE_COMMAND_BASE
+    jp nz, CheckSoundExtendedCommand
 
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     ld b, $00
     ld hl, SOUND_CH_LENGTH_SCALE
     add hl, bc
     ld [hl], a
     ld a, c
-    cp $03
-    jr z, jr_001_4ea0
+    cp SOUND_CHANNEL3_INDEX
+    jr z, ContinueSoundCommandParsing
 
     call SoundUpdate2
     ld d, a
     ld a, c
-    cp $02
-    jr z, jr_001_4e8c
+    cp SOUND_PRIMARY_WAVE_CHANNEL_INDEX
+    jr z, UseMainWavePatternSelector
 
-    cp $06
-    jr nz, jr_001_4e99
+    cp SOUND_SECONDARY_WAVE_CHANNEL_INDEX
+    jr nz, StoreSoundEnvelope
 
     ld hl, SOUND_WAVE_PATTERN_ALT
-    jr jr_001_4e8f
+    jr StoreWavePatternSelectorAndEnvelope
 
-jr_001_4e8c:
+UseMainWavePatternSelector:
     ld hl, SOUND_WAVE_PATTERN_MAIN
 
-jr_001_4e8f:
+StoreWavePatternSelectorAndEnvelope:
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     ld [hl], a
     ld a, d
-    and $30
+    and SOUND_WAVE_LEVEL_PARAM_BITS
     sla a
     ld d, a
 
-jr_001_4e99:
+StoreSoundEnvelope:
     ld b, $00
     ld hl, SOUND_CH_ENVELOPE
     add hl, bc
     ld [hl], d
 
-jr_001_4ea0:
+ContinueSoundCommandParsing:
     jp CountdownSequence
 
 
-Jump_001_4ea3:
+CheckSoundExtendedCommand:
     ld a, d
-    cp $e8
-    jr nz, jr_001_4eb5
+    cp SOUND_FREQ_CARRY_TOGGLE_COMMAND
+    jr nz, CheckSoundVibratoCommand
 
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
     ld a, [hl]
-    xor $01
+    xor SOUND_CH_FREQ_CARRY_MASK
     ld [hl], a
     jp CountdownSequence
 
 
-jr_001_4eb5:
-    cp $ea
-    jr nz, jr_001_4eed
+CheckSoundVibratoCommand:
+    cp SOUND_VIBRATO_COMMAND
+    jr nz, CheckSoundPitchSlideCommand
 
     call SoundUpdate2
     ld b, $00
@@ -2653,7 +2709,7 @@ jr_001_4eb5:
     ld [hl], a
     call SoundUpdate2
     ld d, a
-    and $f0
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
     swap a
     ld b, $00
     ld hl, SOUND_CH_VIBRATO_DEPTH
@@ -2665,7 +2721,7 @@ jr_001_4eb5:
     or e
     ld [hl], a
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     ld d, a
     ld hl, SOUND_CH_VIBRATO_PHASE
     add hl, bc
@@ -2675,9 +2731,9 @@ jr_001_4eb5:
     jp CountdownSequence
 
 
-jr_001_4eed:
-    cp $eb
-    jr nz, jr_001_4f25
+CheckSoundPitchSlideCommand:
+    cp SOUND_PITCH_SLIDE_COMMAND
+    jr nz, CheckSoundDutyLengthCommand
 
     call SoundUpdate2
     ld b, $00
@@ -2686,11 +2742,11 @@ jr_001_4eed:
     ld [hl], a
     call SoundUpdate2
     ld d, a
-    and $f0
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
     swap a
     ld b, a
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     call SoundUpdate5
     ld b, $00
     ld hl, SOUND_CH_SLIDE_TARGET_HI
@@ -2702,20 +2758,20 @@ jr_001_4eed:
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    set 4, [hl]
+    set SOUND_CH_PITCH_SLIDE_ACTIVE_BIT, [hl]
     call SoundUpdate2
     ld d, a
-    jp Display2PStatus
+    jp ProcessSoundNoteCommand
 
 
-jr_001_4f25:
-    cp $ec
-    jr nz, jr_001_4f3a
+CheckSoundDutyLengthCommand:
+    cp SOUND_DUTY_LENGTH_COMMAND
+    jr nz, CheckSoundTempoCommand
 
     call SoundUpdate2
     rrca
     rrca
-    and $c0
+    and SOUND_DUTY_BITS_MASK
     ld b, $00
     ld hl, SOUND_CH_DUTY_LENGTH
     add hl, bc
@@ -2723,13 +2779,13 @@ jr_001_4f25:
     jp CountdownSequence
 
 
-jr_001_4f3a:
-    cp $ed
-    jr nz, jr_001_4f7a
+CheckSoundTempoCommand:
+    cp SOUND_TEMPO_COMMAND
+    jr nz, CheckSoundOutputMaskCommand
 
     ld a, c
-    cp $04
-    jr nc, jr_001_4f5e
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, StoreSfxTempo
 
     call SoundUpdate2
     ld [SOUND_MAIN_TEMPO_HI], a
@@ -2740,9 +2796,9 @@ jr_001_4f3a:
     ld [SOUND_CH_TEMPO_ACCUM + 1], a
     ld [SOUND_CH_TEMPO_ACCUM + 2], a
     ld [SOUND_CH_TEMPO_ACCUM + 3], a
-    jr jr_001_4f77
+    jr ContinueAfterSoundTempoCommand
 
-jr_001_4f5e:
+StoreSfxTempo:
     call SoundUpdate2
     ld [SOUND_SFX_TEMPO_HI], a
     call SoundUpdate2
@@ -2753,22 +2809,22 @@ jr_001_4f5e:
     ld [SOUND_CH_TEMPO_ACCUM + 6], a
     ld [SOUND_CH_TEMPO_ACCUM + 7], a
 
-jr_001_4f77:
+ContinueAfterSoundTempoCommand:
     jp CountdownSequence
 
 
-jr_001_4f7a:
-    cp $ee
-    jr nz, jr_001_4f87
+CheckSoundOutputMaskCommand:
+    cp SOUND_OUTPUT_MASK_COMMAND
+    jr nz, CheckNestedSoundCommand
 
     call SoundUpdate2
     ld [SOUND_OUTPUT_MASK], a
     jp CountdownSequence
 
 
-jr_001_4f87:
-    cp $ef
-    jr nz, jr_001_4fa6
+CheckNestedSoundCommand:
+    cp SOUND_NESTED_SOUND_COMMAND
+    jr nz, CheckSoundDutyRotateCommand
 
     call SoundUpdate2
     push bc
@@ -2776,54 +2832,54 @@ jr_001_4f87:
     pop bc
     ld a, [SOUND_DEFERRED_ID]
     and a
-    jr nz, jr_001_4fa3
+    jr nz, ContinueAfterNestedSoundCommand
 
     ld a, [SOUND_BGM_ACTIVE_ID + 3]
     ld [SOUND_DEFERRED_ID], a
     xor a
     ld [SOUND_BGM_ACTIVE_ID + 3], a
 
-jr_001_4fa3:
+ContinueAfterNestedSoundCommand:
     jp CountdownSequence
 
 
-jr_001_4fa6:
-    cp $fc
-    jr nz, StageIntroAnim
+CheckSoundDutyRotateCommand:
+    cp SOUND_DUTY_ROTATE_COMMAND
+    jr nz, CheckSoundMasterVolumeCommand
 
     call SoundUpdate2
     ld b, $00
     ld hl, SOUND_CH_DUTY_ROTATE
     add hl, bc
     ld [hl], a
-    and $c0
+    and SOUND_DUTY_BITS_MASK
     ld hl, SOUND_CH_DUTY_LENGTH
     add hl, bc
     ld [hl], a
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    set 6, [hl]
+    set SOUND_CH_DUTY_ROTATE_ACTIVE_BIT, [hl]
     jp CountdownSequence
 
 
-StageIntroAnim::
-    cp $f0
-    jr nz, jr_001_4fd0
+CheckSoundMasterVolumeCommand::
+    cp SOUND_MASTER_VOLUME_COMMAND
+    jr nz, CheckSoundVisualUpdateCommand
 
     call SoundUpdate2
     ldh [rNR50], a
     jp CountdownSequence
 
 
-jr_001_4fd0:
-    cp $f1
-    jr nz, jr_001_4fe2
+CheckSoundVisualUpdateCommand:
+    cp SOUND_VISUAL_UPDATE_COMMAND
+    jr nz, CheckSoundGateFlagCommand
 
     push af
     push bc
     push de
     push hl
-    call CheckGameStateUpdate
+    call ApplySoundVisualUpdateCommand
     pop hl
     pop de
     pop bc
@@ -2831,46 +2887,46 @@ jr_001_4fd0:
     jp CountdownSequence
 
 
-jr_001_4fe2:
-    cp $f8
-    jr nz, jr_001_4ff1
+CheckSoundGateFlagCommand:
+    cp SOUND_GATE_FLAG_COMMAND
+    jr nz, CheckSoundOctaveCommand
 
     ld b, $00
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, bc
-    set 0, [hl]
+    set SOUND_CH_GATE_SUPPRESS_BIT, [hl]
     jp CountdownSequence
 
 
-jr_001_4ff1:
-    and $f0
-    cp $e0
-    jr nz, jr_001_5004
+CheckSoundOctaveCommand:
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
+    cp SOUND_OCTAVE_COMMAND_BASE
+    jr nz, CheckSoundExtendedNoteCommand
 
     ld hl, SOUND_CH_OCTAVE
     ld b, $00
     add hl, bc
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     ld [hl], a
     jp CountdownSequence
 
 
-jr_001_5004:
-    cp $20
-    jr nz, jr_001_5051
+CheckSoundExtendedNoteCommand:
+    cp SOUND_EXTENDED_NOTE_COMMAND_BASE
+    jr nz, CheckSoundSweepCommand
 
     ld a, c
-    cp $03
-    jr c, jr_001_5051
+    cp SOUND_CHANNEL3_INDEX
+    jr c, CheckSoundSweepCommand
 
     ld b, $00
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, bc
-    bit 0, [hl]
-    jr nz, jr_001_5051
+    bit SOUND_CH_GATE_SUPPRESS_BIT, [hl]
+    jr nz, CheckSoundSweepCommand
 
-    call Display2PStatus
+    call ProcessSoundNoteCommand
     ld d, a
     ld b, $00
     ld hl, SOUND_CH_DUTY_LENGTH
@@ -2878,101 +2934,101 @@ jr_001_5004:
     ld a, [hl]
     or d
     ld d, a
-    ld b, $01
+    ld b, SOUND_REGISTER_DUTY_LENGTH_OFFSET
     call SoundUpdate3
     ld [hl], d
     call SoundUpdate2
     ld d, a
-    ld b, $02
+    ld b, SOUND_REGISTER_ENVELOPE_OFFSET
     call SoundUpdate3
     ld [hl], d
     call SoundUpdate2
     ld e, a
     ld a, c
-    cp $07
+    cp SOUND_LAST_CHANNEL_INDEX
     ld a, $00
-    jr z, jr_001_5044
+    jr z, ContinueExtendedSoundNoteCommand
 
     push de
     call SoundUpdate2
     pop de
 
-jr_001_5044:
+ContinueExtendedSoundNoteCommand:
     ld d, a
     push de
-    call GetMusicPointer
-    call MusicDataInit
+    call WriteSoundChannelLengthRegister
+    call UpdateSoundChannelOutputMask
     pop de
     call ProcessNote
     ret
 
 
-jr_001_5051:
+CheckSoundSweepCommand:
     ld a, c
-    cp $04
-    jr c, jr_001_506d
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr c, CheckChannel3NestedSoundCommand
 
     ld a, d
-    cp $10
-    jr nz, jr_001_506d
+    cp SOUND_SWEEP_COMMAND
+    jr nz, CheckChannel3NestedSoundCommand
 
     ld b, $00
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, bc
-    bit 0, [hl]
-    jr nz, jr_001_506d
+    bit SOUND_CH_GATE_SUPPRESS_BIT, [hl]
+    jr nz, CheckChannel3NestedSoundCommand
 
     call SoundUpdate2
     ldh [rNR10], a
     jp CountdownSequence
 
 
-jr_001_506d:
+CheckChannel3NestedSoundCommand:
     ld a, c
-    cp $03
-    jr nz, Display2PStatus
+    cp SOUND_CHANNEL3_INDEX
+    jr nz, ProcessSoundNoteCommand
 
     ld a, d
-    and $f0
-    cp $b0
-    jr z, jr_001_5087
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
+    cp SOUND_CHANNEL3_NESTED_COMMAND_BASE
+    jr z, ReadChannel3NestedSoundOperand
 
-    jr nc, Display2PStatus
+    jr nc, ProcessSoundNoteCommand
 
     swap a
     ld b, a
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     ld d, a
     ld a, b
     push de
     push bc
-    jr jr_001_508f
+    jr TriggerChannel3NestedSoundIfAllowed
 
-jr_001_5087:
+ReadChannel3NestedSoundOperand:
     ld a, d
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     push af
     push bc
     call SoundUpdate2
 
-jr_001_508f:
+TriggerChannel3NestedSoundIfAllowed:
     ld d, a
     ld a, [SOUND_DEFERRED_ID]
     and a
-    jr nz, jr_001_509a
+    jr nz, ContinueAfterChannel3NestedSound
 
     ld a, d
     call SoundEngine
 
-jr_001_509a:
+ContinueAfterChannel3NestedSound:
     pop bc
     pop de
 
-Display2PStatus::
+ProcessSoundNoteCommand::
     ld a, d
     push af
-    and $0f
+    and SOUND_COMMAND_LOW_NIBBLE_MASK
     inc a
     ld b, $00
     ld e, a
@@ -2983,28 +3039,28 @@ Display2PStatus::
     ld l, b
     call SoundUpdate4
     ld a, c
-    cp $04
-    jr nc, jr_001_50bd
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, UseSfxOrFixedSoundTempo
 
-Draw2PField::
+UseMainSoundTempo:
     ld a, [SOUND_MAIN_TEMPO_HI]
     ld d, a
     ld a, [SOUND_MAIN_TEMPO_LO]
     ld e, a
-    jr jr_001_50cd
+    jr StoreScaledSoundNoteLength
 
-jr_001_50bd:
-    ld d, $01
-    ld e, $00
-    cp $07
-    jr z, jr_001_50cd
+UseSfxOrFixedSoundTempo:
+    ld d, SOUND_FIXED_TEMPO_HI
+    ld e, SOUND_FIXED_TEMPO_LO
+    cp SOUND_LAST_CHANNEL_INDEX
+    jr z, StoreScaledSoundNoteLength
 
     ld a, [SOUND_SFX_TEMPO_HI]
     ld d, a
     ld a, [SOUND_SFX_TEMPO_LO]
     ld e, a
 
-jr_001_50cd:
+StoreScaledSoundNoteLength:
     ld a, l
     ld b, $00
     ld hl, SOUND_CH_TEMPO_ACCUM
@@ -3022,65 +3078,65 @@ jr_001_50cd:
     ld [hl], a
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, bc
-    bit 0, [hl]
-    jr nz, jr_001_50f7
+    bit SOUND_CH_GATE_SUPPRESS_BIT, [hl]
+    jr nz, ProcessSoundNoteHighNibble
 
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 2, [hl]
-    jr z, jr_001_50f7
+    bit SOUND_CH_NOTE_OUTPUT_GATE_BIT, [hl]
+    jr z, ProcessSoundNoteHighNibble
 
     pop hl
     ret
 
 
-jr_001_50f7:
+ProcessSoundNoteHighNibble:
     pop af
-    and $f0
-    cp $c0
-    jr nz, jr_001_512e
+    and SOUND_COMMAND_HIGH_NIBBLE_MASK
+    cp SOUND_REST_NOTE_COMMAND_BASE
+    jr nz, ProcessPitchedSoundNote
 
     ld a, c
-    cp $04
-    jr nc, jr_001_510b
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, CheckSoundRestWaveChannel
 
     ld hl, SOUND_BGM_ACTIVE_ID
     add hl, bc
     ld a, [hl]
     and a
-    jr nz, jr_001_512d
+    jr nz, ReturnFromSoundNoteCommand
 
-jr_001_510b:
+CheckSoundRestWaveChannel:
     ld a, c
-    cp $02
-    jr z, jr_001_5114
+    cp SOUND_PRIMARY_WAVE_CHANNEL_INDEX
+    jr z, MuteWaveChannelForRest
 
-    cp $06
-    jr nz, jr_001_5121
+    cp SOUND_SECONDARY_WAVE_CHANNEL_INDEX
+    jr nz, TriggerSoundRestHardwareWrite
 
-jr_001_5114:
+MuteWaveChannelForRest:
     ld b, $00
     ld hl, SoundChannelDisableMaskTable
     add hl, bc
     ldh a, [rNR51]
     and [hl]
     ldh [rNR51], a
-    jr jr_001_512d
+    jr ReturnFromSoundNoteCommand
 
-jr_001_5121:
-    ld b, $02
+TriggerSoundRestHardwareWrite:
+    ld b, SOUND_REGISTER_ENVELOPE_OFFSET
     call SoundUpdate3
-    ld a, $08
+    ld a, SOUND_REST_ENVELOPE_VALUE
     ld [hl+], a
     inc hl
-    ld a, $80
+    ld a, AUDHIGH_RESTART
     ld [hl], a
 
-jr_001_512d:
+ReturnFromSoundNoteCommand:
     ret
 
 
-jr_001_512e:
+ProcessPitchedSoundNote:
     swap a
     ld b, $00
     ld hl, SOUND_CH_OCTAVE
@@ -3090,16 +3146,16 @@ jr_001_512e:
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 4, [hl]
-    jr z, jr_001_5147
+    bit SOUND_CH_PITCH_SLIDE_ACTIVE_BIT, [hl]
+    jr z, ContinueAfterPitchSlideNoteInit
 
-    call UpdateObjectData
+    call InitSoundPitchSlideForNote
 
-jr_001_5147:
+ContinueAfterPitchSlideNoteInit:
     push de
     ld a, c
-    cp $04
-    jr nc, jr_001_515c
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, WriteSoundEnvelopeAndEnableOutput
 
     ld hl, SOUND_BGM_ACTIVE_ID
     ld d, $00
@@ -3107,38 +3163,38 @@ jr_001_5147:
     add hl, de
     ld a, [hl]
     and a
-    jr nz, jr_001_515a
+    jr nz, ReturnIfPrimaryBgmAlreadyActive
 
-    jr jr_001_515c
+    jr WriteSoundEnvelopeAndEnableOutput
 
-jr_001_515a:
+ReturnIfPrimaryBgmAlreadyActive:
     pop de
     ret
 
 
-jr_001_515c:
+WriteSoundEnvelopeAndEnableOutput:
     ld b, $00
     ld hl, SOUND_CH_ENVELOPE
     add hl, bc
     ld d, [hl]
-    ld b, $02
+    ld b, SOUND_REGISTER_ENVELOPE_OFFSET
     call SoundUpdate3
     ld [hl], d
-    call GetMusicPointer
-    call MusicDataInit
+    call WriteSoundChannelLengthRegister
+    call UpdateSoundChannelOutputMask
     pop de
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 0, [hl]
-    jr z, jr_001_517e
+    bit SOUND_CH_FREQ_CARRY_BIT, [hl]
+    jr z, StoreSoundNoteBaseFrequency
 
     inc e
-    jr nc, jr_001_517e
+    jr nc, StoreSoundNoteBaseFrequency
 
     inc d
 
-jr_001_517e:
+StoreSoundNoteBaseFrequency:
     ld hl, SOUND_CH_FREQ_LO_BASE
     add hl, bc
     ld [hl], e
@@ -3146,7 +3202,7 @@ jr_001_517e:
     ret
 
 
-MusicDataInit::
+UpdateSoundChannelOutputMask::
     ld b, $00
     ld hl, SoundChannelEnableMaskTable
     add hl, bc
@@ -3154,19 +3210,19 @@ MusicDataInit::
     or [hl]
     ld d, a
     ld a, c
-    cp $07
-    jr z, jr_001_51a2
+    cp SOUND_LAST_CHANNEL_INDEX
+    jr z, ApplySoundOutputMask
 
-    cp $04
-    jr nc, jr_001_51b4
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nc, WriteSoundChannelOutputMask
 
     ld hl, SOUND_BGM_ACTIVE_ID
     add hl, bc
     ld a, [hl]
     and a
-    jr nz, jr_001_51b4
+    jr nz, WriteSoundChannelOutputMask
 
-jr_001_51a2:
+ApplySoundOutputMask:
     ld a, [SOUND_OUTPUT_MASK]
     ld hl, SoundChannelEnableMaskTable
     add hl, bc
@@ -3177,32 +3233,32 @@ jr_001_51a2:
     add hl, bc
     and [hl]
 
-LoadMusicTrack::
+StoreSoundChannelOutputMask:
     or d
     ld d, a
 
-jr_001_51b4:
+WriteSoundChannelOutputMask:
     ld a, d
     ldh [rNR51], a
     ret
 
 
-GetMusicPointer::
+WriteSoundChannelLengthRegister::
     ld b, $00
     ld hl, SOUND_CH_NOTE_LENGTH
     add hl, bc
     ld d, [hl]
     ld a, c
-    cp $02
+    cp SOUND_PRIMARY_WAVE_CHANNEL_INDEX
 
-ParseMusicCommand::
-    jr z, jr_001_51d3
+CheckWaveChannelLengthRegisterWrite:
+    jr z, WriteSoundLengthRegister
 
-    cp $06
-    jr z, jr_001_51d3
+    cp SOUND_SECONDARY_WAVE_CHANNEL_INDEX
+    jr z, WriteSoundLengthRegister
 
     ld a, d
-    and $3f
+    and SOUND_LENGTH_BITS_MASK
     ld d, a
     ld hl, SOUND_CH_DUTY_LENGTH
     add hl, bc
@@ -3210,8 +3266,8 @@ ParseMusicCommand::
     or d
     ld d, a
 
-jr_001_51d3:
-    ld b, $01
+WriteSoundLengthRegister:
+    ld b, SOUND_REGISTER_DUTY_LENGTH_OFFSET
     call SoundUpdate3
     ld [hl], d
     ret
@@ -3219,54 +3275,54 @@ jr_001_51d3:
 
 ProcessNote::
     ld a, c
-    cp $02
-    jr z, jr_001_51e3
+    cp SOUND_PRIMARY_WAVE_CHANNEL_INDEX
+    jr z, LoadWavePatternForSoundNote
 
-    cp $06
-    jr nz, jr_001_5210
+    cp SOUND_SECONDARY_WAVE_CHANNEL_INDEX
+    jr nz, WriteSoundFrequencyAndTrigger
 
-jr_001_51e3:
+LoadWavePatternForSoundNote:
     push de
     ld de, SOUND_WAVE_PATTERN_MAIN
-    cp $02
-    jr z, jr_001_51ee
+    cp SOUND_PRIMARY_WAVE_CHANNEL_INDEX
+    jr z, LookupSoundWavePatternPointer
 
     ld de, SOUND_WAVE_PATTERN_ALT
 
-jr_001_51ee:
+LookupSoundWavePatternPointer:
     ld a, [de]
     add a
     ld d, $00
     ld e, a
-    ld hl, WavePatternPointerTable
+    ld hl, SoundWavePatternPointerTable
     add hl, de
     ld e, [hl]
     inc hl
     ld d, [hl]
-    ld hl, $ff30
-    ld b, $0f
-    ld a, $00
+    ld hl, _AUD3WAVERAM
+    ld b, SOUND_WAVE_PATTERN_LAST_BYTE_INDEX
+    ld a, AUD3ENA_OFF
     ldh [rNR30], a
 
-jr_001_5203:
+CopySoundWavePatternToWaveRamLoop:
     ld a, [de]
     inc de
     ld [hl+], a
     ld a, b
     dec b
     and a
-    jr nz, jr_001_5203
+    jr nz, CopySoundWavePatternToWaveRamLoop
 
-    ld a, $80
+    ld a, AUD3ENA_ON
     ldh [rNR30], a
     pop de
 
-jr_001_5210:
+WriteSoundFrequencyAndTrigger:
     ld a, d
-    or $80
-    and $c7
+    or AUDHIGH_RESTART
+    and SOUND_FREQ_HIGH_RESTART_KEEP_MASK
     ld d, a
-    ld b, $03
+    ld b, SOUND_REGISTER_FREQ_LO_OFFSET
     call SoundUpdate3
     ld [hl], e
     inc hl
@@ -3276,21 +3332,21 @@ jr_001_5210:
 
 UpdateChannel::
     ld a, [SOUND_BGM_ACTIVE_ID]
-    cp $0f
-    jr nc, jr_001_5228
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr nc, CheckBgmActiveIdForSequenceRewind
 
-    jr jr_001_5249
+    jr ReturnNoSoundSequenceRewind
 
-jr_001_5228:
+CheckBgmActiveIdForSequenceRewind:
     ld a, [SOUND_BGM_ACTIVE_ID]
-    cp $0f
-    jr z, jr_001_5249
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr z, ReturnNoSoundSequenceRewind
 
-    jr c, jr_001_5233
+    jr c, RewindSoundSequencePointerAndReturnCarry
 
-    jr jr_001_5249
+    jr ReturnNoSoundSequenceRewind
 
-jr_001_5233:
+RewindSoundSequencePointerAndReturnCarry:
     ld hl, SOUND_CH_SEQUENCE_PTRS
     ld e, c
     ld d, $00
@@ -3298,27 +3354,27 @@ jr_001_5233:
     rl d
     add hl, de
     ld a, [hl]
-    sub $01
+    sub SOUND_SEQUENCE_REWIND_LOW_BYTE_DELTA
     ld [hl], a
     inc hl
     ld a, [hl]
-    sbc $00
+    sbc SOUND_SEQUENCE_REWIND_HIGH_BYTE_DELTA
     ld [hl], a
     scf
     ret
 
 
-jr_001_5249:
+ReturnNoSoundSequenceRewind:
     scf
     ccf
     ret
 
 
-Jump_001_524c:
+UpdateSoundPitchSlide:
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    bit 5, [hl]
-    jp nz, Jump_001_5293
+    bit SOUND_CH_PITCH_SLIDE_DESCENDING_BIT, [hl]
+    jp nz, UpdateSoundPitchSlideDescending
 
     ld hl, SOUND_CH_FREQ_LO
     add hl, bc
@@ -3352,19 +3408,19 @@ Jump_001_524c:
     add hl, bc
     ld a, [hl]
     cp d
-    jp c, ClearObjectFlags
+    jp c, ClearSoundPitchSlideFlags
 
-    jr nz, jr_001_52c6
+    jr nz, StoreSoundPitchSlideFrequency
 
     ld hl, SOUND_CH_SLIDE_TARGET_LO
     add hl, bc
     ld a, [hl]
     cp e
-    jp c, ClearObjectFlags
+    jp c, ClearSoundPitchSlideFlags
 
-    jr jr_001_52c6
+    jr StoreSoundPitchSlideFrequency
 
-Jump_001_5293:
+UpdateSoundPitchSlideDescending:
     ld hl, SOUND_CH_FREQ_LO
     add hl, bc
     ld a, [hl]
@@ -3394,24 +3450,24 @@ Jump_001_5293:
     add hl, bc
     ld a, d
     cp [hl]
-    jr c, ClearObjectFlags
+    jr c, ClearSoundPitchSlideFlags
 
-    jr nz, jr_001_52c6
+    jr nz, StoreSoundPitchSlideFrequency
 
     ld hl, SOUND_CH_SLIDE_TARGET_LO
     add hl, bc
     ld a, e
     cp [hl]
-    jr c, ClearObjectFlags
+    jr c, ClearSoundPitchSlideFlags
 
-jr_001_52c6:
+StoreSoundPitchSlideFrequency:
     ld hl, SOUND_CH_FREQ_LO
     add hl, bc
     ld [hl], e
     ld hl, SOUND_CH_FREQ_HI
     add hl, bc
     ld [hl], d
-    ld b, $03
+    ld b, SOUND_REGISTER_FREQ_LO_OFFSET
     call SoundUpdate3
     ld a, e
     ld [hl+], a
@@ -3419,15 +3475,15 @@ jr_001_52c6:
     ret
 
 
-ClearObjectFlags::
+ClearSoundPitchSlideFlags::
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    res 4, [hl]
-    res 5, [hl]
+    res SOUND_CH_PITCH_SLIDE_ACTIVE_BIT, [hl]
+    res SOUND_CH_PITCH_SLIDE_DESCENDING_BIT, [hl]
     ret
 
 
-UpdateObjectData::
+InitSoundPitchSlideForNote::
     ld hl, SOUND_CH_FREQ_HI
     add hl, bc
     ld [hl], d
@@ -3440,11 +3496,11 @@ UpdateObjectData::
     ld hl, SOUND_CH_SLIDE_TICKS
     add hl, bc
     sub [hl]
-    jr nc, jr_001_52fa
+    jr nc, StoreSoundPitchSlideTickCount
 
-    ld a, $01
+    ld a, SOUND_PITCH_SLIDE_MIN_TICKS
 
-jr_001_52fa:
+StoreSoundPitchSlideTickCount:
     ld [hl], a
     ld hl, SOUND_CH_SLIDE_TARGET_LO
     add hl, bc
@@ -3456,16 +3512,16 @@ jr_001_52fa:
     ld hl, SOUND_CH_SLIDE_TARGET_HI
     add hl, bc
     sub [hl]
-    jr c, jr_001_5316
+    jr c, InitSoundPitchSlideAscending
 
     ld d, a
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    set 5, [hl]
-    jr jr_001_5339
+    set SOUND_CH_PITCH_SLIDE_DESCENDING_BIT, [hl]
+    jr CalculateSoundPitchSlideStep
 
-jr_001_5316:
+InitSoundPitchSlideAscending:
     ld hl, SOUND_CH_FREQ_HI
     add hl, bc
     ld d, [hl]
@@ -3488,28 +3544,28 @@ jr_001_5316:
     ld b, $00
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    res 5, [hl]
+    res SOUND_CH_PITCH_SLIDE_DESCENDING_BIT, [hl]
 
-jr_001_5339:
+CalculateSoundPitchSlideStep:
     ld hl, SOUND_CH_SLIDE_TICKS
     add hl, bc
 
-jr_001_533d:
+DivideSoundPitchSlideDeltaLoop:
     inc b
     ld a, e
     sub [hl]
     ld e, a
-    jr nc, jr_001_533d
+    jr nc, DivideSoundPitchSlideDeltaLoop
 
     ld a, d
     and a
-    jr z, jr_001_534b
+    jr z, StoreSoundPitchSlideStep
 
     dec a
     ld d, a
-    jr jr_001_533d
+    jr DivideSoundPitchSlideDeltaLoop
 
-jr_001_534b:
+StoreSoundPitchSlideStep:
     ld a, e
     add [hl]
     ld d, b
@@ -3534,12 +3590,12 @@ SoundUpdate1::
     rlca
     rlca
     ld [hl], a
-    and $c0
+    and SOUND_DUTY_BITS_MASK
     ld d, a
-    ld b, $01
+    ld b, SOUND_REGISTER_DUTY_LENGTH_OFFSET
     call SoundUpdate3
     ld a, [hl]
-    and $3f
+    and SOUND_LENGTH_BITS_MASK
     or d
     ld [hl], a
     ret
@@ -3568,37 +3624,37 @@ SoundUpdate3::
     ld a, c
     ld hl, SoundRegisterOffsetTable
     add l
-    jr nc, jr_001_5393
+    jr nc, ReadSoundRegisterBaseOffset
 
     inc h
 
-jr_001_5393:
+ReadSoundRegisterBaseOffset:
     ld l, a
     ld a, [hl]
     add b
     ld l, a
-    ld h, $ff
+    ld h, SOUND_REGISTER_PAGE_HI
     ret
 
 
 SoundUpdate4::
     ld h, $00
 
-jr_001_539c:
+MultiplySoundValueLoop:
     srl a
-    jr nc, jr_001_53a1
+    jr nc, DoubleSoundMultiplyAddend
 
     add hl, de
 
-jr_001_53a1:
+DoubleSoundMultiplyAddend:
     sla e
     rl d
     and a
-    jr z, jr_001_53aa
+    jr z, ReturnFromSoundMultiply
 
-    jr jr_001_539c
+    jr MultiplySoundValueLoop
 
-jr_001_53aa:
+ReturnFromSoundMultiply:
     ret
 
 
@@ -3615,17 +3671,17 @@ SoundUpdate5::
     ld d, [hl]
     ld a, b
 
-jr_001_53b9:
-    cp $07
-    jr z, jr_001_53c4
+ShiftSoundPitchBaseLoop:
+    cp SOUND_PITCH_SHIFT_TARGET_OCTAVE
+    jr z, ReturnShiftedSoundPitchBase
 
     sra d
     rr e
     inc a
-    jr jr_001_53b9
+    jr ShiftSoundPitchBaseLoop
 
-jr_001_53c4:
-    ld a, $08
+ReturnShiftedSoundPitchBase:
+    ld a, SOUND_PITCH_FREQ_HIGH_BIAS
     add d
     ld d, a
     ret
@@ -3633,32 +3689,32 @@ jr_001_53c4:
 
 SoundEngine::
     ld [SOUND_COMMAND_ID], a
-    cp $ff
+    cp SND_STOP_ALL
     jp z, StopAllSoundHW
 
-    cp $2f
+    cp SOUND_BGM_RESET_SKIP_MAX_COMMAND
     jp z, SoundLookupIndex
 
     jp c, SoundLookupIndex
 
-    cp $72
-    jr z, jr_001_53e0
+    cp SOUND_BGM_RESET_MAX_COMMAND
+    jr z, ResetSoundStateForBgmCommand
 
     jp nc, SoundLookupIndex
 
-jr_001_53e0:
+ResetSoundStateForBgmCommand:
     xor a
     ld [SOUND_STATUS], a
     ld [SOUND_DEFERRED_ID], a
     ld [SOUND_MAIN_TEMPO_LO], a
     ld [SOUND_WAVE_PATTERN_MAIN], a
     ld [SOUND_WAVE_PATTERN_ALT], a
-    ld d, $08
+    ld d, SOUND_PRIMARY_POINTER_CLEAR_BYTES
     ld hl, SOUND_CH_RETURN_PTRS
     call StopAllSound
     ld hl, SOUND_CH_SEQUENCE_PTRS
     call StopAllSound
-    ld d, $04
+    ld d, SOUND_PRIMARY_CHANNEL_COUNT
     ld hl, SOUND_CH_ACTIVE_ID
     call StopAllSound
     ld hl, SOUND_CH_FLAGS
@@ -3695,7 +3751,7 @@ jr_001_53e0:
     call StopAllSound
     ld hl, SOUND_CH_SLIDE_TARGET_LO
     call StopAllSound
-    ld a, $01
+    ld a, SOUND_COUNTER_INIT_VALUE
     ld hl, SOUND_CH_LOOP_COUNTER
     call StopAllSound
     ld hl, SOUND_CH_NOTE_LENGTH
@@ -3703,19 +3759,19 @@ jr_001_53e0:
     ld hl, SOUND_CH_LENGTH_SCALE
     call StopAllSound
     ld [SOUND_MAIN_TEMPO_HI], a
-    ld a, $ff
+    ld a, SOUND_OUTPUT_MASK_ALL
     ld [SOUND_OUTPUT_MASK], a
     xor a
     ldh [rNR50], a
-    ld a, $08
+    ld a, SOUND_HW_RESET_SWEEP_ENV_VALUE
     ldh [rNR10], a
     ld a, $00
     ldh [rNR51], a
     xor a
     ldh [rNR30], a
-    ld a, $80
+    ld a, AUD3ENA_ON
     ldh [rNR30], a
-    ld a, $77
+    ld a, SOUND_NR50_RESET_VALUE
     ldh [rNR50], a
     jp StartSoundSequence
 
@@ -3734,12 +3790,12 @@ SoundLookupIndex::
     ld a, l
     ld [SOUND_INDEX_PTR_LO], a
     ld a, [hl]
-    and $c0
+    and SOUND_INDEX_ENTRY_COUNT_BITS
     rlca
     rlca
     ld c, a
 
-Jump_001_54ba:
+ExpandSoundIndexChannelEntryLoop:
     ld d, c
     ld a, c
     add a
@@ -3753,44 +3809,44 @@ Jump_001_54ba:
     add hl, bc
     ld c, d
     ld a, [hl]
-    and $0f
+    and SOUND_INDEX_ENTRY_CHANNEL_MASK
     ld e, a
     ld d, $00
     ld hl, SOUND_CH_ACTIVE_ID
     add hl, de
     ld a, [hl]
     and a
-    jr z, jr_001_54f6
+    jr z, ClearSoundChannelStateForNewEntry
 
     ld a, e
-    cp $07
-    jr nz, jr_001_54ed
+    cp SOUND_LAST_CHANNEL_INDEX
+    jr nz, CheckSoundCommandPriorityAgainstActiveId
 
     ld a, [SOUND_COMMAND_ID]
-    cp $0f
-    jr nc, jr_001_54e6
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr nc, CheckSoundChannel7PriorityGate
 
     ret
 
 
-jr_001_54e6:
+CheckSoundChannel7PriorityGate:
     ld a, [hl]
-    cp $0f
-    jr z, jr_001_54f6
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr z, ClearSoundChannelStateForNewEntry
 
-    jr c, jr_001_54f6
+    jr c, ClearSoundChannelStateForNewEntry
 
-jr_001_54ed:
+CheckSoundCommandPriorityAgainstActiveId:
     ld a, [SOUND_COMMAND_ID]
     cp [hl]
-    jr z, jr_001_54f6
+    jr z, ClearSoundChannelStateForNewEntry
 
-    jr c, jr_001_54f6
+    jr c, ClearSoundChannelStateForNewEntry
 
     ret
 
 
-jr_001_54f6:
+ClearSoundChannelStateForNewEntry:
     xor a
     push de
     ld h, d
@@ -3861,7 +3917,7 @@ jr_001_54f6:
     ld hl, SOUND_CH_GATE_FLAGS
     add hl, de
     ld [hl], a
-    ld a, $01
+    ld a, SOUND_COUNTER_INIT_VALUE
     ld hl, SOUND_CH_LOOP_COUNTER
     add hl, de
     ld [hl], a
@@ -3872,38 +3928,38 @@ jr_001_54f6:
     add hl, de
     ld [hl], a
     ld a, e
-    cp $04
-    jr nz, jr_001_557e
+    cp SOUND_PRIMARY_CHANNEL_COUNT
+    jr nz, ContinueSoundIndexChannelExpansion
 
-    ld a, $08
+    ld a, SOUND_HW_RESET_SWEEP_ENV_VALUE
     ldh [rNR10], a
 
-jr_001_557e:
+ContinueSoundIndexChannelExpansion:
     ld a, c
     and a
     jp z, StartSoundSequence
 
     dec c
-    jp Jump_001_54ba
+    jp ExpandSoundIndexChannelEntryLoop
 
 
 StopAllSoundHW::
-    ld a, $80
+    ld a, SOUND_HW_RESET_ENABLE_VALUE
     ldh [rNR52], a
     ldh [rNR30], a
     xor a
     ldh [rNR51], a
     ldh [rNR32], a
-    ld a, $08
+    ld a, SOUND_HW_RESET_SWEEP_ENV_VALUE
     ldh [rNR10], a
     ldh [rNR12], a
     ldh [rNR22], a
     ldh [rNR42], a
-    ld a, $40
+    ld a, SOUND_HW_RESET_LENGTH_ON_VALUE
     ldh [rNR14], a
     ldh [rNR24], a
     ldh [rNR44], a
-    ld a, $77
+    ld a, SOUND_NR50_RESET_VALUE
     ldh [rNR50], a
     xor a
     ld [SOUND_STATUS], a
@@ -3913,16 +3969,16 @@ StopAllSoundHW::
     ld [SOUND_SFX_TEMPO_LO], a
     ld [SOUND_WAVE_PATTERN_MAIN], a
     ld [SOUND_WAVE_PATTERN_ALT], a
-    ld d, $a0
+    ld d, SOUND_HW_RESET_ZERO_CLEAR_BYTES
     ld hl, SOUND_CH_SEQUENCE_PTRS
     call StopAllSound
-    ld a, $01
-    ld d, $18
+    ld a, SOUND_COUNTER_INIT_VALUE
+    ld d, SOUND_HW_RESET_COUNTER_CLEAR_BYTES
     ld hl, SOUND_CH_NOTE_LENGTH
     call StopAllSound
     ld [SOUND_MAIN_TEMPO_HI], a
     ld [SOUND_SFX_TEMPO_HI], a
-    ld a, $ff
+    ld a, SOUND_OUTPUT_MASK_ALL
     ld [SOUND_OUTPUT_MASK], a
     ret
 
@@ -3930,10 +3986,10 @@ StopAllSoundHW::
 StopAllSound::
     ld b, d
 
-jr_001_55dd:
+FillSoundStateRangeLoop:
     ld [hl+], a
     dec b
-    jr nz, jr_001_55dd
+    jr nz, FillSoundStateRangeLoop
 
     ret
 
@@ -3955,25 +4011,25 @@ StartSoundSequence::
     ld b, a
     rlca
     rlca
-    and $03
+    and SOUND_INDEX_ENTRY_COUNT_FIELD_MASK
     ld c, a
     ld a, b
-    and $0f
+    and SOUND_INDEX_ENTRY_CHANNEL_MASK
     ld b, c
     inc b
     inc de
     ld c, $00
 
-jr_001_5603:
+FindSoundSequencePointerSlot:
     cp c
-    jr z, jr_001_560c
+    jr z, InstallSoundSequenceChannelEntry
 
     inc c
     inc hl
     inc hl
-    jr jr_001_5603
+    jr FindSoundSequencePointerSlot
 
-jr_001_560c:
+InstallSoundSequenceChannelEntry:
     push hl
     push bc
     push af
@@ -3984,14 +4040,14 @@ jr_001_560c:
     ld a, [SOUND_COMMAND_ID]
     ld [hl], a
     pop af
-    cp $03
-    jr c, jr_001_5625
+    cp SOUND_CHANNEL3_INDEX
+    jr c, StoreSoundSequencePointerForChannel
 
     ld hl, SOUND_CH_FLAGS
     add hl, bc
-    set 2, [hl]
+    set SOUND_CH_NOTE_OUTPUT_GATE_BIT, [hl]
 
-jr_001_5625:
+StoreSoundSequencePointerForChannel:
     pop bc
     pop hl
     ld a, [de]
@@ -4006,64 +4062,185 @@ jr_001_5625:
     and a
     ld a, [de]
     inc de
-    jr nz, jr_001_5603
+    jr nz, FindSoundSequencePointerSlot
 
     ld a, [SOUND_COMMAND_ID]
-    cp $0f
-    jr nc, jr_001_563f
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr nc, CheckSoundCommandForBgmActiveState
 
-    jr jr_001_5668
+    jr ReturnFromStartSoundSequence
 
-jr_001_563f:
+CheckSoundCommandForBgmActiveState:
     ld a, [SOUND_COMMAND_ID]
-    cp $0f
-    jr z, jr_001_5668
+    cp SOUND_BGM_ACTIVE_ID_GATE
+    jr z, ReturnFromStartSoundSequence
 
-    jr c, jr_001_5649
+    jr c, StoreSoundBgmActiveState
 
-jr_001_5647:
-    jr jr_001_5668
+    jr ReturnFromStartSoundSequence
 
-jr_001_5649:
+StoreSoundBgmActiveState:
     ld hl, SOUND_BGM_ACTIVE_ID
     ld [hl+], a
     ld [hl+], a
     ld [hl+], a
     ld [hl], a
-    ld hl, SOUND_CH_SEQUENCE_PTRS + $0c
+    ld hl, SOUND_CH_SEQUENCE_PTRS + SOUND_SECONDARY_WAVE_SEQUENCE_PTR_OFFSET
     ld de, SoundWaveDutyData
     ld [hl], e
     inc hl
     ld [hl], d
     ld a, [SOUND_NR50_BACKUP]
     and a
-    jr nz, jr_001_5668
+    jr nz, ReturnFromStartSoundSequence
 
     ldh a, [rNR50]
     ld [SOUND_NR50_BACKUP], a
-    ld a, $77
+    ld a, SOUND_NR50_RESET_VALUE
     ldh [rNR50], a
 
-jr_001_5668:
+ReturnFromStartSoundSequence:
     ret
 
+MACRO SOUND_WAVE_DUTY_END
+    db SOUND_SEQUENCE_END_COMMAND
+ENDM
+
+MACRO SOUND_REGISTER_OFFSET_ENTRY
+    db \1
+ENDM
+
+MACRO SOUND_CHANNEL_MASK_ENTRY
+    db \1
+ENDM
+
+MACRO SOUND_PITCH_BASE_ENTRY
+    dw \1
+ENDM
+
 SoundWaveDutyData::
-    db $ff
+    SOUND_WAVE_DUTY_END
 
 SoundRegisterOffsetTable::
-    db $10, $15, $1a, $1f, $10, $15, $1a, $1f
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH1_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH2_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH3_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH4_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH1_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH2_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH3_BASE_LOW
+    SOUND_REGISTER_OFFSET_ENTRY SOUND_REGISTER_CH4_BASE_LOW
 
 SoundChannelDisableMaskTable::
-    db $ee, $dd, $bb, $77, $ee, $dd, $bb, $77
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH1_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH2_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH3_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH4_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH1_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH2_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH3_CLEAR_MASK
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH4_CLEAR_MASK
 
 SoundChannelEnableMaskTable::
-    db $11, $22, $44, $88, $11, $22, $44, $88
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH1_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH2_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH3_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH4_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH1_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH2_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH3_TERMINAL_BITS
+    SOUND_CHANNEL_MASK_ENTRY SOUND_OUTPUT_CH4_TERMINAL_BITS
 
 SoundPitchBaseTable::
-    dw $f82c, $f89d, $f907, $f96b, $f9ca, $fa23, $fa77, $fac7
-    dw $fb12, $fb58, $fb9b, $fbda
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_0
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_1
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_2
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_3
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_4
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_5
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_6
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_7
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_8
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_9
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_10
+    SOUND_PITCH_BASE_ENTRY SOUND_PITCH_BASE_INDEX_11
 
-SoundSequenceData_569a::
+MACRO SOUND_DUTY_LENGTH
+    db SOUND_DUTY_LENGTH_COMMAND, \1
+ENDM
+
+MACRO SOUND_SWEEP
+    db SOUND_SWEEP_COMMAND, \1
+ENDM
+
+MACRO SOUND_EXTENDED_NOTE
+    db SOUND_EXTENDED_NOTE_COMMAND_BASE | \1
+    db \2, \3, \4
+ENDM
+
+MACRO SOUND_SEQUENCE_END
+    db SOUND_SEQUENCE_END_COMMAND
+ENDM
+
+MACRO SOUND_LENGTH_ENVELOPE
+    db SOUND_LENGTH_ENVELOPE_COMMAND_BASE | \1, \2
+ENDM
+
+MACRO SOUND_CHANNEL3_LENGTH_SCALE
+    db SOUND_LENGTH_ENVELOPE_COMMAND_BASE | \1
+ENDM
+
+MACRO SOUND_OCTAVE
+    db SOUND_OCTAVE_COMMAND_BASE | \1
+ENDM
+
+MACRO SOUND_VIBRATO
+    db SOUND_VIBRATO_COMMAND, \1, \2
+ENDM
+
+MACRO SOUND_TEMPO
+    db SOUND_TEMPO_COMMAND, \1, \2
+ENDM
+
+MACRO SOUND_MASTER_VOLUME
+    db SOUND_MASTER_VOLUME_COMMAND, \1
+ENDM
+
+MACRO SOUND_FREQ_CARRY_TOGGLE
+    db SOUND_FREQ_CARRY_TOGGLE_COMMAND
+ENDM
+
+MACRO SOUND_VISUAL_UPDATE
+    db SOUND_VISUAL_UPDATE_COMMAND
+ENDM
+
+MACRO SOUND_GATE_FLAG
+    db SOUND_GATE_FLAG_COMMAND
+ENDM
+
+MACRO SOUND_PITCH_SLIDE
+    db SOUND_PITCH_SLIDE_COMMAND, \1, \2, \3
+ENDM
+
+MACRO SOUND_REST_NOTE
+    db SOUND_REST_NOTE_COMMAND_BASE | \1
+ENDM
+
+MACRO SOUND_CHANNEL3_NESTED_SOUND_NOTE
+    db SOUND_CHANNEL3_NESTED_COMMAND_BASE | \1, \2
+ENDM
+
+MACRO SOUND_SUBSEQUENCE_CALL
+    db SOUND_SUBSEQUENCE_CALL_COMMAND
+    dw \1
+ENDM
+
+MACRO SOUND_LOOP_JUMP
+    db SOUND_LOOP_JUMP_COMMAND, \1
+    dw \2
+ENDM
+
+TitleBgmChannel0Sequence::
     db $ed, $00
 SoundSequenceData_569c::
     db $b0, $f0, $77, $ec, $02, $e8, $dc, $b1, $e6, $a2, $e5, $22, $51, $e6, $a2, $e5
@@ -4080,10 +4257,24 @@ SoundSequenceData_56c7::
     db $e5, $51, $71, $e6, $a1, $e5, $31, $51, $71, $31, $a1, $71, $51, $e6, $a1, $e5
     db $21, $31, $51, $71, $91, $b1, $e4, $01, $e5, $51, $71, $91, $51, $71, $91, $e4
     db $01, $e5, $a1, $91, $71, $91, $dc, $b1, $a7, $fe, $00, $c7, $56
-SoundSequenceData_5764::
-    db $ec, $02, $ea, $08, $26, $dc, $c1, $e4, $21, $21, $01, $01, $e5, $a1, $e4, $01
-    db $21, $e5, $a0, $d6, $c1, $e4, $20, $50, $dc, $c1, $71, $71, $51, $51, $71, $51
-    db $31, $21, $01, $01, $21, $21, $31, $31, $71, $31, $53, $33, $23, $a3
+TitleBgmChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $08, $26
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_OCTAVE $04
+    db $21, $21, $01, $01
+    SOUND_OCTAVE $05
+    db $a1
+    SOUND_OCTAVE $04
+    db $01, $21
+    SOUND_OCTAVE $05
+    db $a0
+    SOUND_LENGTH_ENVELOPE $06, $c1
+    SOUND_OCTAVE $04
+    db $20, $50
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    db $71, $71, $51, $51, $71, $51, $31, $21, $01, $01, $21, $21, $31, $31, $71, $31
+    db $53, $33, $23, $a3
 SoundSequenceData_5792::
     db $dc, $b3, $50, $71, $52, $21, $a1, $91, $a1, $91, $71, $3d, $00, $31, $02, $e5
     db $91, $e4, $71, $51, $71, $51, $23, $33, $43, $53, $50, $71, $52, $21, $a1, $91
@@ -4093,8 +4284,12 @@ SoundSequenceData_5792::
     db $a3, $e3, $03, $21, $01, $e4, $a1, $91, $73, $35, $a1, $91, $a1, $e3, $23, $03
     db $e4, $b3, $61, $71, $e3, $03, $e4, $a3, $91, $e3, $21, $01, $e4, $91, $dc, $b3
     db $a3, $a3, $dc, $b1, $a7, $fe, $00, $92, $57
-SoundSequenceData_580b::
-    db $d6, $12, $fd, $34, $5a, $fd, $34, $5a, $fd, $34, $5a, $fd, $34, $5a
+TitleBgmChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $06, $12
+    SOUND_SUBSEQUENCE_CALL SoundSequenceData_5a34
+    SOUND_SUBSEQUENCE_CALL SoundSequenceData_5a34
+    SOUND_SUBSEQUENCE_CALL SoundSequenceData_5a34
+    SOUND_SUBSEQUENCE_CALL SoundSequenceData_5a34
 SoundSequenceData_5819::
     db $e4, $eb, $00, $5a, $a0, $c0, $51, $e3, $eb, $00, $45, $50, $c0, $e4, $eb, $00
     db $5a, $a0, $c0, $73, $eb, $00, $5a, $a0, $c0, $e3, $eb, $00, $45, $50, $c0, $e4
@@ -4135,20 +4330,81 @@ SoundSequenceData_5a34::
     db $a0, $c4, $eb, $00, $5a, $a0, $c0, $e3, $eb, $00, $45, $50, $c0, $e4, $eb, $00
     db $5a, $a0, $c2, $e3, $eb, $00, $45, $50, $c0, $e4, $eb, $00, $5a, $a0, $c4, $eb
     db $00, $5a, $a0, $c0, $e3, $eb, $00, $45, $50, $c0, $ff
-SoundSequenceData_5a6f::
-    db $dc, $c3, $b7, $04, $b2, $04, $b4, $04, $b7, $04, $b7, $04, $b7, $04, $b2, $04
-    db $b4, $04, $b7, $04, $b1, $04, $b0, $04, $b0, $04
+TitleBgmChannel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $02, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $04, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $02, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $04, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $04
 SoundSequenceData_5a89::
-    db $c3, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b2
-    db $04, $b4, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7
-    db $04, $b2, $04, $b4, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7
-    db $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b7, $04, $b2
-    db $04, $b4, $04, $b7, $04, $b3, $04, $fe, $00, $89, $5a
-SoundSequenceData_5ad4::
-    db $ed, $00, $92, $f0, $77, $ec, $02, $e8, $d8, $b2, $e5, $73, $b1, $93, $b1, $e4
-    db $05, $21, $41, $21, $e5, $71, $e4, $21, $01, $e5, $b1, $91, $b1, $75, $25
-SoundSequenceData_5af3::
-    db $ed, $00, $92, $f0, $77, $ec, $02, $e8, $d8, $b2
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $02, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $04, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $02, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $04, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $02, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $04, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $07, $04
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $04
+    SOUND_LOOP_JUMP $00, SoundSequenceData_5a89
+BgmOption0Channel0Sequence::
+    SOUND_TEMPO $00, $92
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $08, $b2
+    SOUND_OCTAVE $05
+    db $73, $b1, $93, $b1
+    SOUND_OCTAVE $04
+    db $05, $21, $41, $21
+    SOUND_OCTAVE $05
+    db $71
+    SOUND_OCTAVE $04
+    db $21, $01
+    SOUND_OCTAVE $05
+    db $b1, $91, $b1, $75, $25
+BgmPreview0Channel0Sequence::
+    SOUND_TEMPO $00, $92
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $08, $b2
 SoundSequenceData_5afd::
     db $e5, $75, $63, $21, $75, $91, $61, $91, $75, $b3, $71, $91, $71, $61, $41, $61
     db $91, $75, $63, $21, $75, $91, $61, $91, $75, $b3, $e4, $21, $01, $e5, $b1, $91
@@ -4180,11 +4436,16 @@ SoundSequenceData_5afd::
     db $91, $b1, $91, $61, $d8, $b2, $21, $21, $21, $b3, $71, $91, $41, $61, $73, $61
     db $71, $71, $71, $b3, $71, $91, $71, $91, $71, $93, $ec, $02, $d8, $b2, $fe, $00
     db $fd, $5a
-SoundSequenceData_5ccf::
-    db $ec, $02, $d8, $c2, $e4, $21, $71, $61, $73, $21, $41, $61, $71, $b3, $91, $73
-    db $61, $43, $61, $75, $e5, $75
-SoundSequenceData_5ce5::
-    db $ec, $02, $d8, $c2
+BgmOption0Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $08, $c2
+    SOUND_OCTAVE $04
+    db $21, $71, $61, $73, $21, $41, $61, $71, $b3, $91, $73, $61, $43, $61, $75
+    SOUND_OCTAVE $05
+    db $75
+BgmPreview0Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $08, $c2
 SoundSequenceData_5ce9::
     db $e4, $21, $21, $21, $21, $01, $e5, $b1, $e4, $45, $63, $41, $21, $71, $61, $71
     db $61, $71, $43, $01, $e5, $b1, $e4, $01, $11, $21, $21, $21, $21, $01, $e5, $b1
@@ -4222,10 +4483,22 @@ SoundSequenceData_5ce9::
     db $61, $41, $21, $73, $61, $73, $21, $41, $21, $01, $e5, $b1, $e4, $01, $21, $73
     db $61, $73, $21, $01, $71, $61, $73, $ec, $02, $d8, $c2, $ea, $00, $00, $e5, $b0
     db $e4, $00, $fe, $00, $e9, $5c
-SoundSequenceData_5f1f::
-    db $d8, $12, $cf, $c5, $e4, $01, $21, $c3, $01, $c3, $e5, $b1, $c3, $b1, $c3
-SoundSequenceData_5f2e::
-    db $d8, $12
+BgmOption0Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $08, $12
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $05
+    SOUND_OCTAVE $04
+    db $01, $21
+    SOUND_REST_NOTE $03
+    db $01
+    SOUND_REST_NOTE $03
+    SOUND_OCTAVE $05
+    db $b1
+    SOUND_REST_NOTE $03
+    db $b1
+    SOUND_REST_NOTE $03
+BgmPreview0Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $08, $12
 SoundSequenceData_5f30::
     db $e4, $21, $c3, $e5, $b1, $c3, $e4, $41, $c3, $03, $41, $21, $c3, $e5, $b1, $c3
     db $e4, $01, $c3, $11, $c3, $21, $c3, $e5, $b1, $c3, $e4, $41, $c3, $03, $41, $21
@@ -4254,44 +4527,186 @@ MusicSequenceData_5fe3::
     db $c3, $e4, $01, $c3, $e5, $b1, $c1, $91, $71, $c3, $b1, $c3, $e4, $01, $c3, $e5
     db $b1, $c1, $91, $71, $c3, $b1, $c3, $e4, $01, $c3, $e5, $b1, $c1, $91, $71, $c3
     db $b1, $c3, $e4, $01, $21, $c1, $21, $c1, $41, $fe, $00, $30, $5f
-MusicSequenceData_60c0::
-    db $d8, $cf, $c7, $c7, $cf
-MusicSequenceData_60c5::
-    db $d8, $f1, $c4, $f1, $c5, $f1, $c5, $f1, $c5
+BgmOption0Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $08
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $07
+    SOUND_REST_NOTE $07
+    SOUND_REST_NOTE $0f
+BgmPreview0Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $08
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $04
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
 MusicSequenceData_60ce::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $07, $ce, $60
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $07, MusicSequenceData_60ce
 MusicSequenceData_60da::
-    db $f1, $cb, $f1, $cb, $fe, $02, $da, $60
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_LOOP_JUMP $02, MusicSequenceData_60da
 MusicSequenceData_60e2::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $02, $e2, $60
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $02, MusicSequenceData_60e2
 MusicSequenceData_60ee::
-    db $f1, $c5, $f1, $c5, $f1, $c3, $f1, $c0, $f1, $c0, $f1, $c0, $f1, $c4, $d8, $fe
-    db $02, $ee, $60
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $04
+    SOUND_CHANNEL3_LENGTH_SCALE $08
+    SOUND_LOOP_JUMP $02, MusicSequenceData_60ee
 MusicSequenceData_6101::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $04, $01, $61, $f1, $cb, $f1, $cb
-    db $f1, $cb, $c9, $f1, $c1
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6101
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_REST_NOTE $09
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
 MusicSequenceData_6116::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $02, $16, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6116
 MusicSequenceData_6122::
-    db $f1, $cb, $f1, $cb, $fe, $04, $22, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6122
 MusicSequenceData_612a::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $08, $2a, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $08, MusicSequenceData_612a
 MusicSequenceData_6136::
-    db $f1, $cb, $f1, $cb, $f1, $cb, $f1, $c5, $f1, $c5, $fe, $02, $36, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6136
 MusicSequenceData_6144::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $04, $44, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6144
 MusicSequenceData_6150::
-    db $f1, $cb, $f1, $cb, $fe, $02, $50, $61
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0b
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6150
 MusicSequenceData_6158::
-    db $f1, $c5, $f1, $c5, $f1, $c5, $f1, $c5, $fe, $04, $58, $61, $f1, $c5, $f1, $c5
-    db $f1, $c5, $f1, $c5, $fe, $00, $ce, $60
-MusicSequenceData_6170::
-    db $ed, $00, $e0, $f0, $77, $ec, $02, $e8, $dc, $b3, $c3, $e4, $07, $e5, $b7, $41
-    db $71, $01, $79
-MusicSequenceData_6183::
-    db $ed, $00, $e0, $f0, $77, $ec, $02, $e8, $dc, $b3, $cf, $c9, $e5, $70, $50, $40
-    db $50, $40, $20, $01, $e6, $71, $e5, $01, $41, $21, $51, $01, $41, $21, $e6, $b0
-    db $e5, $00, $21, $51, $73, $53
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6158
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $05
+    SOUND_LOOP_JUMP $00, MusicSequenceData_60ce
+BgmOption1Channel0Sequence::
+    SOUND_TEMPO $00, $e0
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_REST_NOTE $03
+    SOUND_OCTAVE $04
+    db $07
+    SOUND_OCTAVE $05
+    db $b7, $41, $71, $01, $79
+BgmPreview1Channel0Sequence::
+    SOUND_TEMPO $00, $e0
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $09
+    SOUND_OCTAVE $05
+    db $70, $50, $40, $50, $40, $20, $01
+    SOUND_OCTAVE $06
+    db $71
+    SOUND_OCTAVE $05
+    db $01, $41, $21, $51, $01, $41, $21
+    SOUND_OCTAVE $06
+    db $b0
+    SOUND_OCTAVE $05
+    db $00, $21, $51, $73, $53
 MusicSequenceData_61a9::
     db $41, $01, $41, $71, $51, $01, $41, $01, $21, $e6, $b0, $e5, $00, $21, $51, $41
     db $50, $40, $21, $71, $01, $21, $41, $21, $40, $20, $01, $41, $71, $23, $53, $71
@@ -4305,13 +4720,35 @@ MusicSequenceData_61a9::
     db $97, $77, $97, $b7, $dc, $b3, $73, $53, $43, $23, $e4, $03, $e5, $b3, $93, $71
     db $b1, $e4, $03, $e5, $53, $73, $03, $23, $43, $53, $7f, $c3, $cf, $cf, $cf, $fe
     db $00, $a9, $61
-MusicSequenceData_625c::
-    db $ec, $02, $dc, $c3, $e4, $01, $21, $43, $51, $41, $21, $01, $e5, $b1, $e4, $21
-    db $03, $23, $01, $e5, $71, $51, $71
-MusicSequenceData_6273::
-    db $ec, $02, $dc, $c3, $e4, $01, $e5, $71, $e4, $01, $41, $21, $e5, $71, $e4, $21
-    db $51, $41, $00, $20, $41, $51, $43, $21, $00, $20, $41, $01, $41, $71, $51, $01
-    db $41, $01, $21, $e5, $71, $e4, $21, $51, $41, $50, $40, $23
+BgmOption1Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c3
+    SOUND_OCTAVE $04
+    db $01, $21, $43, $51, $41, $21, $01
+    SOUND_OCTAVE $05
+    db $b1
+    SOUND_OCTAVE $04
+    db $21, $03, $23, $01
+    SOUND_OCTAVE $05
+    db $71, $51, $71
+BgmPreview1Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c3
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $71
+    SOUND_OCTAVE $04
+    db $01, $41, $21
+    SOUND_OCTAVE $05
+    db $71
+    SOUND_OCTAVE $04
+    db $21, $51, $41, $00, $20, $41, $51, $43, $21, $00, $20, $41, $01, $41, $71, $51
+    db $01, $41, $01, $21
+    SOUND_OCTAVE $05
+    db $71
+    SOUND_OCTAVE $04
+    db $21, $51, $41, $50, $40, $23
 MusicSequenceData_629f::
     db $c1, $00, $20, $41, $50, $40, $21, $e5, $b0, $e4, $00, $21, $41, $51, $41, $21
     db $01, $e5, $b1, $91, $71, $b1, $e4, $70, $50, $40, $20, $01, $e5, $b1, $91, $e4
@@ -4334,10 +4771,25 @@ MusicSequenceData_629f::
     db $01, $41, $21, $e5, $71, $e4, $21, $51, $41, $00, $20, $41, $51, $41, $01, $23
     db $41, $01, $41, $71, $51, $01, $41, $01, $21, $e5, $71, $e4, $21, $51, $43, $23
     db $fe, $00, $9f, $62
-MusicSequenceData_63e3::
-    db $dc, $10, $ea, $08, $26, $c3, $cf, $cf
-MusicSequenceData_63eb::
-    db $dc, $10, $ea, $08, $26, $cf, $cf, $cf, $cb, $e6, $b0, $e5, $00, $20, $e6, $b0
+BgmOption1Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_VIBRATO $08, $26
+    SOUND_REST_NOTE $03
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+BgmPreview1Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_VIBRATO $08, $26
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0b
+    SOUND_OCTAVE $06
+    db $b0
+    SOUND_OCTAVE $05
+    db $00, $20
+    SOUND_OCTAVE $06
+    db $b0
 MusicSequenceData_63fb::
     db $e5, $01, $e6, $71, $e5, $01, $41, $21, $71, $01, $41, $20, $00, $e6, $b0, $e5
     db $00, $e6, $b1, $e5, $01, $23, $73, $cf, $cf, $41, $01, $41, $71, $53, $43, $22
@@ -4353,37 +4805,199 @@ MusicSequenceData_63fb::
     db $01, $71, $90, $70, $50, $70, $91, $b1, $91, $71, $51, $41, $20, $40, $51, $40
     db $50, $71, $50, $70, $91, $b1, $e4, $21, $07, $27, $47, $57, $77, $53, $43, $27
     db $43, $53, $fe, $00, $fb, $63
-MusicSequenceData_64d1::
-    db $dc, $c3, $cf, $cf
-MusicSequenceData_64d5::
-    db $dc, $f1, $c6, $f1, $c7, $f1, $c7, $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $f1
-    db $c3, $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3
+BgmOption1Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $03
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+BgmPreview1Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $06
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
 MusicSequenceData_64f0::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $f0, $64
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_64f0
 MusicSequenceData_64fc::
-    db $f1, $c7, $f1, $c7, $fe, $02, $fc, $64
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_LOOP_JUMP $02, MusicSequenceData_64fc
 MusicSequenceData_6504::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $04, $65, $f1, $c7, $f1, $c7
-    db $f1, $c7, $f1, $c3, $f1, $c3, $f1, $c7, $f1, $c7, $f1, $c3, $f1, $c3, $f1, $c3
-    db $f1, $c3, $f1, $c7, $f1, $c7, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c3
-    db $f1, $c3
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6504
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
 MusicSequenceData_6536::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $04, $36, $65, $f1, $c7, $f1, $c7
-    db $f1, $c7, $f1, $c3, $f1, $c3, $f1, $c7, $f1, $c3, $f1, $c3
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6536
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
 MusicSequenceData_6552::
-    db $f1, $c7, $f1, $c7, $fe, $04, $52, $65
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6552
 MusicSequenceData_655a::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $04, $5a, $65
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $04, MusicSequenceData_655a
 MusicSequenceData_656e::
-    db $f1, $c7, $f1, $c7, $fe, $02, $6e, $65, $f1, $c7, $f1, $c3, $f1, $c3, $f1, $c7
-    db $f1, $c3, $f1, $c3, $fe, $00, $f0, $64
-MusicSequenceData_6586::
-    db $ed, $00, $80, $f0, $77, $ec, $02, $ea, $07, $23, $e8, $dc, $b2, $e4, $40, $60
-    db $40, $60, $40, $60, $40, $60, $41, $e5, $b1, $e4, $11, $31, $e5, $b2, $e4, $10
-    db $31, $e5, $b1, $e4, $43, $43
-MusicSequenceData_65ac::
-    db $ed, $00, $80, $f0, $77, $ec, $02, $ea, $07, $23, $e8
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_LOOP_JUMP $02, MusicSequenceData_656e
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $00, MusicSequenceData_64f0
+BgmOption2Channel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $07, $23
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b2
+    SOUND_OCTAVE $04
+    db $40, $60, $40, $60, $40, $60, $40, $60, $41
+    SOUND_OCTAVE $05
+    db $b1
+    SOUND_OCTAVE $04
+    db $11, $31
+    SOUND_OCTAVE $05
+    db $b2
+    SOUND_OCTAVE $04
+    db $10, $31
+    SOUND_OCTAVE $05
+    db $b1
+    SOUND_OCTAVE $04
+    db $43, $43
+BgmPreview2Channel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $07, $23
+    SOUND_FREQ_CARRY_TOGGLE
 MusicSequenceData_65b7::
     db $dc, $b2, $e5, $81, $83, $b1, $e4, $43, $32, $10, $e5, $b1, $63, $e4, $91, $61
     db $e3, $41, $33, $e5, $b1, $b3, $61, $93, $62, $90, $83, $93, $b1, $91, $81, $61
@@ -4404,11 +5018,20 @@ MusicSequenceData_65b7::
     db $31, $11, $31, $41, $31, $11, $31, $61, $41, $31, $41, $61, $41, $61, $81, $b1
     db $91, $81, $63, $81, $83, $c7, $e5, $43, $33, $13, $e6, $b3, $93, $83, $e5, $43
     db $33, $13, $e6, $b3, $93, $83, $63, $33, $fe, $00, $b7, $65
-MusicSequenceData_66e3::
-    db $ec, $02, $ea, $06, $24, $dc, $c2, $e4, $b5, $e3, $11, $e4, $b1, $91, $81, $61
-    db $41, $61, $81, $61, $b3, $b3
-MusicSequenceData_66f9::
-    db $ec, $02, $ea, $06, $24, $dc, $c2
+BgmOption2Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $06, $24
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_OCTAVE $04
+    db $b5
+    SOUND_OCTAVE $03
+    db $11
+    SOUND_OCTAVE $04
+    db $b1, $91, $81, $61, $41, $61, $81, $61, $b3, $b3
+BgmPreview2Channel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $06, $24
+    SOUND_LENGTH_ENVELOPE $0c, $c2
 MusicSequenceData_6700::
     db $dc, $c2, $e4, $41, $e5, $b3, $e4, $41, $83, $62, $40, $31, $e5, $b3, $e3, $11
     db $e4, $b1, $e3, $81, $63, $e4, $31, $63, $e5, $b1, $e4, $13, $32, $60, $45, $61
@@ -4438,10 +5061,20 @@ MusicSequenceData_6700::
     db $b5, $b3, $e3, $31, $11, $31, $63, $e4, $b1, $e3, $41, $e4, $10, $30, $43, $33
     db $13, $e5, $b3, $93, $83, $63, $43, $e4, $43, $33, $13, $e5, $b3, $93, $83, $63
     db $b3, $fe, $00, $00, $67
-MusicSequenceData_68b5::
-    db $dc, $10, $cf, $c9, $e5, $b0, $c0, $e4, $10, $c0, $30, $c0
-MusicSequenceData_68c1::
-    db $dc, $10
+BgmOption2Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $09
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $04
+    db $10
+    SOUND_REST_NOTE $00
+    db $30
+    SOUND_REST_NOTE $00
+BgmPreview2Channel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
 MusicSequenceData_68c3::
     db $e4, $40, $c0, $40, $c0, $e5, $b0, $c0, $e4, $80, $c0, $40, $c0, $b0, $c0, $e5
     db $b0, $c0, $e4, $60, $c0, $30, $c0, $e5, $b0, $c4, $eb, $00, $6b, $b0, $c2, $eb
@@ -4481,65 +5114,429 @@ MusicSequenceData_68c3::
     db $e4, $b1, $c1, $e3, $40, $c0, $40, $cf, $c2, $e5, $43, $33, $13, $e6, $b3, $e4
     db $83, $63, $43, $33, $13, $e5, $b3, $c1, $b0, $c0, $e4, $10, $c0, $30, $c0, $fe
     db $00, $c3, $68
-MusicSequenceData_6b16::
-    db $dc, $cf, $cf
-MusicSequenceData_6b19::
-    db $dc, $f1, $c0, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1
-    db $c1
+BgmOption2Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+BgmPreview2Channel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
 MusicSequenceData_6b2a::
-    db $f1, $c1, $f1, $c1, $c1, $d6, $f1, $c0, $f1, $c2, $f1, $c0, $f1, $c2, $f1, $c0
-    db $f1, $c2, $f1, $c0, $f1, $c2, $dc, $c1
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_LENGTH_SCALE $06
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $01
 MusicSequenceData_6b42::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $02, $42, $6b, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $c1, $d6, $f1, $c0, $f1, $c2, $f1, $c0
-    db $f1, $c2, $f1, $c0, $f1, $c2, $f1, $c0, $f1, $c2, $dc, $c1, $f1, $c1, $f1, $c1
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c3, $f1, $c3
-    db $f1, $c3, $f1, $c1, $f1, $c1
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6b42
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_LENGTH_SCALE $06
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $02
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
 MusicSequenceData_6b98::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $04, $98, $6b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $04, MusicSequenceData_6b98
 MusicSequenceData_6bac::
-    db $f1, $c7, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $fe, $02, $ac, $6b, $f1, $c1
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $cf
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $07
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6bac
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0f
 MusicSequenceData_6bcc::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $03, $cc, $6b, $f1, $cf
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $03, MusicSequenceData_6bcc
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $0f
 MusicSequenceData_6bda::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $03, $da, $6b, $f1, $c1, $f1, $c1
-    db $f1, $c1, $f1, $c1, $c7
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $03, MusicSequenceData_6bda
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $07
 MusicSequenceData_6bef::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $ef, $6b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6bef
 MusicSequenceData_6bfb::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $06, $fb, $6b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $06, MusicSequenceData_6bfb
 MusicSequenceData_6c0f::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $0f, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c0f
 MusicSequenceData_6c1b::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $1b, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c1b
 MusicSequenceData_6c27::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $02, $27, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c27
 MusicSequenceData_6c3b::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $3b, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c3b
 MusicSequenceData_6c47::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $02, $47, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c47
 MusicSequenceData_6c5b::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $02, $5b, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c5b
 MusicSequenceData_6c67::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $02, $67, $6c
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $02, MusicSequenceData_6c67
 MusicSequenceData_6c7b::
-    db $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1
-    db $fe, $07, $7b, $6c, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c3, $f1, $c1, $f1, $c3
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $07, MusicSequenceData_6c7b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
 MusicSequenceData_6c9b::
-    db $f1, $c3, $f1, $c3, $f1, $c3, $f1, $c3, $fe, $03, $9b, $6c, $f1, $c3, $f1, $c3
-    db $f1, $c3, $c0, $f1, $c0, $f1, $c0, $f1, $c0, $f1, $c1, $f1, $c1, $f1, $c1, $f1
-    db $c1, $f1, $c1, $f1, $c1, $f1, $c1, $f1, $c1, $fe, $00, $2a, $6b
-MusicSequenceData_6cc8::
-    db $ed, $00, $84, $f0, $77, $ec, $02, $ea, $07, $23, $e8, $dc, $b2, $e5, $71, $70
-    db $70, $73, $d8, $b2, $c1, $71, $91, $b1, $e4, $01, $11, $25, $dc, $b2, $e5, $b3
-    db $e4, $03, $e5, $05
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $03, MusicSequenceData_6c9b
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $03
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $00
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_VISUAL_UPDATE
+    SOUND_REST_NOTE $01
+    SOUND_LOOP_JUMP $00, MusicSequenceData_6b2a
+LinkRoleSharedChannel0Sequence::
+    SOUND_TEMPO $00, $84
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $07, $23
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b2
+    SOUND_OCTAVE $05
+    db $71, $70, $70, $73
+    SOUND_LENGTH_ENVELOPE $08, $b2
+    SOUND_REST_NOTE $01
+    db $71, $91, $b1
+    SOUND_OCTAVE $04
+    db $01, $11, $25
+    SOUND_LENGTH_ENVELOPE $0c, $b2
+    SOUND_OCTAVE $05
+    db $b3
+    SOUND_OCTAVE $04
+    db $03
+    SOUND_OCTAVE $05
+    db $05
 MusicSequenceData_6cec::
     db $53, $53, $53, $53, $e4, $00, $e5, $b0, $e4, $00, $e5, $b0, $e4, $03, $e5, $90
     db $80, $90, $80, $93, $73, $73, $73, $73, $90, $80, $90, $80, $90, $a0, $e4, $01
@@ -4554,14 +5551,25 @@ MusicSequenceData_6cec::
     db $93, $93, $93, $93, $93, $93, $93, $93, $93, $93, $93, $93, $a3, $a3, $a3, $a3
     db $e4, $03, $03, $03, $03, $03, $03, $03, $00, $c0, $e5, $9f, $c0, $cf, $cf, $cf
     db $cf, $ca, $c5, $fe, $00, $ec, $6c
-MusicSequenceData_6db3::
-    db $fd, $dd, $6d
+LinkMasterChannel1Sequence::
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6ddd
 MusicSequenceData_6db6::
-    db $fd, $00, $6e, $fd, $22, $6f, $fd, $4e, $6f, $fd, $66, $6f, $fe, $00, $b6, $6d
-MusicSequenceData_6dc6::
-    db $d4, $c1, $c0, $e8, $fd, $dd, $6d
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6e00
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f22
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f4e
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f66
+    SOUND_LOOP_JUMP $00, MusicSequenceData_6db6
+LinkSlaveChannel1Sequence::
+    SOUND_LENGTH_ENVELOPE $04, $c1
+    SOUND_REST_NOTE $00
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6ddd
 MusicSequenceData_6dcd::
-    db $fd, $00, $6e, $fd, $38, $6f, $fd, $59, $6f, $fd, $66, $6f, $fe, $00, $cd, $6d
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6e00
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f38
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f59
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_6f66
+    SOUND_LOOP_JUMP $00, MusicSequenceData_6dcd
 MusicSequenceData_6ddd::
     db $ec, $02, $dc, $c1, $e4, $01, $00, $00, $dc, $c3, $03, $d8, $c3, $c1, $01, $21
     db $41, $51, $61, $75, $b2, $90, $b0, $70, $dc, $c3, $e3, $03, $e5, $71, $ec, $03
@@ -4599,11 +5607,27 @@ MusicSequenceData_6f59::
 MusicSequenceData_6f66::
     db $d8, $d0, $ea, $00, $60, $e4, $ab, $ea, $00, $00, $dc, $d1, $e3, $0f, $dc, $c1
     db $c0, $cf, $c2, $01, $e4, $01, $ff
-MusicSequenceData_6f7d::
-    db $e8
-MusicSequenceData_6f7e::
-    db $d6, $10, $e4, $42, $c0, $40, $c0, $40, $c0, $dc, $10, $43, $cb, $20, $c2, $00
-    db $c2, $e5, $70, $c2
+LinkMasterChannel2Sequence::
+    SOUND_FREQ_CARRY_TOGGLE
+LinkSlaveChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $06, $10
+    SOUND_OCTAVE $04
+    db $42
+    SOUND_REST_NOTE $00
+    db $40
+    SOUND_REST_NOTE $00
+    db $40
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    db $43
+    SOUND_REST_NOTE $0b
+    db $20
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $05
+    db $70
+    SOUND_REST_NOTE $02
 MusicSequenceData_6f92::
     db $00, $c0, $e4, $00, $c0, $e5, $50, $c0, $e4, $00, $c0, $e5, $40, $c0, $e4, $00
     db $c0, $e5, $20, $c0, $e4, $00, $c0, $e5, $00, $c0, $e4, $00, $c0, $e5, $50, $c0
@@ -4645,16 +5669,22 @@ MusicSequenceData_71c1::
     db $70
 MusicSequenceData_71c2::
     db $c0, $e5, $50, $cf, $cf, $cf, $cf, $cf, $c8, $01, $21, $41, $fe, $00, $92, $6f
-MusicSequenceData_71d2::
-    db $fd, $f2, $71
+LinkMasterChannel3Sequence::
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_71f2
 MusicSequenceData_71d5::
-    db $fd, $17, $72, $fd, $f0, $74, $fd, $3c, $75, $fe, $00, $d5, $71
-MusicSequenceData_71e2::
-    db $fd, $f2
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7217
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_74f0
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_753c
+    SOUND_LOOP_JUMP $00, MusicSequenceData_71d5
+LinkSlaveChannel3Sequence::
+    db SOUND_SUBSEQUENCE_CALL_COMMAND, LOW(MusicSequenceData_71f2)
 MusicSequenceData_71e4::
-    db $71
+    db HIGH(MusicSequenceData_71f2)
 MusicSequenceData_71e5::
-    db $fd, $17, $72, $fd, $16, $75, $fd, $3c, $75, $fe, $00, $e5, $71
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7217
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7516
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_753c
+    SOUND_LOOP_JUMP $00, MusicSequenceData_71e5
 MusicSequenceData_71f2::
     db $dc, $c3, $d6, $b0, $0a, $b0, $06, $b0, $0a, $b0, $06, $b0, $0a, $b0, $06, $b0
     db $0a, $b0, $06, $b1, $05, $cd, $b1, $05, $c5, $b1, $05, $c3, $b1, $05, $b1, $05
@@ -4718,201 +5748,1008 @@ MusicSequenceData_7516::
     db $b0, $09, $c0, $b0, $07, $ff
 MusicSequenceData_753c::
     db $c0, $ff
-MusicSequenceData_753e::
-    db $ed, $00, $80, $f0, $77, $ea, $18, $26, $ec, $02, $e8, $dc, $b1, $e4, $01, $00
-    db $00, $dc, $b3, $01, $51, $dc, $b0, $97, $dc, $b7, $9f, $dc, $92, $e3, $eb, $00
-    db $19, $91, $c7, $ff
-MusicSequenceData_7562::
-    db $ea, $10, $27, $ec, $02, $dc, $c1, $e4, $51, $50, $50, $dc, $c3, $51, $91, $dc
-    db $c0, $e3, $07, $dc, $c7, $0f, $dc, $b3, $e2, $eb, $00, $00, $01, $ff
-MusicSequenceData_7580::
-    db $dc, $10, $e4, $90, $c0, $d6, $10, $90, $c0, $90, $c0, $dc, $10, $90, $c0, $e3
-    db $00, $c0, $e4, $93, $c3, $cf, $e3, $eb, $00, $10, $01, $ff
-MusicSequenceData_759c::
-    db $dc, $cf, $d6, $b0, $0d, $b0, $0d, $b0, $0c, $b0, $0c, $b0, $0b, $b0, $0b, $b0
-    db $0b, $b0, $0b, $b0, $06, $b0, $06, $b0, $06, $b0, $06, $b0, $06, $b0, $06, $b0
-    db $06, $b0, $06, $b0, $0a, $b0, $0a, $b0, $0a, $b0, $0a, $b0, $0a, $b0, $0a, $b0
-    db $0a, $b0, $0a, $d8, $b1, $05, $b1, $05, $b1, $05, $b1, $09, $ff
-MusicSequenceData_75d9::
-    db $ed, $00, $80, $ea, $0a, $23, $e8, $ec, $02, $dc, $b3, $e5, $91, $90, $a0, $e4
-    db $05, $01, $e5, $91, $e4, $01, $21, $41, $51, $71, $97, $ff
-MusicSequenceData_75f5::
-    db $ec, $02, $ea, $08, $24, $dc, $c3, $e4, $51, $50, $50, $55, $51, $71, $91, $a2
-    db $e3, $00, $21, $41, $57, $ff
-MusicSequenceData_760b::
-    db $dc, $10, $e5, $51, $50, $40, $55, $01, $21, $41, $52, $70, $91, $71, $53, $c3
-    db $ff
-MusicSequenceData_761c::
-    db $ed, $00, $80, $ea, $0c, $23, $ec, $02, $d3, $93, $c0, $dc, $93, $e5, $91, $90
-    db $a0, $e4, $05, $01, $e5, $91, $e4, $01, $21, $41, $51, $71, $97, $ff
-MusicSequenceData_763a::
-    db $ec, $02, $e8, $ea, $0a, $24, $d3, $a3, $c0, $dc, $a3, $e4, $51, $50, $50, $55
-    db $51, $71, $91, $a2, $e3, $00, $21, $41, $57, $ff
-MusicSequenceData_7654::
-    db $d3, $10, $c0, $dc, $10, $e5, $51, $50, $40, $55, $01, $21, $41, $52, $70, $91
-    db $71, $53, $c3, $ff
-MusicSequenceData_7668::
-    db $ed, $00, $80, $e8, $ea, $09, $24, $ec, $02
+ConfirmChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_VIBRATO $18, $26
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_OCTAVE $04
+    db $01, $00, $00
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    db $01, $51
+    SOUND_LENGTH_ENVELOPE $0c, $b0
+    db $97
+    SOUND_LENGTH_ENVELOPE $0c, $b7
+    db $9f
+    SOUND_LENGTH_ENVELOPE $0c, $92
+    SOUND_OCTAVE $03
+    SOUND_PITCH_SLIDE $00, $19, $91
+    SOUND_REST_NOTE $07
+    SOUND_SEQUENCE_END
+ConfirmChannel1Sequence::
+    SOUND_VIBRATO $10, $27
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_OCTAVE $04
+    db $51, $50, $50
+    SOUND_LENGTH_ENVELOPE $0c, $c3
+    db $51, $91
+    SOUND_LENGTH_ENVELOPE $0c, $c0
+    SOUND_OCTAVE $03
+    db $07
+    SOUND_LENGTH_ENVELOPE $0c, $c7
+    db $0f
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_OCTAVE $02
+    SOUND_PITCH_SLIDE $00, $00, $01
+    SOUND_SEQUENCE_END
+ConfirmChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_OCTAVE $04
+    db $90
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $06, $10
+    db $90
+    SOUND_REST_NOTE $00
+    db $90
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    db $90
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $03
+    db $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $04
+    db $93
+    SOUND_REST_NOTE $03
+    SOUND_REST_NOTE $0f
+    SOUND_OCTAVE $03
+    SOUND_PITCH_SLIDE $00, $10, $01
+    SOUND_SEQUENCE_END
+ConfirmChannel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
+    SOUND_REST_NOTE $0f
+    SOUND_CHANNEL3_LENGTH_SCALE $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0d
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0d
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0c
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0c
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0b
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0b
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0b
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0b
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $06
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $00, $0a
+    SOUND_CHANNEL3_LENGTH_SCALE $08
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $05
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $05
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $05
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $09
+    SOUND_SEQUENCE_END
+LinkResultNonzeroChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_VIBRATO $0a, $23
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_OCTAVE $05
+    db $91, $90, $a0
+    SOUND_OCTAVE $04
+    db $05, $01
+    SOUND_OCTAVE $05
+    db $91
+    SOUND_OCTAVE $04
+    db $01, $21, $41, $51, $71, $97
+    SOUND_SEQUENCE_END
+LinkResultNonzeroChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $08, $24
+    SOUND_LENGTH_ENVELOPE $0c, $c3
+    SOUND_OCTAVE $04
+    db $51, $50, $50, $55, $51, $71, $91, $a2
+    SOUND_OCTAVE $03
+    db $00, $21, $41, $57
+    SOUND_SEQUENCE_END
+LinkResultNonzeroChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_OCTAVE $05
+    db $51, $50, $40, $55, $01, $21, $41, $52, $70, $91, $71, $53
+    SOUND_REST_NOTE $03
+    SOUND_SEQUENCE_END
+LinkResultZeroChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_VIBRATO $0c, $23
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $03, $93
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $0c, $93
+    SOUND_OCTAVE $05
+    db $91, $90, $a0
+    SOUND_OCTAVE $04
+    db $05, $01
+    SOUND_OCTAVE $05
+    db $91
+    SOUND_OCTAVE $04
+    db $01, $21, $41, $51, $71, $97
+    SOUND_SEQUENCE_END
+LinkResultZeroChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_VIBRATO $0a, $24
+    SOUND_LENGTH_ENVELOPE $03, $a3
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $0c, $a3
+    SOUND_OCTAVE $04
+    db $51, $50, $50, $55, $51, $71, $91, $a2
+    SOUND_OCTAVE $03
+    db $00, $21, $41, $57
+    SOUND_SEQUENCE_END
+LinkResultZeroChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $03, $10
+    SOUND_REST_NOTE $00
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_OCTAVE $05
+    db $51, $50, $40, $55, $01, $21, $41, $52, $70, $91, $71, $53
+    SOUND_REST_NOTE $03
+    SOUND_SEQUENCE_END
+LinkResultConfirmWaitChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_VIBRATO $09, $24
+    SOUND_DUTY_LENGTH $02
 MusicSequenceData_7671::
-    db $dc, $b3, $fd, $90, $76, $cf, $cf, $cf, $cf, $fd, $90, $76, $dc, $93, $fd, $d5
-    db $76, $dc, $b3, $fd, $90, $76, $dc, $93, $fd, $f4, $76, $fe, $00, $71, $76
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7690
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7690
+    SOUND_LENGTH_ENVELOPE $0c, $93
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76d5
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7690
+    SOUND_LENGTH_ENVELOPE $0c, $93
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76f4
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7671
 MusicSequenceData_7690::
-    db $e4, $02, $e5, $90, $e4, $01, $53, $43, $21, $43, $7b, $e5, $a2, $70, $e4, $01
-    db $43, $23, $41, $53, $0b, $ff
-MusicSequenceData_76a6::
-    db $ec, $02, $ea, $0b, $23
+    SOUND_OCTAVE $04
+    db $02
+    SOUND_OCTAVE $05
+    db $90
+    SOUND_OCTAVE $04
+    db $01, $53, $43, $21, $43, $7b
+    SOUND_OCTAVE $05
+    db $a2, $70
+    SOUND_OCTAVE $04
+    db $01, $43, $23, $41, $53, $0b
+    SOUND_SEQUENCE_END
+LinkResultConfirmWaitChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $0b, $23
 MusicSequenceData_76ab::
-    db $dc, $c2, $fd, $d5, $76, $dc, $c1, $e6, $53, $03, $23, $43, $73, $03, $23, $03
-    db $43, $03, $23, $43, $53, $03, $23, $43, $dc, $c2, $fd, $d5, $76, $fd, $d5, $76
-    db $fd, $02, $77, $fd, $f4, $76, $fe, $00, $ab, $76
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76d5
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    db $e6, $53, $03, $23, $43, $73, $03, $23, $03, $43, $03, $23, $43, $53, $03, $23
+    db $43
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76d5
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76d5
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7702
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_76f4
+    SOUND_LOOP_JUMP $00, MusicSequenceData_76ab
 MusicSequenceData_76d5::
-    db $e4, $52, $90, $e3, $01, $23, $03, $e4, $91, $a3, $e3, $01, $e4, $00, $e5, $b0
-    db $e4, $01, $e5, $a1, $73, $e4, $42, $70, $91, $a3, $93, $71, $93, $5b, $ff
+    SOUND_OCTAVE $04
+    db $52, $90
+    SOUND_OCTAVE $03
+    db $01, $23, $03
+    SOUND_OCTAVE $04
+    db $91, $a3
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $00
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $a1, $73
+    SOUND_OCTAVE $04
+    db $42, $70, $91, $a3, $93, $71, $93, $5b
+    SOUND_SEQUENCE_END
 MusicSequenceData_76f4::
-    db $cf, $c5, $e4, $00, $e5, $b0, $e4, $01, $e5, $a1, $73, $cf, $cf, $ff
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $05
+    SOUND_OCTAVE $04
+    db $00
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $a1, $73
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SEQUENCE_END
 MusicSequenceData_7702::
-    db $e4, $52, $90, $e3, $01, $23, $03, $e4, $91, $a3, $e3, $01, $c9, $e4, $42, $70
-    db $91, $a3, $93, $71, $93, $5b, $ff
-MusicSequenceData_7719::
-    db $dc, $10, $fd, $60, $77, $e3, $50, $c1, $90, $e2, $00, $c0, $20, $c2, $00, $c2
-    db $e3, $90, $c0, $a0, $c2, $e2, $00, $c0, $e3, $00, $e4, $b0, $e3, $00, $c0, $e4
-    db $a0, $c0, $70, $c2, $e3, $40, $c1, $70, $90, $c0, $a0, $c2, $90, $c2, $70, $c0
-    db $90, $c2, $50, $ca, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf
-    db $fd, $60, $77, $fe, $00, $19, $77
+    SOUND_OCTAVE $04
+    db $52, $90
+    SOUND_OCTAVE $03
+    db $01, $23, $03
+    SOUND_OCTAVE $04
+    db $91, $a3
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_REST_NOTE $09
+    SOUND_OCTAVE $04
+    db $42, $70, $91, $a3, $93, $71, $93, $5b
+    SOUND_SEQUENCE_END
+LinkResultConfirmWaitChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7760
+    SOUND_OCTAVE $03
+    db $50
+    SOUND_REST_NOTE $01
+    db $90
+    SOUND_OCTAVE $02
+    db $00
+    SOUND_REST_NOTE $00
+    db $20
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $03
+    db $90
+    SOUND_REST_NOTE $00
+    db $a0
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $02
+    db $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $03
+    db $00
+    SOUND_OCTAVE $04
+    db $b0
+    SOUND_OCTAVE $03
+    db $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $04
+    db $a0
+    SOUND_REST_NOTE $00
+    db $70
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $03
+    db $40
+    SOUND_REST_NOTE $01
+    db $70, $90
+    SOUND_REST_NOTE $00
+    db $a0
+    SOUND_REST_NOTE $02
+    db $90
+    SOUND_REST_NOTE $02
+    db $70
+    SOUND_REST_NOTE $00
+    db $90
+    SOUND_REST_NOTE $02
+    db $50
+    SOUND_REST_NOTE $0a
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7760
+    SOUND_LOOP_JUMP $00, LinkResultConfirmWaitChannel2Sequence
 MusicSequenceData_7760::
-    db $e4, $50, $c2, $00, $c2, $20, $c2, $40, $c2, $70, $c2, $00, $c2, $20, $c2, $00
-    db $c2, $40, $c2, $00, $c2, $20, $c2, $40, $c2, $50, $c2, $00, $c2, $20, $c2, $40
-    db $c2, $ff
-MusicSequenceData_7782::
-    db $dc
+    SOUND_OCTAVE $04
+    db $50
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $70
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $50
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    SOUND_SEQUENCE_END
+LinkResultConfirmWaitChannel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
 MusicSequenceData_7783::
-    db $fd, $9b, $77, $cf, $cf, $cf, $cf, $fd, $9b, $77, $cf, $cf, $cf, $cf, $fd, $ca
-    db $77, $fd, $b6, $77, $fe, $00, $83, $77
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_779b
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_779b
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_77ca
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_77b6
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7783
 MusicSequenceData_779b::
-    db $b3, $0e, $b1, $03, $b1, $03, $b3, $0e, $b3, $03, $b1, $0e, $b1, $03, $b1, $03
-    db $b1, $03, $b3, $0e, $b3, $03, $fe, $02, $9b, $77, $ff
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_779b
+    SOUND_SEQUENCE_END
 MusicSequenceData_77b6::
-    db $b3, $0e, $c1, $c1, $b3, $0e, $c3, $b1, $0e, $c1, $c1, $c1, $b3, $0e, $c3
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $0e
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $03
 MusicSequenceData_77c5::
-    db $fe, $02, $b6, $77, $ff
+    SOUND_LOOP_JUMP $02, MusicSequenceData_77b6
+    SOUND_SEQUENCE_END
 MusicSequenceData_77ca::
-    db $c3, $b1, $03, $b1, $03, $c3, $b3, $03, $c1, $b1, $03, $b1, $03, $b1, $03, $c3
-    db $b3, $03, $fe, $02, $ca, $77, $ff
-MusicSequenceData_77e1::
-    db $ed, $00, $80, $ea, $0c, $24, $ec, $02, $dc, $b3
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_77ca
+    SOUND_SEQUENCE_END
+LinkResultMenuWaitChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_VIBRATO $0c, $24
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $b3
 MusicSequenceData_77eb::
-    db $fd, $06, $78, $cf, $cf, $cf, $cf, $fd, $06, $78, $dc, $93, $fd, $4c, $78, $fd
-    db $6b, $78, $dc, $b3, $fd, $06, $78, $fe, $00, $eb, $77
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7806
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7806
+    SOUND_LENGTH_ENVELOPE $0c, $93
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_784c
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_786b
+    SOUND_LENGTH_ENVELOPE $0c, $b3
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7806
+    SOUND_LOOP_JUMP $00, MusicSequenceData_77eb
 MusicSequenceData_7806::
-    db $e4, $02, $e5, $90, $e4, $01, $53, $43, $21, $43, $7b, $e5, $a2, $70, $e4, $01
-    db $43, $23, $41, $53, $0b, $ff
-MusicSequenceData_781c::
-    db $e8, $ec, $02, $ea, $0a, $23
+    SOUND_OCTAVE $04
+    db $02
+    SOUND_OCTAVE $05
+    db $90
+    SOUND_OCTAVE $04
+    db $01, $53, $43, $21, $43, $7b
+    SOUND_OCTAVE $05
+    db $a2, $70
+    SOUND_OCTAVE $04
+    db $01, $43, $23, $41, $53, $0b
+    SOUND_SEQUENCE_END
+LinkResultMenuWaitChannel1Sequence::
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $0a, $23
 MusicSequenceData_7822::
-    db $dc, $c2, $fd, $4c, $78, $dc, $c1, $e6, $53, $03, $23, $43, $73, $03, $23, $03
-    db $43, $03, $23, $43, $53, $03, $23, $43, $dc, $c2, $fd, $4c, $78, $fd, $4c, $78
-    db $fd, $6b, $78, $fd, $79, $78, $fe, $00, $22, $78
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_784c
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_OCTAVE $06
+    db $53, $03, $23, $43, $73, $03, $23, $03, $43, $03, $23, $43, $53, $03, $23, $43
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_784c
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_784c
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_786b
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7879
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7822
 MusicSequenceData_784c::
-    db $e4, $52, $90, $e3, $01, $23, $03, $e4, $91, $a3, $e3, $01, $e4, $00, $e5, $b0
-    db $e4, $01, $e5, $a1, $73, $e4, $42, $70, $91, $a3, $93, $71, $93, $5b, $ff
+    SOUND_OCTAVE $04
+    db $52, $90
+    SOUND_OCTAVE $03
+    db $01, $23, $03
+    SOUND_OCTAVE $04
+    db $91, $a3
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $00
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $a1, $73
+    SOUND_OCTAVE $04
+    db $42, $70, $91, $a3, $93, $71, $93, $5b
+    SOUND_SEQUENCE_END
 MusicSequenceData_786b::
-    db $cf, $c5, $e4, $00, $e5, $b0, $e4, $01, $e5, $a1, $73, $cf, $cf, $ff
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $05
+    SOUND_OCTAVE $04
+    db $00
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $a1, $73
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SEQUENCE_END
 MusicSequenceData_7879::
-    db $e4, $52, $90, $e3, $01, $23, $03, $e4, $91, $a3, $e3, $01, $c9, $e4, $42, $70
-    db $91, $a3, $93, $71, $93, $5b, $ff
-MusicSequenceData_7890::
-    db $dc, $10, $fd, $d7, $78, $e3, $50, $c1, $90, $e2, $00, $c0, $20, $c2, $00, $c2
-    db $e3, $90, $c0, $a0, $c2, $e2, $00, $c0, $e3, $00, $e4, $b0, $e3, $00, $c0, $e4
-    db $a0, $c0, $70, $c2, $e3, $40, $c1, $70, $90, $c0, $a0, $c2, $90, $c2, $70, $c0
-    db $90, $c2, $50, $ca, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $cf, $fd, $d7, $78, $cf
-    db $cf, $cf, $cf, $fe, $00, $90, $78
+    SOUND_OCTAVE $04
+    db $52, $90
+    SOUND_OCTAVE $03
+    db $01, $23, $03
+    SOUND_OCTAVE $04
+    db $91, $a3
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_REST_NOTE $09
+    SOUND_OCTAVE $04
+    db $42, $70, $91, $a3, $93, $71, $93, $5b
+    SOUND_SEQUENCE_END
+LinkResultMenuWaitChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_78d7
+    SOUND_OCTAVE $03
+    db $50
+    SOUND_REST_NOTE $01
+    db $90
+    SOUND_OCTAVE $02
+    db $00
+    SOUND_REST_NOTE $00
+    db $20
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $03
+    db $90
+    SOUND_REST_NOTE $00
+    db $a0
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $02
+    db $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $03
+    db $00
+    SOUND_OCTAVE $04
+    db $b0
+    SOUND_OCTAVE $03
+    db $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $04
+    db $a0
+    SOUND_REST_NOTE $00
+    db $70
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $03
+    db $40
+    SOUND_REST_NOTE $01
+    db $70, $90
+    SOUND_REST_NOTE $00
+    db $a0
+    SOUND_REST_NOTE $02
+    db $90
+    SOUND_REST_NOTE $02
+    db $70
+    SOUND_REST_NOTE $00
+    db $90
+    SOUND_REST_NOTE $02
+    db $50
+    SOUND_REST_NOTE $0a
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_78d7
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_LOOP_JUMP $00, LinkResultMenuWaitChannel2Sequence
 MusicSequenceData_78d7::
-    db $e4, $50, $c2, $00, $c2, $20, $c2, $40, $c2, $70, $c2, $00, $c2, $20, $c2, $00
-    db $c2, $40, $c2, $00, $c2, $20, $c2, $40, $c2, $50, $c2, $00, $c2, $20, $c2, $40
-    db $c2, $ff
-MusicSequenceData_78f9::
-    db $dc
+    SOUND_OCTAVE $04
+    db $50
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $70
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    db $50
+    SOUND_REST_NOTE $02
+    db $00
+    SOUND_REST_NOTE $02
+    db $20
+    SOUND_REST_NOTE $02
+    db $40
+    SOUND_REST_NOTE $02
+    SOUND_SEQUENCE_END
+LinkResultMenuWaitChannel3Sequence::
+    SOUND_CHANNEL3_LENGTH_SCALE $0c
 MusicSequenceData_78fa::
-    db $fd, $12, $79, $cf, $cf, $cf, $cf, $fd, $12, $79, $cf, $cf, $cf, $cf, $fd, $2d
-    db $79, $fd, $41, $79, $fe, $00, $fa, $78
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7912
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7912
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_REST_NOTE $0f
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_792d
+    SOUND_SUBSEQUENCE_CALL MusicSequenceData_7941
+    SOUND_LOOP_JUMP $00, MusicSequenceData_78fa
 MusicSequenceData_7912::
-    db $b3, $0e, $b1, $03, $b1, $03, $b3, $0e, $b3, $03, $b1, $0e, $b1, $03, $b1, $03
-    db $b1, $03, $b3, $0e, $b3, $03, $fe, $02, $12, $79, $ff
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_7912
+    SOUND_SEQUENCE_END
 MusicSequenceData_792d::
-    db $b3, $0e, $c1, $c1, $b3, $0e, $c3, $b1, $0e, $c1, $c1, $c1, $b3, $0e, $c3, $fe
-    db $02, $2d, $79, $ff
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $0e
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $0e
+    SOUND_REST_NOTE $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_792d
+    SOUND_SEQUENCE_END
 MusicSequenceData_7941::
-    db $c3, $b1, $03, $b1, $03, $c3, $b3, $03, $c1, $b1, $03, $b1, $03, $b1, $03, $c3
-    db $b3, $03, $fe, $02, $41, $79, $ff
-MusicSequenceData_7958::
-    db $ed, $00, $90, $f0, $77, $ec, $02, $d4, $b1, $c0, $e8, $d8, $b1
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_REST_NOTE $01
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $01, $03
+    SOUND_REST_NOTE $03
+    SOUND_CHANNEL3_NESTED_SOUND_NOTE $03, $03
+    SOUND_LOOP_JUMP $02, MusicSequenceData_7941
+    SOUND_SEQUENCE_END
+TwoPlayerPreplayMasterInitChannel0Sequence::
+    SOUND_TEMPO $00, $90
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $04, $b1
+    SOUND_REST_NOTE $00
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $08, $b1
 MusicSequenceData_7965::
-    db $e4, $02, $00, $00, $00, $41, $01, $41, $71, $41, $71, $e3, $03, $01, $e4, $42
-    db $40, $40, $40, $71, $41, $71, $e3, $01, $e4, $71, $e3, $01, $43, $41, $02, $00
-    db $00, $00, $e4, $71, $e3, $01, $e4, $71, $e3, $01, $e4, $71, $41, $03, $01, $43
-    db $41, $73, $71, $e3, $03, $01, $e4, $73, $71, $73, $71, $e3, $03, $01, $43, $41
-    db $03, $01, $01, $01, $01, $45, $01, $01, $01, $45, $e4, $71, $71, $71, $e3, $05
-    db $e4, $71, $71, $71, $e3, $05, $fe, $00, $65, $79
-MusicSequenceData_79bf::
-    db $ec, $02, $d8, $c1
+    SOUND_OCTAVE $04
+    db $02, $00, $00, $00, $41, $01, $41, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $42, $40, $40, $40, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01, $43, $41, $02, $00, $00, $00
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71, $41, $03, $01, $43, $41, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $73, $71, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01, $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7965
+TwoPlayerPreplayMasterInitChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $08, $c1
 MusicSequenceData_79c3::
-    db $e4, $02, $00, $00, $00, $41, $01, $41, $71, $41, $71, $e3, $03, $01, $e4, $42
-    db $40, $40, $40, $71, $41, $71, $e3, $01, $e4, $71, $e3, $01, $43, $41, $02, $00
-    db $00, $00, $e4, $71, $e3, $01, $e4, $71, $e3, $01, $e4, $71, $41, $03, $01, $43
-    db $41, $73, $71, $e3, $03, $01, $e4, $73, $71, $73, $71, $e3, $03, $01, $43, $41
-    db $03, $01, $01, $01, $01, $45, $01, $01, $01, $45, $e4, $71, $71, $71, $e3, $05
-    db $e4, $71, $71, $71, $e3, $05, $fe, $00, $c3, $79
-MusicSequenceData_7a1d::
-    db $ed, $00, $90, $f0, $77, $ec, $02, $d4, $b1, $c0, $e8, $dc, $c1, $cf
+    SOUND_OCTAVE $04
+    db $02, $00, $00, $00, $41, $01, $41, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $42, $40, $40, $40, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01, $43, $41, $02, $00, $00, $00
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71, $41, $03, $01, $43, $41, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $73, $71, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01, $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_LOOP_JUMP $00, MusicSequenceData_79c3
+TwoPlayerPreplaySlaveInitChannel0Sequence::
+    SOUND_TEMPO $00, $90
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $04, $b1
+    SOUND_REST_NOTE $00
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_REST_NOTE $0f
 MusicSequenceData_7a2b::
-    db $d8, $b1, $e4, $02, $00, $00, $00, $41, $01, $41, $71, $41, $71, $e3, $03, $01
-    db $e4, $42, $40, $40, $40, $71, $41, $71, $e3, $01, $e4, $71, $e3, $01, $43, $41
-    db $02, $00, $00, $00, $e4, $71, $e3, $01, $e4, $71, $e3, $01, $e4, $71, $41, $03
-    db $01, $43, $41, $73, $71, $e3, $03, $01, $e4, $73, $71, $73, $71, $e3, $03, $01
-    db $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45, $e4, $71, $71, $71
-    db $e3, $05, $e4, $71, $71, $71, $e3, $05, $fe, $00, $2b, $7a
-MusicSequenceData_7a87::
-    db $ec, $02, $dc, $c1, $cf
+    SOUND_LENGTH_ENVELOPE $08, $b1
+    SOUND_OCTAVE $04
+    db $02, $00, $00, $00, $41, $01, $41, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $42, $40, $40, $40, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01, $43, $41, $02, $00, $00, $00
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71, $41, $03, $01, $43, $41, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $73, $71, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01, $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7a2b
+TwoPlayerPreplaySlaveInitChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_REST_NOTE $0f
 MusicSequenceData_7a8c::
-    db $d8, $c1, $e4, $02, $00, $00, $00, $41, $01, $41, $71, $41, $71, $e3, $03, $01
-    db $e4, $42, $40, $40, $40, $71, $41, $71, $e3, $01, $e4, $71, $e3, $01, $43, $41
-    db $02, $00, $00, $00, $e4, $71, $e3, $01, $e4, $71, $e3, $01, $e4, $71, $41, $03
-    db $01, $43, $41, $73, $71, $e3, $03, $01, $e4, $73, $71, $73, $71, $e3, $03, $01
-    db $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45, $e4, $71, $71, $71
-    db $e3, $05, $e4, $71, $71, $71, $e3, $05, $fe, $00, $8c, $7a
-MusicSequenceData_7ae8::
-    db $ed, $00, $90, $f0, $77, $ec, $03, $e8, $ea, $05, $25, $dc, $b1, $e5, $70, $50
-    db $40, $20, $01, $e6, $b1, $91, $e5, $41, $e6, $71, $e5, $21, $01, $e6, $b1, $91
-    db $71, $43, $e7, $73, $ff
-MusicSequenceData_7b0d::
-    db $ec, $02, $ea, $06, $26, $dc, $c2, $e4, $01, $e5, $b1, $91, $71, $40, $50, $71
-    db $20, $40, $51, $41, $21, $01, $e6, $b1, $e5, $03, $dc, $b1, $e6, $03, $ff
-MusicSequenceData_7b2c::
-    db $dc, $10, $cf, $e6, $90, $b0, $e5, $01, $00, $20, $41, $01, $c1, $e6, $01, $c1
-    db $ff
-MusicSequenceData_7b3d::
-    db $ed, $00, $80, $f0, $77, $ec, $02, $e8, $ea, $01, $23, $dc, $b1, $e5, $b0, $e4
-    db $84, $90, $81, $60, $41, $30, $e5, $b1, $90, $81, $90, $b2, $dc, $b2, $e4, $89
-    db $ff
-MusicSequenceData_7b5e::
-    db $ec, $02, $ea, $00, $24, $dc, $c2, $e4, $40, $b4, $e3, $10, $e4, $b1, $90, $81
-    db $60, $41, $60, $81, $60, $42, $dc, $c3, $e3, $49, $ff
-MusicSequenceData_7b79::
-    db $ed, $00, $80, $f0, $77, $ec, $02, $e8, $dc, $b1, $c0, $c0, $c0, $e4, $70, $70
-    db $70, $dc, $b4, $e3, $0f, $ff
-MusicSequenceData_7b8f::
-    db $ec, $02, $dc, $c1, $e4, $00, $40, $70, $e3, $00, $00, $00, $dc, $c4, $4f, $ff
-MusicSequenceData_7b9f::
-    db $ed, $00, $80, $f0, $77, $ec, $02, $e8, $dc, $b1, $e5, $eb, $00, $40, $00, $c2
-    db $e5, $eb, $00, $47, $70, $c2, $e6, $eb, $00, $50, $00, $c2, $e6, $eb, $00, $57
-    db $70, $c2, $ff
-MusicSequenceData_7bc2::
-    db $ec, $02, $dc, $c1, $e4, $eb, $00, $50, $00, $c2, $e4, $eb, $00, $57, $70, $c2
-    db $e5, $eb, $00, $60, $00, $c2, $e5, $eb, $00, $67, $70, $c2, $ff
+    SOUND_LENGTH_ENVELOPE $08, $c1
+    SOUND_OCTAVE $04
+    db $02, $00, $00, $00, $41, $01, $41, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $42, $40, $40, $40, $71, $41, $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01, $43, $41, $02, $00, $00, $00
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71
+    SOUND_OCTAVE $03
+    db $01
+    SOUND_OCTAVE $04
+    db $71, $41, $03, $01, $43, $41, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01
+    SOUND_OCTAVE $04
+    db $73, $71, $73, $71
+    SOUND_OCTAVE $03
+    db $03, $01, $43, $41, $03, $01, $01, $01, $01, $45, $01, $01, $01, $45
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_OCTAVE $04
+    db $71, $71, $71
+    SOUND_OCTAVE $03
+    db $05
+    SOUND_LOOP_JUMP $00, MusicSequenceData_7a8c
+Result1PNoRankChannel0Sequence::
+    SOUND_TEMPO $00, $90
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $03
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_VIBRATO $05, $25
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_OCTAVE $05
+    db $70, $50, $40, $20, $01
+    SOUND_OCTAVE $06
+    db $b1, $91
+    SOUND_OCTAVE $05
+    db $41
+    SOUND_OCTAVE $06
+    db $71
+    SOUND_OCTAVE $05
+    db $21, $01
+    SOUND_OCTAVE $06
+    db $b1, $91, $71, $43
+    SOUND_OCTAVE $07
+    db $73
+    SOUND_SEQUENCE_END
+Result1PNoRankChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $06, $26
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_OCTAVE $04
+    db $01
+    SOUND_OCTAVE $05
+    db $b1, $91, $71, $40, $50, $71, $20, $40, $51, $41, $21, $01
+    SOUND_OCTAVE $06
+    db $b1
+    SOUND_OCTAVE $05
+    db $03
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_OCTAVE $06
+    db $03
+    SOUND_SEQUENCE_END
+Result1PNoRankChannel2Sequence::
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_REST_NOTE $0f
+    SOUND_OCTAVE $06
+    db $90, $b0
+    SOUND_OCTAVE $05
+    db $01, $00, $20, $41, $01
+    SOUND_REST_NOTE $01
+    SOUND_OCTAVE $06
+    db $01
+    SOUND_REST_NOTE $01
+    SOUND_SEQUENCE_END
+Result1PRankedChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_VIBRATO $01, $23
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_OCTAVE $05
+    db $b0
+    SOUND_OCTAVE $04
+    db $84, $90, $81, $60, $41, $30
+    SOUND_OCTAVE $05
+    db $b1, $90, $81, $90, $b2
+    SOUND_LENGTH_ENVELOPE $0c, $b2
+    SOUND_OCTAVE $04
+    db $89
+    SOUND_SEQUENCE_END
+Result1PRankedChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_VIBRATO $00, $24
+    SOUND_LENGTH_ENVELOPE $0c, $c2
+    SOUND_OCTAVE $04
+    db $40, $b4
+    SOUND_OCTAVE $03
+    db $10
+    SOUND_OCTAVE $04
+    db $b1, $90, $81, $60, $41, $60, $81, $60, $42
+    SOUND_LENGTH_ENVELOPE $0c, $c3
+    SOUND_OCTAVE $03
+    db $49
+    SOUND_SEQUENCE_END
+Result2PNonzeroRankChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_REST_NOTE $00
+    SOUND_REST_NOTE $00
+    SOUND_REST_NOTE $00
+    SOUND_OCTAVE $04
+    db $70, $70, $70
+    SOUND_LENGTH_ENVELOPE $0c, $b4
+    SOUND_OCTAVE $03
+    db $0f
+    SOUND_SEQUENCE_END
+Result2PNonzeroRankChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_OCTAVE $04
+    db $00, $40, $70
+    SOUND_OCTAVE $03
+    db $00, $00, $00
+    SOUND_LENGTH_ENVELOPE $0c, $c4
+    db $4f
+    SOUND_SEQUENCE_END
+Result2PZeroRankChannel0Sequence::
+    SOUND_TEMPO $00, $80
+    SOUND_MASTER_VOLUME $77
+    SOUND_DUTY_LENGTH $02
+    SOUND_FREQ_CARRY_TOGGLE
+    SOUND_LENGTH_ENVELOPE $0c, $b1
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $40, $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $47, $70
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $06
+    SOUND_PITCH_SLIDE $00, $50, $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $06
+    SOUND_PITCH_SLIDE $00, $57, $70
+    SOUND_REST_NOTE $02
+    SOUND_SEQUENCE_END
+Result2PZeroRankChannel1Sequence::
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $0c, $c1
+    SOUND_OCTAVE $04
+    SOUND_PITCH_SLIDE $00, $50, $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $04
+    SOUND_PITCH_SLIDE $00, $57, $70
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $60, $00
+    SOUND_REST_NOTE $02
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $67, $70
+    SOUND_REST_NOTE $02
+    SOUND_SEQUENCE_END
 MusicSequenceData_7bdf::
-    db $f8, $ec, $02, $d4, $e1, $e2, $20, $00, $e3, $b0, $90, $ff, $f8, $ec, $02, $d4
-    db $e1, $e3, $50, $90, $e2, $00, $dc, $e3, $5f, $ff, $f8, $dc, $10, $e3, $eb, $00
-    db $65, $53, $ff
+    SOUND_GATE_FLAG
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $04, $e1
+    SOUND_OCTAVE $02
+    SOUND_EXTENDED_NOTE $00, $00, $e3, $b0
+    db $90
+    SOUND_SEQUENCE_END
+    SOUND_GATE_FLAG
+    SOUND_DUTY_LENGTH $02
+    SOUND_LENGTH_ENVELOPE $04, $e1
+    SOUND_OCTAVE $03
+    db $50, $90
+    SOUND_OCTAVE $02
+    db $00
+    SOUND_LENGTH_ENVELOPE $0c, $e3
+    db $5f
+    SOUND_SEQUENCE_END
+    SOUND_GATE_FLAG
+    SOUND_LENGTH_ENVELOPE $0c, $10
+    SOUND_OCTAVE $03
+    SOUND_PITCH_SLIDE $00, $65, $53
+    SOUND_SEQUENCE_END
 TickBgmPreviewTimer::
     ld hl, BGM_PREVIEW_TIMER
     dec [hl]
@@ -4921,25 +6758,26 @@ TickBgmPreviewTimer::
     ret
 
 
-CheckGameStateUpdate::
+ApplySoundVisualUpdateCommand::
     ld hl, GAME_STATE
     ld a, [hl]
     cp GAME_STATE_PLAYING
     jp z, ToggleEggTextAltAnimation
 
     ld a, [OPTION_BGM]
-    add $09
+    add BGM_CURSOR_OBJECT_SLOT_BASE
     swap a
     ld l, a
     ld h, SPRITE_OBJECTS_HI
+    ; SPRITE_OBJECT_TOGGLED_FRAME is copied to SPRITE_OBJECT_FRAME when selected.
     inc l
     inc l
     inc l
     ld a, [hl]
-    xor $10
+    xor BGM_CURSOR_FRAME_TOGGLE_MASK
     ld [hl], a
     ld a, [MENU_CURSOR]
-    cp $03
+    cp MENU_CURSOR_ROW_BGM
     ret nz
 
     ld a, [hl]
@@ -4947,500 +6785,552 @@ CheckGameStateUpdate::
     ld [hl], a
     ret
 
+MACRO SOUND_INDEX_ENTRY
+    db \1
+    dw \2
+ENDM
+
 SoundIndexTable::
 SoundIndexEntry_00::
-    db $ff
-    dw $ffff
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_SENTINEL_FLAGS, SOUND_INDEX_ENTRY_SENTINEL_POINTER
 SoundIndexEntry_01::
-    db $07
-    dw SoundSequenceData_7d85
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d85
 SoundIndexEntry_02::
-    db $07
-    dw SoundSequenceData_7d89
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d89
 SoundIndexEntry_03::
-    db $07
-    dw SoundSequenceData_7d8d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d8d
 SoundIndexEntry_04::
-    db $07
-    dw SoundSequenceData_7d91
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d91
 SoundIndexEntry_05::
-    db $07
-    dw SoundSequenceData_7d95
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d95
 SoundIndexEntry_06::
-    db $07
-    dw SoundSequenceData_7d99
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d99
 SoundIndexEntry_07::
-    db $07
-    dw SoundSequenceData_7d9d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7d9d
 SoundIndexEntry_08::
-    db $07
-    dw SoundSequenceData_7da1
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7da1
 SoundIndexEntry_09::
-    db $07
-    dw SoundSequenceData_7da5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7da5
 SoundIndexEntry_0a::
-    db $07
-    dw SoundSequenceData_7da9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7da9
 SoundIndexEntry_0b::
-    db $07
-    dw SoundSequenceData_7dad
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7dad
 SoundIndexEntry_0c::
-    db $07
-    dw SoundSequenceData_7db1
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7db1
 SoundIndexEntry_0d::
-    db $07
-    dw SoundSequenceData_7db5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7db5
 SoundIndexEntry_0e::
-    db $07
-    dw SoundSequenceData_7db9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7db9
 SoundIndexEntry_0f::
-    db $44
-    dw SoundSequenceData_7fd0
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7fd0
 SoundIndexEntry_10::
-    db $05
-    dw SoundSequenceData_7fe3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7fe3
+SoundIndexEntry_LinkFieldRise::
 SoundIndexEntry_11::
-    db $04
-    dw MusicSequenceData_7bdf
-SoundIndexEntry_12::
-    db $c4
-    dw SoundSequenceData_7ef6
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, MusicSequenceData_7bdf
+SoundIndexEntry_RoundCompleteReveal::
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7ef6
 SoundIndexEntry_13::
-    db $05
-    dw SoundSequenceData_7f0d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7f0d
 SoundIndexEntry_14::
-    db $06
-    dw SoundSequenceData_7f1b
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_6, SoundSequenceData_7f1b
 SoundIndexEntry_15::
-    db $07
-    dw SoundSequenceData_7f1c
-SoundIndexEntry_16::
-    db $c4
-    dw SoundSequenceData_7f9d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7f1c
+SoundIndexEntry_RoundCompleteMajorReveal::
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f9d
 SoundIndexEntry_17::
-    db $05
-    dw SoundSequenceData_7fb4
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7fb4
 SoundIndexEntry_18::
-    db $06
-    dw SoundSequenceData_7fc2
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_6, SoundSequenceData_7fc2
 SoundIndexEntry_19::
-    db $07
-    dw SoundSequenceData_7fc3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_7, SoundSequenceData_7fc3
 SoundIndexEntry_1a::
-    db $04
-    dw SoundSequenceData_7f29
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f29
 SoundIndexEntry_DropStart::
 SoundIndexEntry_1b::
-    db $04
-    dw SoundSequenceData_7e2c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e2c
+SoundIndexEntry_PlacePiece::
 SoundIndexEntry_1c::
-    db $04
-    dw SoundSequenceData_7e5c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e5c
 SoundIndexEntry_1d::
-    db $44
-    dw SoundSequenceData_7eb4
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7eb4
 SoundIndexEntry_BoardScanStep7::
 SoundIndexEntry_1e::
-    db $05
-    dw SoundSequenceData_7ec7
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7ec7
 SoundIndexEntry_BoardScanStep6::
 SoundIndexEntry_1f::
-    db $04
-    dw SoundSequenceData_7ea9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7ea9
 SoundIndexEntry_BoardScanStep5::
 SoundIndexEntry_20::
-    db $04
-    dw SoundSequenceData_7e9e
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e9e
 SoundIndexEntry_BoardScanStep4::
 SoundIndexEntry_21::
-    db $04
-    dw SoundSequenceData_7e93
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e93
 SoundIndexEntry_BoardScanStep3::
 SoundIndexEntry_22::
-    db $04
-    dw SoundSequenceData_7e88
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e88
 SoundIndexEntry_BoardScanStep2::
 SoundIndexEntry_23::
-    db $04
-    dw SoundSequenceData_7e7d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e7d
 SoundIndexEntry_BoardScanStep1::
 SoundIndexEntry_24::
-    db $04
-    dw SoundSequenceData_7e72
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e72
 SoundIndexEntry_BoardScanStep0::
 SoundIndexEntry_BoardScanStepBase::
 SoundIndexEntry_25::
-    db $04
-    dw SoundSequenceData_7e67
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e67
 SoundIndexEntry_CommitPiece::
 SoundIndexEntry_26::
-    db $04
-    dw SoundSequenceData_7e4b
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7e4b
 SoundIndexEntry_PieceLand::
 SoundIndexEntry_27::
-    db $04
-    dw SoundSequenceData_7eda
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7eda
 SoundIndexEntry_CursorMove::
 SoundIndexEntry_28::
-    db $04
-    dw SoundSequenceData_7eeb
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7eeb
+SoundIndexEntry_MatchingOamSlide::
 SoundIndexEntry_29::
-    db $44
-    dw SoundSequenceData_7f65
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f65
 SoundIndexEntry_2a::
-    db $05
-    dw SoundSequenceData_7f80
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7f80
+SoundIndexEntry_MatchingIntroBlink::
 SoundIndexEntry_2b::
-    db $04
-    dw SoundSequenceData_7f34
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f34
+SoundIndexEntry_MatchingResultPanelBlink::
 SoundIndexEntry_2c::
-    db $04
-    dw SoundSequenceData_7f43
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f43
 SoundIndexEntry_RoundComplete::
 SoundIndexEntry_2d::
-    db $04
-    dw SoundSequenceData_7f52
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7f52
 SoundIndexEntry_Pause::
 SoundIndexEntry_2e::
-    db $44
-    dw SoundSequenceData_7dff
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_4, SoundSequenceData_7dff
 SoundIndexEntry_2f::
-    db $05
-    dw SoundSequenceData_7e15
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_5, SoundSequenceData_7e15
 SoundIndexEntry_TitleBgm::
 SoundIndexEntry_30::
-    db $c0
-    dw SoundSequenceData_569a
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, TitleBgmChannel0Sequence
 SoundIndexEntry_31::
-    db $01
-    dw SoundSequenceData_5764
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, TitleBgmChannel1Sequence
 SoundIndexEntry_32::
-    db $02
-    dw SoundSequenceData_580b
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, TitleBgmChannel2Sequence
 SoundIndexEntry_33::
-    db $03
-    dw SoundSequenceData_5a6f
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, TitleBgmChannel3Sequence
 SoundIndexEntry_BgmOption0::
 SoundIndexEntry_34::
-    db $c0
-    dw SoundSequenceData_5ad4
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmOption0Channel0Sequence
 SoundIndexEntry_35::
-    db $01
-    dw SoundSequenceData_5ccf
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmOption0Channel1Sequence
 SoundIndexEntry_36::
-    db $02
-    dw SoundSequenceData_5f1f
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmOption0Channel2Sequence
 SoundIndexEntry_37::
-    db $03
-    dw MusicSequenceData_60c0
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmOption0Channel3Sequence
 SoundIndexEntry_BgmPreview0::
 SoundIndexEntry_38::
-    db $c0
-    dw SoundSequenceData_5af3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmPreview0Channel0Sequence
 SoundIndexEntry_39::
-    db $01
-    dw SoundSequenceData_5ce5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmPreview0Channel1Sequence
 SoundIndexEntry_3a::
-    db $02
-    dw SoundSequenceData_5f2e
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmPreview0Channel2Sequence
 SoundIndexEntry_3b::
-    db $03
-    dw MusicSequenceData_60c5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmPreview0Channel3Sequence
 SoundIndexEntry_BgmOption1::
 SoundIndexEntry_3c::
-    db $c0
-    dw MusicSequenceData_6170
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmOption1Channel0Sequence
 SoundIndexEntry_3d::
-    db $01
-    dw MusicSequenceData_625c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmOption1Channel1Sequence
 SoundIndexEntry_3e::
-    db $02
-    dw MusicSequenceData_63e3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmOption1Channel2Sequence
 SoundIndexEntry_3f::
-    db $03
-    dw MusicSequenceData_64d1
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmOption1Channel3Sequence
 SoundIndexEntry_BgmPreview1::
 SoundIndexEntry_40::
-    db $c0
-    dw MusicSequenceData_6183
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmPreview1Channel0Sequence
 SoundIndexEntry_41::
-    db $01
-    dw MusicSequenceData_6273
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmPreview1Channel1Sequence
 SoundIndexEntry_42::
-    db $02
-    dw MusicSequenceData_63eb
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmPreview1Channel2Sequence
 SoundIndexEntry_43::
-    db $03
-    dw MusicSequenceData_64d5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmPreview1Channel3Sequence
 SoundIndexEntry_BgmOption2::
 SoundIndexEntry_44::
-    db $c0
-    dw MusicSequenceData_6586
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmOption2Channel0Sequence
 SoundIndexEntry_45::
-    db $01
-    dw MusicSequenceData_66e3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmOption2Channel1Sequence
 SoundIndexEntry_46::
-    db $02
-    dw MusicSequenceData_68b5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmOption2Channel2Sequence
 SoundIndexEntry_47::
-    db $03
-    dw MusicSequenceData_6b16
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmOption2Channel3Sequence
 SoundIndexEntry_BgmPreview2::
 SoundIndexEntry_48::
-    db $c0
-    dw MusicSequenceData_65ac
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, BgmPreview2Channel0Sequence
 SoundIndexEntry_49::
-    db $01
-    dw MusicSequenceData_66f9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, BgmPreview2Channel1Sequence
 SoundIndexEntry_4a::
-    db $02
-    dw MusicSequenceData_68c1
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, BgmPreview2Channel2Sequence
 SoundIndexEntry_4b::
-    db $03
-    dw MusicSequenceData_6b19
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, BgmPreview2Channel3Sequence
 SoundIndexEntry_LinkMaster::
 SoundIndexEntry_4c::
-    db $c0
-    dw MusicSequenceData_6cc8
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkRoleSharedChannel0Sequence
 SoundIndexEntry_4d::
-    db $01
-    dw MusicSequenceData_6db3
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkMasterChannel1Sequence
 SoundIndexEntry_4e::
-    db $02
-    dw MusicSequenceData_6f7d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkMasterChannel2Sequence
 SoundIndexEntry_4f::
-    db $03
-    dw MusicSequenceData_71d2
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, LinkMasterChannel3Sequence
 SoundIndexEntry_LinkSlave::
 SoundIndexEntry_50::
-    db $c0
-    dw MusicSequenceData_6cc8
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkRoleSharedChannel0Sequence
 SoundIndexEntry_51::
-    db $01
-    dw MusicSequenceData_6dc6
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkSlaveChannel1Sequence
 SoundIndexEntry_52::
-    db $02
-    dw MusicSequenceData_6f7e
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkSlaveChannel2Sequence
 SoundIndexEntry_53::
-    db $03
-    dw MusicSequenceData_71e2
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, LinkSlaveChannel3Sequence
 SoundIndexEntry_Confirm::
 SoundIndexEntry_54::
-    db $c0
-    dw MusicSequenceData_753e
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, ConfirmChannel0Sequence
 SoundIndexEntry_55::
-    db $01
-    dw MusicSequenceData_7562
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, ConfirmChannel1Sequence
 SoundIndexEntry_56::
-    db $02
-    dw MusicSequenceData_7580
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, ConfirmChannel2Sequence
 SoundIndexEntry_57::
-    db $03
-    dw MusicSequenceData_759c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, ConfirmChannel3Sequence
+SoundIndexEntry_LinkResultNonzero::
 SoundIndexEntry_58::
-    db $80
-    dw MusicSequenceData_75d9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_3 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkResultNonzeroChannel0Sequence
 SoundIndexEntry_59::
-    db $01
-    dw MusicSequenceData_75f5
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkResultNonzeroChannel1Sequence
 SoundIndexEntry_5a::
-    db $02
-    dw MusicSequenceData_760b
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkResultNonzeroChannel2Sequence
+SoundIndexEntry_LinkResultZero::
 SoundIndexEntry_5b::
-    db $80
-    dw MusicSequenceData_761c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_3 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkResultZeroChannel0Sequence
 SoundIndexEntry_5c::
-    db $01
-    dw MusicSequenceData_763a
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkResultZeroChannel1Sequence
 SoundIndexEntry_5d::
-    db $02
-    dw MusicSequenceData_7654
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkResultZeroChannel2Sequence
+SoundIndexEntry_LinkResultConfirmWait::
 SoundIndexEntry_5e::
-    db $c0
-    dw MusicSequenceData_7668
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkResultConfirmWaitChannel0Sequence
 SoundIndexEntry_5f::
-    db $01
-    dw MusicSequenceData_76a6
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkResultConfirmWaitChannel1Sequence
 SoundIndexEntry_60::
-    db $02
-    dw MusicSequenceData_7719
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkResultConfirmWaitChannel2Sequence
 SoundIndexEntry_61::
-    db $03
-    dw MusicSequenceData_7782
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, LinkResultConfirmWaitChannel3Sequence
+SoundIndexEntry_LinkResultMenuWait::
 SoundIndexEntry_62::
-    db $c0
-    dw MusicSequenceData_77e1
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_4 | SOUND_INDEX_ENTRY_CHANNEL_0, LinkResultMenuWaitChannel0Sequence
 SoundIndexEntry_63::
-    db $01
-    dw MusicSequenceData_781c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, LinkResultMenuWaitChannel1Sequence
 SoundIndexEntry_64::
-    db $02
-    dw MusicSequenceData_7890
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, LinkResultMenuWaitChannel2Sequence
 SoundIndexEntry_65::
-    db $03
-    dw MusicSequenceData_78f9
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_3, LinkResultMenuWaitChannel3Sequence
+SoundIndexEntry_Result1PNoRank::
 SoundIndexEntry_66::
-    db $80
-    dw MusicSequenceData_7ae8
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_3 | SOUND_INDEX_ENTRY_CHANNEL_0, Result1PNoRankChannel0Sequence
 SoundIndexEntry_67::
-    db $01
-    dw MusicSequenceData_7b0d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, Result1PNoRankChannel1Sequence
 SoundIndexEntry_68::
-    db $02
-    dw MusicSequenceData_7b2c
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_2, Result1PNoRankChannel2Sequence
+SoundIndexEntry_Result1PRanked::
 SoundIndexEntry_69::
-    db $40
-    dw MusicSequenceData_7b3d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_0, Result1PRankedChannel0Sequence
 SoundIndexEntry_6a::
-    db $01
-    dw MusicSequenceData_7b5e
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, Result1PRankedChannel1Sequence
+SoundIndexEntry_TwoPlayerPreplayMasterInit::
 SoundIndexEntry_6b::
-    db $40
-    dw MusicSequenceData_7958
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_0, TwoPlayerPreplayMasterInitChannel0Sequence
 SoundIndexEntry_6c::
-    db $01
-    dw MusicSequenceData_79bf
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, TwoPlayerPreplayMasterInitChannel1Sequence
+SoundIndexEntry_TwoPlayerPreplaySlaveInit::
 SoundIndexEntry_6d::
-    db $40
-    dw MusicSequenceData_7a1d
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_0, TwoPlayerPreplaySlaveInitChannel0Sequence
 SoundIndexEntry_6e::
-    db $01
-    dw MusicSequenceData_7a87
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, TwoPlayerPreplaySlaveInitChannel1Sequence
+SoundIndexEntry_Result2PNonzeroRank::
 SoundIndexEntry_6f::
-    db $40
-    dw MusicSequenceData_7b79
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_0, Result2PNonzeroRankChannel0Sequence
 SoundIndexEntry_70::
-    db $01
-    dw MusicSequenceData_7b8f
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, Result2PNonzeroRankChannel1Sequence
+SoundIndexEntry_Result2PZeroRank::
 SoundIndexEntry_71::
-    db $40
-    dw MusicSequenceData_7b9f
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_COUNT_2 | SOUND_INDEX_ENTRY_CHANNEL_0, Result2PZeroRankChannel0Sequence
 SoundIndexEntry_72::
-    db $01
-    dw MusicSequenceData_7bc2
+    SOUND_INDEX_ENTRY SOUND_INDEX_ENTRY_CHANNEL_1, Result2PZeroRankChannel1Sequence
+
+MACRO SOUND_CHANNEL7_EXTENDED_NOTE
+    db SOUND_EXTENDED_NOTE_COMMAND_BASE | \1
+    db \2, \3
+ENDM
+
+MACRO SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE
+    SOUND_CHANNEL7_EXTENDED_NOTE $00, \1, \2
+    db SOUND_SEQUENCE_END_COMMAND
+ENDM
 
 SoundSequenceData_7d85::
-    db $20, $a1, $98, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $98
 SoundSequenceData_7d89::
-    db $20, $a1, $23, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $23
 SoundSequenceData_7d8d::
-    db $20, $a1, $33, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $33
 SoundSequenceData_7d91::
-    db $20, $a1, $13, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $13
 SoundSequenceData_7d95::
-    db $20, $a1, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $32
 SoundSequenceData_7d99::
-    db $20, $81, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $81, $32
 SoundSequenceData_7d9d::
-    db $20, $61, $22, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $61, $22
 SoundSequenceData_7da1::
-    db $20, $a3, $13, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a3, $13
 SoundSequenceData_7da5::
-    db $20, $a1, $43, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $a1, $43
 SoundSequenceData_7da9::
-    db $20, $91, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $91, $32
 SoundSequenceData_7dad::
-    db $20, $51, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $51, $32
 SoundSequenceData_7db1::
-    db $20, $41, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $41, $32
 SoundSequenceData_7db5::
-    db $20, $31, $32, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $31, $32
 SoundSequenceData_7db9::
-    db $20, $71, $44, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE_SEQUENCE $71, $44
 
-WavePatternPointerTable::
-    dw WavePatternData_7dcf
-    dw WavePatternData_7ddf
-    dw WavePatternData_7def
-    dw WavePatternData_7dff
-    dw WavePatternData_7dff
-    dw WavePatternData_7dff
-    dw WavePatternData_7dff
-    dw WavePatternData_7dff
-    dw WavePatternData_7dff
+MACRO SOUND_WAVE_PATTERN_POINTER
+    dw \1
+ENDM
 
-WavePatternData_7dcf::
-    db $02, $46, $8a, $ce, $ff, $fe, $ed, $dc, $cb, $a9, $87, $65, $44, $33, $22, $11
-WavePatternData_7ddf::
-    db $bb, $ff, $ff, $ff, $ff, $ff, $ff, $bb, $44, $00, $00, $00, $00, $00, $00, $44
-WavePatternData_7def::
-    db $01, $12, $34, $57, $9b, $df, $fe, $dc, $ba, $98, $76, $54, $43, $32, $21, $11
-WavePatternData_7dff::
+SoundWavePatternPointerTable::
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_0
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_1
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_2
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+    SOUND_WAVE_PATTERN_POINTER SoundWavePatternData_SharedSequence
+
+MACRO SOUND_WAVE_PATTERN_ROW
+    db \1, \2, \3, \4, \5, \6, \7, \8
+ENDM
+
+SoundWavePatternData_0::
+    SOUND_WAVE_PATTERN_ROW $02, $46, $8a, $ce, $ff, $fe, $ed, $dc
+    SOUND_WAVE_PATTERN_ROW $cb, $a9, $87, $65, $44, $33, $22, $11
+SoundWavePatternData_1::
+    SOUND_WAVE_PATTERN_ROW $bb, $ff, $ff, $ff, $ff, $ff, $ff, $bb
+    SOUND_WAVE_PATTERN_ROW $44, $00, $00, $00, $00, $00, $00, $44
+SoundWavePatternData_2::
+    SOUND_WAVE_PATTERN_ROW $01, $12, $34, $57, $9b, $df, $fe, $dc
+    SOUND_WAVE_PATTERN_ROW $ba, $98, $76, $54, $43, $32, $21, $11
+
+SoundWavePatternData_SharedSequence::
 SoundSequenceData_7dff::
     db $ed, $01, $00, $ec, $02, $24, $f4, $00, $07, $21, $a1, $40, $07, $22, $c1, $80
     db $07, $28, $a2, $c0, $07, $ff
 SoundSequenceData_7e15::
-    db $ec, $01, $21, $21, $c0, $06, $24, $d4, $00, $07, $21, $81, $40, $07, $22, $a1
-    db $80, $07, $28, $82, $c0, $07, $ff
+    SOUND_DUTY_LENGTH $01
+    SOUND_EXTENDED_NOTE $01, $21, $c0, $06
+    SOUND_EXTENDED_NOTE $04, $d4, $00, $07
+    SOUND_EXTENDED_NOTE $01, $81, $40, $07
+    SOUND_EXTENDED_NOTE $02, $a1, $80, $07
+    SOUND_EXTENDED_NOTE $08, $82, $c0, $07
+    SOUND_SEQUENCE_END
 SoundSequenceData_7e2c::
-    db $ec, $02, $20, $42, $00, $05, $20, $92, $80, $06, $20, $d2, $00, $07, $20, $f2
-    db $80, $07, $20, $d2, $00, $07, $20, $92, $80, $06, $2a, $41, $00, $05, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $00, $42, $00, $05
+    SOUND_EXTENDED_NOTE $00, $92, $80, $06
+    SOUND_EXTENDED_NOTE $00, $d2, $00, $07
+    SOUND_EXTENDED_NOTE $00, $f2, $80, $07
+    SOUND_EXTENDED_NOTE $00, $d2, $00, $07
+    SOUND_EXTENDED_NOTE $00, $92, $80, $06
+    SOUND_EXTENDED_NOTE $0a, $41, $00, $05
+    SOUND_SEQUENCE_END
 SoundSequenceData_7e4b::
-    db $ec, $02, $10, $3a, $24, $f2, $00, $04, $10, $23, $28, $f2, $00, $06, $10, $08
-    db $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_SWEEP $3a
+    SOUND_EXTENDED_NOTE $04, $f2, $00, $04
+    SOUND_SWEEP $23
+    SOUND_EXTENDED_NOTE $08, $f2, $00, $06
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7e5c::
-    db $ec, $00, $10, $22, $24, $f2, $00, $03, $10, $08, $ff
+    SOUND_DUTY_LENGTH $00
+    SOUND_SWEEP $22
+    SOUND_EXTENDED_NOTE $04, $f2, $00, $03
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
+
+MACRO SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE
+    db SOUND_DUTY_LENGTH_COMMAND, \1
+    db SOUND_SWEEP_COMMAND, \2
+    db SOUND_EXTENDED_NOTE_COMMAND_BASE | \3
+    db \4, \5, \6
+    db SOUND_SWEEP_COMMAND, \7
+    db SOUND_SEQUENCE_END_COMMAND
+ENDM
+
 SoundSequenceData_7e67::
-    db $ec, $02, $10, $2d, $26, $f1, $c0, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $c0, $07, $08
 SoundSequenceData_7e72::
-    db $ec, $02, $10, $2d, $26, $f1, $a0, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $a0, $07, $08
 SoundSequenceData_7e7d::
-    db $ec, $02, $10, $2d, $26, $f1, $80, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $80, $07, $08
 SoundSequenceData_7e88::
-    db $ec, $02, $10, $2d, $26, $f1, $60, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $60, $07, $08
 SoundSequenceData_7e93::
-    db $ec, $02, $10, $2d, $26, $f1, $40, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $40, $07, $08
 SoundSequenceData_7e9e::
-    db $ec, $02, $10, $2d, $26, $f1, $20, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $20, $07, $08
 SoundSequenceData_7ea9::
-    db $ec, $02, $10, $2d, $26, $f1, $00, $07, $10, $08, $ff
+    SOUND_SWEEP_EXTENDED_NOTE_SEQUENCE $02, $2d, $06, $f1, $00, $07, $08
 SoundSequenceData_7eb4::
-    db $ec, $02, $20, $c1, $80, $07, $21, $f1, $a0, $07, $21, $c1, $c0, $07, $24, $f1
-    db $e0, $07, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $00, $c1, $80, $07
+    SOUND_EXTENDED_NOTE $01, $f1, $a0, $07
+    SOUND_EXTENDED_NOTE $01, $c1, $c0, $07
+    SOUND_EXTENDED_NOTE $04, $f1, $e0, $07
+    SOUND_SEQUENCE_END
 SoundSequenceData_7ec7::
-    db $ec, $02, $20, $91, $81, $07, $21, $d1, $a1, $07, $21, $91, $c1, $07, $24, $d1
-    db $e1, $07, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $00, $91, $81, $07
+    SOUND_EXTENDED_NOTE $01, $d1, $a1, $07
+    SOUND_EXTENDED_NOTE $01, $91, $c1, $07
+    SOUND_EXTENDED_NOTE $04, $d1, $e1, $07
+    SOUND_SEQUENCE_END
 SoundSequenceData_7eda::
-    db $ec, $01, $10, $26, $28, $f1, $40, $07, $10, $36, $24, $e1, $c0, $07, $10, $08
-    db $ff
+    SOUND_DUTY_LENGTH $01
+    SOUND_SWEEP $26
+    SOUND_EXTENDED_NOTE $08, $f1, $40, $07
+    SOUND_SWEEP $36
+    SOUND_EXTENDED_NOTE $04, $e1, $c0, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7eeb::
-    db $ec, $01, $10, $15, $24, $a1, $40, $07, $10, $08, $ff
+    SOUND_DUTY_LENGTH $01
+    SOUND_SWEEP $15
+    SOUND_EXTENDED_NOTE $04, $a1, $40, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7ef6::
-    db $ec, $03, $10, $17, $24, $f1, $c0, $06, $10, $16, $2f, $f1, $c0, $07, $10, $1d
-    db $24, $f1, $00, $04, $10, $08, $ff
+    SOUND_DUTY_LENGTH $03
+    SOUND_SWEEP $17
+    SOUND_EXTENDED_NOTE $04, $f1, $c0, $06
+    SOUND_SWEEP $16
+    SOUND_EXTENDED_NOTE $0f, $f1, $c0, $07
+    SOUND_SWEEP $1d
+    SOUND_EXTENDED_NOTE $04, $f1, $00, $04
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f0d::
-    db $ec, $02, $24, $d1, $80, $06, $2f, $a1, $c0, $07, $24, $c1, $80, $03
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $04, $d1, $80, $06
+    SOUND_EXTENDED_NOTE $0f, $a1, $c0, $07
+    SOUND_EXTENDED_NOTE $04, $c1, $80, $03
 SoundSequenceData_7f1b::
-    db $ff
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f1c::
-    db $21, $d1, $38, $2e, $d1, $28, $21, $d1, $39, $24, $d1, $49, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE $01, $d1, $38
+    SOUND_CHANNEL7_EXTENDED_NOTE $0e, $d1, $28
+    SOUND_CHANNEL7_EXTENDED_NOTE $01, $d1, $39
+    SOUND_CHANNEL7_EXTENDED_NOTE $04, $d1, $49
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f29::
-    db $ec, $02, $10, $36, $28, $f1, $00, $07, $10, $08, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_SWEEP $36
+    SOUND_EXTENDED_NOTE $08, $f1, $00, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f34::
-    db $ec, $02, $10, $14, $28, $71, $80, $06, $28, $41, $00, $07, $10, $08, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_SWEEP $14
+    SOUND_EXTENDED_NOTE $08, $71, $80, $06
+    SOUND_EXTENDED_NOTE $08, $41, $00, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f43::
-    db $ec, $02, $10, $14, $28, $d1, $80, $06, $28, $a1, $00, $07, $10, $08, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_SWEEP $14
+    SOUND_EXTENDED_NOTE $08, $d1, $80, $06
+    SOUND_EXTENDED_NOTE $08, $a1, $00, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f52::
-    db $ec, $02, $10, $36, $24, $f4, $80, $07, $23, $c1, $c0, $07, $24, $d1, $a0, $07
-    db $10, $08, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_SWEEP $36
+    SOUND_EXTENDED_NOTE $04, $f4, $80, $07
+    SOUND_EXTENDED_NOTE $03, $c1, $c0, $07
+    SOUND_EXTENDED_NOTE $04, $d1, $a0, $07
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f65::
-    db $ec, $02, $22, $c4, $30, $02, $22, $c4, $40, $02, $23, $c1, $60, $02, $2f, $00
-    db $00, $00, $f8, $dc, $f1, $e5, $eb, $00, $60, $f0, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $02, $c4, $30, $02
+    SOUND_EXTENDED_NOTE $02, $c4, $40, $02
+    SOUND_EXTENDED_NOTE $03, $c1, $60, $02
+    SOUND_EXTENDED_NOTE $0f, $00, $00, $00
+    SOUND_GATE_FLAG
+    SOUND_LENGTH_ENVELOPE $0c, $f1
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $60, $f0
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f80::
-    db $ec, $03, $22, $83, $31, $03, $22, $83, $41, $03, $23, $81, $61, $03, $2f, $00
-    db $00, $00, $ec, $02, $f8, $dc, $d1, $e5, $eb, $00, $60, $f0, $ff
+    SOUND_DUTY_LENGTH $03
+    SOUND_EXTENDED_NOTE $02, $83, $31, $03
+    SOUND_EXTENDED_NOTE $02, $83, $41, $03
+    SOUND_EXTENDED_NOTE $03, $81, $61, $03
+    SOUND_EXTENDED_NOTE $0f, $00, $00, $00
+    SOUND_DUTY_LENGTH $02
+    SOUND_GATE_FLAG
+    SOUND_LENGTH_ENVELOPE $0c, $d1
+    SOUND_OCTAVE $05
+    SOUND_PITCH_SLIDE $00, $60, $f0
+    SOUND_SEQUENCE_END
 SoundSequenceData_7f9d::
-    db $ec, $03, $10, $15, $27, $f4, $c0, $02, $10, $13, $2a, $f2, $c0, $03, $10, $1b
-    db $2c, $f2, $00, $03, $10, $08, $ff
+    SOUND_DUTY_LENGTH $03
+    SOUND_SWEEP $15
+    SOUND_EXTENDED_NOTE $07, $f4, $c0, $02
+    SOUND_SWEEP $13
+    SOUND_EXTENDED_NOTE $0a, $f2, $c0, $03
+    SOUND_SWEEP $1b
+    SOUND_EXTENDED_NOTE $0c, $f2, $00, $03
+    SOUND_SWEEP $08
+    SOUND_SEQUENCE_END
 SoundSequenceData_7fb4::
-    db $ec, $02, $24, $d1, $80, $02, $2f, $a1, $c0, $03, $24, $c1, $80, $02
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $04, $d1, $80, $02
+    SOUND_EXTENDED_NOTE $0f, $a1, $c0, $03
+    SOUND_EXTENDED_NOTE $04, $c1, $80, $02
 SoundSequenceData_7fc2::
-    db $ff
+    SOUND_SEQUENCE_END
 SoundSequenceData_7fc3::
-    db $24, $b2, $48, $2e, $c1, $38, $21, $81, $49, $28, $82, $59, $ff
+    SOUND_CHANNEL7_EXTENDED_NOTE $04, $b2, $48
+    SOUND_CHANNEL7_EXTENDED_NOTE $0e, $c1, $38
+    SOUND_CHANNEL7_EXTENDED_NOTE $01, $81, $49
+    SOUND_CHANNEL7_EXTENDED_NOTE $08, $82, $59
+    SOUND_SEQUENCE_END
 SoundSequenceData_7fd0::
-    db $ec, $02, $23, $d1, $c0, $07, $23, $d1, $80, $07, $23, $d1, $c0, $07, $23, $d1
-    db $80, $07, $ff
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $03, $d1, $c0, $07
+    SOUND_EXTENDED_NOTE $03, $d1, $80, $07
+    SOUND_EXTENDED_NOTE $03, $d1, $c0, $07
+    SOUND_EXTENDED_NOTE $03, $d1, $80, $07
+    SOUND_SEQUENCE_END
 SoundSequenceData_7fe3::
-    db $ec, $02, $23, $a1, $c1, $07, $23, $a1, $81, $07, $23, $a1, $c1, $07, $23, $a1
-    db $81, $07, $ff, $00, $39, $00, $39, $00, $39, $00, $39, $00, $39
+    SOUND_DUTY_LENGTH $02
+    SOUND_EXTENDED_NOTE $03, $a1, $c1, $07
+    SOUND_EXTENDED_NOTE $03, $a1, $81, $07
+    SOUND_EXTENDED_NOTE $03, $a1, $c1, $07
+    SOUND_EXTENDED_NOTE $03, $a1, $81, $07
+    SOUND_SEQUENCE_END
+
+Bank1TailPaddingData::
+    REPT BANK1_TAIL_PADDING_WORDS
+        dw BANK1_TAIL_PADDING_WORD
+    ENDR
