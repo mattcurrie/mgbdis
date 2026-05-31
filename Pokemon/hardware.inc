@@ -59,7 +59,7 @@ MACRO rev_Check_hardware_inc
     DEF MIN_VER equs STRRPL("\1", ".", ",")
     DEF INTERNAL_CHK equs """MACRO ___internal
     IF \\1 != \\4 || \\2 < \\5 || (\\2 == \\5 && \\3 < \\6)
-    	FAIL "Version \\1.\\2.\\3 of 'hardware.inc' is incompatible with requested version \\4.\\5.\\6"
+        FAIL "Version \\1.\\2.\\3 of 'hardware.inc' is incompatible with requested version \\4.\\5.\\6"
     ENDC
 \nENDM"""
     INTERNAL_CHK

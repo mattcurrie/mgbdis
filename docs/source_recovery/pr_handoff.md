@@ -20,6 +20,11 @@ local stack is based on `yoshi-disassembly-step6`; upstream `origin` only has
 `master`, so a GitHub PR to upstream `master` will show the whole recovery
 series, not only the final three reviewed commits.
 
+Before publishing, `origin/master` was merged into the branch so the GitHub PR
+would not start with a known `.gitignore` merge conflict. That merge kept
+upstream's narrower `test/` generated-file ignores and this branch's Yoshi and
+Pokemon build-artifact ignores.
+
 ## What Changed
 
 - Recovered the YOSSY NO TAMAGO source organization into named RGBDS assembly
@@ -74,6 +79,8 @@ The final self-review gate used these checks:
 ```sh
 tools/verify_yoshi_build.sh
 git diff --check HEAD~3..HEAD
+git diff --check origin/master...HEAD
+make -C test
 python3 -m py_compile tools/render_gb_tiles.py
 cmp -s Yoshi/yoshi.gb Yoshi/game.gb
 shasum -a 256 Yoshi/yoshi.gb Yoshi/game.gb
@@ -95,9 +102,11 @@ Additional Python checks audited:
 | Check | Result |
 |-------|--------|
 | `tools/verify_yoshi_build.sh` | Passed. |
+| `make -C test` | Passed after merging current `origin/master`. |
 | `cmp -s Yoshi/yoshi.gb Yoshi/game.gb` | Exit code `0`. |
 | SHA-256 for both ROMs | `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253`. |
 | `git diff --check HEAD~3..HEAD` | Passed. |
+| `git diff --check origin/master...HEAD` | Passed after normalizing one `hardware.inc` indentation line in both recovered examples. |
 | Conflict-marker scan | No matches. |
 | Bank 0/1 raw `$Cxxx` scan | No matches. |
 | Bank 0/1 raw direct branch scan | No matches. |
@@ -185,6 +194,12 @@ written.
 - A first PNG-validation approach depended on a helper that was not available
   in the active Python environment. The audit switched to direct PNG signature
   checks and a full renderer roundtrip.
+- Upstream `master` had advanced before PR publication. A dry merge showed a
+  `.gitignore` conflict, so `origin/master` was merged locally and the ignore
+  rules were combined.
+- After that merge, PR-wide `git diff --check origin/master...HEAD` caught the
+  same space-before-tab indentation line in `Yoshi/hardware.inc` and
+  `Pokemon/hardware.inc`. Both copies were normalized and the check was rerun.
 
 ## Token And Time Accounting
 
@@ -214,6 +229,8 @@ independent API billing record.
   handoff. Because of that, a PR to upstream `master` includes the full recovery
   series from `origin/master`, while the final local self-review specifically
   focused on the last three recovery-completion commits.
+- `origin/master` was merged before publication to resolve the only detected
+  dry-merge conflict.
 
 ## Recommended Reviewer Focus
 
