@@ -13,18 +13,33 @@ This note documents the recovered state bytes at `$C7A4-$C7AD`.
 `UpdateColumnBlinkState` iterates four slots by walking `COLUMN_BLINK_SLOT_FLAGS`
 and `COLUMN_BLINK_SLOT_TIMERS` in parallel. Slots with flag `0` are skipped.
 Active slots toggle between the two sprite frames and redraw through
-`DrawColumnSprite`.
+`DrawColumnSprite`, whose local row labels are named `DrawColumnSpriteRow0..2`.
+`DrawColumnSprite` uses `COLUMN_SPRITE_FRAME_BLOCK_SIZE` to switch between the
+two column-sprite frame blocks inside `ColumnSpritePatternTable`: frame value
+`COLUMN_BLINK_FRAME_2` uses `ColumnSpritePatternFrame2Block`, while frame value
+`COLUMN_BLINK_FRAME_1` adds the `$30`-byte block size and uses
+`ColumnSpritePatternFrame1Block`.
+`UnreachedColumnSpritePatternTailRows` sits immediately after the two live frame
+blocks and is not selected by this live four-slot/two-frame path.
+The internal loop is now labeled as `BeginColumnBlinkSlotScan`,
+`ColumnBlinkSlotLoop`, `TickColumnBlinkSlotTimer`,
+`ToggleColumnBlinkSlotFrame`, `DrawColumnBlinkSlot`, and
+`AdvanceColumnBlinkSlot`.
 
 ## Result Rank State
 
 `RESULT_RANK_POSITION` (`$C7AD`) stores the rank/high-score position returned by
-`CalcRankPosition` inside `ProcessNewHighScore`.
+`ResolveResultRankPosition` inside `ProcessRoundResultAndEnterRoundEnd`.
 
 The result path reads it in three places:
 
-- `DrawScoreRanking` converts it into the two tile ranges drawn at rows `$0804`
-  and `$0904`.
+- `DrawScoreRanking` converts it into the two tile ranges drawn at
+  `RESULT_RANK_TOP_COORD` and `RESULT_RANK_BOTTOM_COORD`, each
+  `RESULT_RANK_TILE_RUN_LENGTH` tiles wide. `NormalizeRankTopTileIndex` and
+  `NormalizeRankBottomTileIndex` handle `RESULT_RANK_SPECIAL_POSITION_CODE`
+  by drawing `RESULT_RANK_FIRST_PLACE` instead of using the raw swapped
+  position byte.
 - The B-game round-end branch checks whether it is nonzero before resuming play
   through `StartNextRound`.
-- `ProcessNewHighScore` writes the latest computed value for both 1P and 2P
+- `ProcessRoundResultAndEnterRoundEnd` writes the latest computed value for both 1P and 2P
   result paths.

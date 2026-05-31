@@ -4,14 +4,16 @@ This note is a handoff summary for confidence levels and unresolved questions.
 It does not replace the detailed subsystem notes; use it to decide what should
 be trusted, what may be refined, and what should stay unnamed until stronger
 evidence appears.
+These unresolved questions are evidence limits for optional future refinement;
+they are not remaining checklist work for the completed recovery pass.
 
 ## Confidence Levels
 
 | Level | Use it for | Current examples |
 |-------|------------|------------------|
 | High | Direct code behavior, table contracts, or build evidence prove the name. | ROM/bank constants, VRAM copy variables, `BG_MAP_SHADOW`, `SPRITE_OBJECTS`, score digits, option variables, result records, link send queues, countdown digit buffers. |
-| Medium | Local evidence is strong, but the exact role may still be refined. | `BOARD_DATA` cell layout, `SCREEN_STATE`, `ANIM_FRAME`, some result tilemap origins, `LINK_FIELD_EVENT_PAYLOAD`, several sound channel fields. |
-| Low | The name is only a useful hypothesis or a write-only/reset pattern. | `$C69D`, `$C6AE`, `$C6C0`, `EGG_COUNT_RESERVED`, `BGM_PREVIEW_PERIOD`, `LINK_STAGING_BYTE`, `DROP_ANIM_GRID_ROW_TMP`. |
+| Medium | Local evidence is strong, but the exact role may still be refined. | `SCREEN_STATE`, `ANIM_FRAME`, some result tilemap origins, `LINK_FIELD_EVENT_PAYLOAD`, several sound channel fields. |
+| Low | The name is only a useful hypothesis or a write-only/reset pattern. | `UNRESOLVED_LANDING_RESET_BYTE_0`, `UNRESOLVED_LANDING_RESET_BYTE_1`, `UNRESOLVED_LANDING_RESET_TIMER`, `SCORE_PRESERVED_UNUSED_BYTE`, `SCORE_UNUSED_TILE_BASE_*`, `TITLE_RESET_UNUSED_HRAM_FLAG`, `TITLE_PLAYER_MARKER_UNUSED_DELAY`, `EGG_COUNT_UNUSED_BYTE`, `BGM_PREVIEW_UNUSED_PERIOD`, `LINK_UNUSED_STAGING_BYTE`, `DROP_ANIM_UNUSED_GRID_ROW_TMP`. |
 
 Do not promote a low-confidence byte just because it is near a recovered
 structure. Promote it only after an independent consumer or a clear table
@@ -33,11 +35,10 @@ contract is found.
 
 | Area | Question | Current best evidence |
 |------|----------|-----------------------|
-| Board cells | What do the paired/interleaved bytes inside each 16-byte column block mean? | `BOARD_DATA` is four 16-byte columns. Visible rows are read from odd offsets, while fall scanning indexes by row/fall position. |
 | Piece payloads | What exact game pieces or states do all payload values represent? | `BOARD_SCAN_TRIGGER_PAYLOAD` and `BOARD_SCAN_TARGET_PAYLOAD` are named by scan behavior only; broader piece semantics remain open. |
-| Landing scan state | What are `$C69D`, `$C6AE`, `$C6BF`, and `$C6C0` semantically? | Reset/write/decrement patterns are real, but only `$C6BF` has a confirmed read/write role in scan/landing timing. |
-| Sprite object slots | What are slot-local bytes `+$01`, `+$03`, and `+$0F`? | `UpdateSpriteObject` stages slots 1-4; `+$05` is now traced as `SPRITE_OBJECT_GRID_COLUMN`, but the remaining offsets still need producer/consumer evidence. |
-| High-bit object types | Are there semantic high-bit sprite object types? | `UpdateSprites` does not mask bit 7 before indexing the frame table; call-site evidence is still incomplete. |
+| Landing scan state | What are `UNRESOLVED_LANDING_RESET_BYTE_0`, `UNRESOLVED_LANDING_RESET_BYTE_1`, `UNRESOLVED_LANDING_SCAN_COUNTER`, and `UNRESOLVED_LANDING_RESET_TIMER` semantically? | Reset/write/decrement patterns are real, but only the scan counter has a confirmed read/write role in scan/landing timing. A follow-up all-source and recent-history search found no hidden producer for these four bytes. |
+| Sprite object slots | Are there any independent consumers for slot-local `+$01`, the BGM-cursor-only `+$03`, or the fast-fall-clamp-only `+$0F`? | `UpdateSprites` skips `+$01`; `ApplySoundVisualUpdateCommand` toggles `+$03` only for option BGM cursor frames; `ClampGameplayObjectFastFallLoop` writes `+$0F`, but no independent consumer has been confirmed. |
+| Sprite object type `$07` and high-bit object types | Is `SPRITE_OBJECT_TYPE_RESERVED_7` ever produced, and are there semantic high-bit object types? | The `$07` frame-table entry exists and draws two tile `$E0` sprites, but no producer is confirmed. `UpdateSprites` saves bit `$80` for inherited OAM attributes; valid `$81-$87` values then share the `$01-$07` frame-table entries because `dec` + `sla` drops bit 7 from the table offset. No high-bit producer is confirmed. |
 | Sound commands | What are the full command semantics and channel roles in the recovered music streams? | Sound state and index tables are structured, but medium-confidence `SOUND_CH_*` names need more sequence decoding. |
 | Bank 3 graphics | Which exact screen regions do remaining Bank 3 tile ranges represent? | Load paths and VRAM destinations are documented, but several ranges still need visual/screen-role decoding. |
 | User testimony | Which ambiguous behaviors match original implementation intent? | Static analysis can show behavior, but not always why the code was structured that way. Compare with user memory where available. |

@@ -18,10 +18,16 @@ Both `Yoshi/yoshi.gb` and rebuilt `Yoshi/game.gb` currently report:
 | Field | Offset | Value | Meaning |
 |-------|--------|-------|---------|
 | Title | `$0134-$0143` | `YOSSY NO TAMAGO` | Japanese/internal title string |
+| New licensee code | `$0144-$0145` | `$00 $00` | Unused because the old licensee code is not `$33` |
+| SGB flag | `$0146` | `$00` | No Super Game Boy support flag |
 | Cartridge type | `$0147` | `$01` | MBC1 |
 | ROM size | `$0148` | `$01` | 64KB |
 | RAM size | `$0149` | `$00` | No external RAM |
+| Destination code | `$014A` | `$00` | Japan |
+| Old licensee code | `$014B` | `$01` | Nintendo |
+| Mask ROM version | `$014C` | `$00` | Version 0 |
 | Header checksum | `$014D` | `$A7` | Valid after `rgbfix` |
+| Global checksum | `$014E-$014F` | `$97 $A1` | Full ROM checksum bytes |
 
 ## Rebuild Status
 
@@ -93,6 +99,27 @@ Observed runtime policy:
 - Normal LCD-on execution expects Bank 1 to be active.
 - VBlank entry jumps to Bank 1 code at `$4B59`.
 - Bank 2/3 are selected temporarily while LCD is off or during controlled graphics-loading paths, then Bank 1 is restored.
+
+Interrupt-sensitive bank audit:
+
+- The only banked interrupt handler is VBlank: the ROM0 vector jumps into
+  `VBlankHandler` in Bank 1. This path therefore relies on Bank 1 being the
+  active switch bank whenever LCD-on VBlank interrupts can occur.
+- The current source writes `MBC1_ROM_BANK_REG` only in the documented graphics
+  load paths, `Init`, and the Bank 1 VBlank handler. All Bank 2/3 selections are
+  paired with a restore to `ROM_BANK_MAIN_CODE` before LCD-on normal execution
+  resumes.
+- Title, pre-play, gameplay, matching/result, high-score/result-record, and
+  link-result graphics loads select Bank 2 or Bank 3 only after `LCDOff` or
+  within the LCD-off setup window, then restore Bank 1 before `LCDOn` or before
+  returning to the frame loop.
+- The serial interrupt vector and handler both live in ROM0, so serial
+  handshakes do not depend on the current switch bank. The timer interrupt bit
+  is enabled in `STARTUP_ENABLED_INTERRUPTS`, but `Init` leaves `rTAC` cleared;
+  no timer ISR path is recovered as live code.
+- `VBlankHandler` writes `ROM_BANK_MAIN_CODE` before the sprite/sound/timer tail
+  of the handler, keeping the normal post-interrupt switch-bank invariant
+  explicit.
 
 ## Recovery Invariants
 

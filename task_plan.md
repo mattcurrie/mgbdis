@@ -4,7 +4,7 @@
 Recover the lost Game Boy YOSSY NO TAMAGO source as a maintainable, buildable RGBDS assembly codebase whose labels, variables, data blocks, and comments reflect the original program structure as accurately as evidence allows.
 
 ## Current Phase
-Phases 2-4
+Completed; final verification passed.
 
 ## Work Inventory And Estimate
 
@@ -17,64 +17,278 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Preserve the current ROM, symbols, and generated assembly as the baseline
 - [x] Identify which files are original artifacts, generated artifacts, and analysis notes
 - [x] Record known facts from ROM headers, bank layout, and user testimony
+- [x] Sync reset/interrupt vector and cartridge header labels in `yoshi.sym`
+- [x] Name cartridge header metadata byte constants
+- [x] Emit cartridge Nintendo logo with RGBDS `NINTENDO_LOGO` macro
+- [x] Rename unused interrupt-vector padding at `00:$0068-$00FF`
+- [x] Structure unused interrupt-vector padding words
 - [x] Document initial findings in findings.md
 - **Status:** completed
 
 ### Phase 2: Memory Map Recovery
 - [x] Build initial WRAM/HRAM read-write index
+- [x] Name startup WRAM clear bounds
 - [x] Name first high-confidence VRAM transfer variables
+- [x] Name SCY/WY hardware register shadows
+- [x] Name BG map shadow slice copy state and VBlank SP scratch
+- [x] Name BG map shadow copy enable flag
 - [x] Document uncertain variables with evidence and confidence
 - [x] Update constants/includes without changing behavior
 - [x] Recover sound engine WRAM constants for `$C000-$C0ED`
 - [x] Name BG map shadow buffer `$C4A0-$C607`
+- [x] Rename Bank 1 BG map shadow copy local branches by behavior
 - [x] Name result record state `$C709-$C75C`
-- **Status:** in_progress
+- **Status:** completed
 
 ### Phase 3: Control Flow & State Machine Recovery
 - [x] Name all currently observed states in GAME_STATE
-- [ ] Trace title, demo/attract, gameplay, round end, options, and 2P paths
+- [x] Rename invalid GAME_STATE fallthrough branch by behavior
+- [x] Trace title, demo/attract, gameplay, round end, options, and 2P paths
 - [x] Rename the state `$05/$06` 1P/2P pre-play dispatch and loop routines
+- [x] Rename the 1P pre-play input branch labels by behavior
+- [x] Apply PADB direction constants to pre-play input dispatch
+- [x] Reuse shared pre-play level-label tile rows in detached label fragment
+- [x] Rename settings cursor frame high-bit clear helper by behavior
+- [x] Name settings cursor sprite init record fields and copy size
+- [x] Macro-structure settings cursor sprite init records
+- [x] Macro-structure option text rows and tile letters
+- [x] Reuse option marker coordinate constants in marker-clear table
+- [x] Rename option cursor triplet data labels by role
+- [x] Macro-structure option marker positions and cursor triplet records
+- [x] Name 1P option count tables
+- [x] Macro-structure 1P and 2P option count table entries
+- [x] Name 1P option cursor rows and BGM off value
+- [x] Rename the 2P pre-play input branch labels by behavior
+- [x] Rename the 1P pre-play screen drawing helpers by behavior
+- [x] Name 1P pre-play background rectangles and fill tiles
+- [x] Name 1P pre-play label/text coordinates and shared label tile rows
+- [x] Name shared pre-play label tile-row width
+- [x] Reuse option marker tile constants in 1P BGM marker strings
+- [x] Rename the 2P pre-play screen drawing helpers by behavior
+- [x] Name 2P pre-play background rectangles and fill tiles
+- [x] Name 2P pre-play role/level/speed layout constants
+- [x] Rename the 2P link packet/result exchange helpers by behavior
+- [x] Rename round-end and new-high-score local branches by behavior
+- [x] Rename 2P result panel and link-confirm local branches by behavior
 - [x] Rename the state `$01` title menu frame loop
-- [ ] Split code/data misclassifications found in bank_000.asm and bank_001.asm
-- [ ] Verify bank assumptions around interrupt-sensitive paths
-- **Status:** in_progress
+- [x] Rename Bank 1 title marker and title-link local branches by behavior
+- [x] Rename high-confidence Bank 0 local control labels by behavior
+- [x] Rename Bank 0 Multiply internal local branches by behavior
+- [x] Name Bank 0 Multiply RNG HRAM state and constants
+- [x] Sync `yoshi.sym` math and sprite object helper labels
+- [x] Rename Bank 0 initial utility local loops by behavior
+- [x] Sync `yoshi.sym` low-level joypad/OAM/LCD/memory helper labels
+- [x] Sync `yoshi.sym` VRAM copy, main-loop dispatch, and pause helper labels
+- [x] Rename Bank 0 startup WRAM/VRAM/HRAM clear local loops by behavior
+- [x] Sync `yoshi.sym` startup clear and hardware tilemap fill helper labels
+- [x] Name startup WRAM clear mode constants
+- [x] Rename Bank 0 tilemap fill local loops by behavior
+- [x] Name game/title BG map shadow fill tiles
+- [x] Rename Bank 0 tilemap address calculation carry labels by behavior
+- [x] Sync `yoshi.sym` BG-map fill and tilemap address utility labels
+- [x] Sync `yoshi.sym` column and grid draw helper labels
+- [x] Sync `yoshi.sym` drop/collision animation helper labels
+- [x] Sync `yoshi.sym` blink and game-state init helper labels
+- [x] Sync `yoshi.sym` matching/result panel helper labels
+- [x] Sync `yoshi.sym` matching/result OAM template and table labels
+- [x] Sync `yoshi.sym` gameplay/input/piece helper labels
+- [x] Sync `yoshi.sym` round-transition/result/menu/blink helper labels
+- [x] Sync `yoshi.sym` option UI and detached preplay helper labels
+- [x] Sync `yoshi.sym` title and field-animation helper labels
+- [x] Sync `yoshi.sym` 2P preplay text and settings-exchange helper labels
+- [x] Sync `yoshi.sym` 1P preplay text, countdown, and round-result helper labels
+- [x] Sync `yoshi.sym` round-end, link-result, and round-complete summary helper labels
+- [x] Name low-level joypad, OAM DMA, and LCD-off utility immediates
+- [x] Apply joypad P1 constants to Bank 1 raw input poll
+- [x] Name pause overlay OAM template and copy size
+- [x] Name startup palette, stack, interrupt, window, and hardware tilemap constants
+- [x] Name startup title-init LCDC and VRAM copy chunk constants
+- [x] Rename Bank 0 MainLoop state dispatch and pause local branches by behavior
+- [x] Restore pause wait raw `$76` opcode as `halt`
+- [x] Restore Bank 1 wait-loop raw `$76` opcodes as `halt`
+- [x] Restore OAM DMA HRAM routine bytes as instructions
+- [x] Rename Bank 0 game-state init and drop cursor local branches by behavior
+- [x] Rename Bank 0 option marker, detached pre-play, and BGM-settings local branches by behavior
+- [x] Clarify write-only BGM preview period state
+- [x] Name BGM preview timer and write-only period values
+- [x] Replace Start-button, link-role master, and link serial raw literals with named constants
+- [x] Name unassigned-role serial DIV reset write value
+- [x] Name pause and link-send active flag values
+- [x] Rename Bank 0 serial, string-copy, 2P preplay-init, and field-animation end local branches by behavior
+- [x] Rename Bank 0 2P pre-play settings exchange local branches by behavior
+- [x] Remove remaining anonymous `Jump_*` labels from Bank 0/1 real code
+- [x] Remove remaining generated `jr_000_*` local label definitions from Bank 0/1 source
+- [x] Rename field timer and 2P field-count local loops by behavior
+- [x] Remove stale `yoshi.sym` `.data:9` override for `WaitLinkStartConfirm`
+- [x] Rename terminal link-result sound/clear tail by behavior
+- [x] Split code/data misclassifications found in bank_000.asm and bank_001.asm
+- [x] Verify bank assumptions around interrupt-sensitive paths
+- **Status:** completed
 
 ### Phase 4: Data & Graphics Recovery
-- [ ] Map Bank 2/3 tile blocks to VRAM destinations and screens
+- [x] Map Bank 2/3 tile blocks to VRAM destinations and screens
 - [x] Build initial cross-reference table for Bank 2/3 graphics loads
 - [x] Add a repeatable GB 2bpp tile renderer and first rendered tile-sheet evidence
 - [x] Replace Bank 0 graphics-load source immediates with Bank 2/3 data labels
-- [ ] Identify tilemaps, OAM templates, animation tables, and score/text data
+- [x] Name common graphics VRAM destination constants
+- [x] Name Bank 2 graphics copy size constants
+- [x] Rename Bank 2 pre-play and 2P tile ranges by load role
+- [x] Label Bank 2 unused tail tile data
+- [x] Split overlapping Bank 2 `TitleTileSet` / 2P tile data blocks in `yoshi.sym`
+- [x] Name Bank 3 matching/result-record graphics copy size constants
+- [x] Refine Bank 3 link-result tile-sheet roles from rendered evidence
+- [x] Sync Bank 3 graphics data labels in source, symbols, and rendered evidence
+- [x] Rename Bank 3 result-record graphics labels and sheets by destination
+- [x] Identify tilemaps, OAM templates, animation tables, and score/text data
 - [x] Document first-pass `$C200` logical sprite object and `$C400` shadow OAM format
+- [x] Rename Bank 1 sprite OAM expansion local loops by behavior
+- [x] Name UpdateSprites redraw and frame-disabled sentinel values
+- [x] Apply LCD redraw expand request constant at call sites
+- [x] Name ClearSpriteObjectBuffer byte count
+- [x] Rename sprite object buffer clear helper by behavior
+- [x] Rename Bank 1 countdown/score/playfield local loops by behavior
+- [x] Rename Bank 1 next-round and tilemap helper local loops by behavior
+- [x] Name manual shadow OAM tail pair `$C498`
+- [x] Name shadow OAM entry field offsets used by matching animation
+- [x] Macro-structure Bank 0 OAM template entries
 - [x] Trace first-pass `$C200` sprite object producer/staging path
+- [x] Rename slot-0 player cursor object initializer by behavior
 - [x] Split Bank 1 sprite frame data into frame tables, tile lists, and layouts
+- [x] Sync `yoshi.sym` Bank 1 sprite frame table/tile/layout labels
+- [x] Macro-structure Bank 1 sprite frame table records
+- [x] Macro-structure Bank 1 sprite layout triples
+- [x] Macro-structure Bank 1 sprite object pointer and tile-id list records
+- [x] Name Bank 1 player cursor and round-complete sprite tile/layout records
+- [x] Name Bank 1 settings cursor and round-transition sprite tile/layout records
+- [x] Name Bank 1 piece-display sprite tile/layout records
+- [x] Rename Bank 1 piece-display sprite frame labels away from game-over-only role
+- [x] Name Bank 1 game BG and field-column pattern constants
+- [x] Macro-structure Bank 1 field-column tile pattern rows
 - [x] Name confirmed sprite object types `$01-$05`
+- [x] Name field-column effect sprite object type `$06`
 - [x] Convert Bank 1 sprite/title tile strings at `$462B` and `$46ED`
+- [x] Apply DrawStringToGrid row terminator to Bank 1 egg/title text rows
+- [x] Macro-structure Bank 1 egg-text frame tile rows
+- [x] Macro-structure Bank 1 title label text rows
+- [x] Label unused Bank 1 inline egg-text drawer at `$45C6`
+- [x] Name Bank 1 unused inline egg-text tile and row-delta constants
 - [x] Name title player selection marker blink WRAM
+- [x] Name game-type A/B values
 - [x] Convert first obvious data blob from bogus instructions to db/dw labels
+- [x] Name Bank 0 pause overlay OAM template coordinates and tiles
 - [x] Convert Bank 0 option UI strings, marker coordinates, cursor tile lists, and option bound tables
 - [x] Convert Bank 0 2P settings limit and round palette byte tables
 - [x] Convert Bank 0 score/result/continue text strings and marker strings
 - [x] Convert Bank 0 preview/result tile string table
+- [x] Macro-structure Bank 0 two-player role header text
+- [x] Name DrawStringToGrid row terminator
+- [x] Apply DrawStringToGrid row terminator to option text strings
+- [x] Apply DrawStringToGrid row terminator to 1P preplay header/off text
+- [x] Macro-structure Bank 0 1P preplay header text rows
+- [x] Macro-structure Bank 0 duplicate OFF text row
+- [x] Apply DrawStringToGrid row terminator to preplay role/speed/game-type/BGM marker strings
+- [x] Macro-structure Bank 0 1P preplay game-type text rows
+- [x] Macro-structure Bank 0 preplay speed text rows
+- [x] Macro-structure Bank 0 BGM marker text rows
+- [x] Apply DrawStringToGrid row terminator to piece preview text rows
+- [x] Macro-structure Bank 0 piece preview text cells
 - [x] Convert Bank 0 countdown digit pattern table
+- [x] Macro-structure Bank 0 countdown digit pattern records
 - [x] Convert Bank 0 level fall-delay table at `$15FE` and restore the `$1612` code boundary
+- [x] Name Bank 0 level fall-delay table entries
+- [x] Macro-structure Bank 0 level-index lookup tables
 - [x] Convert Bank 0 game-turn parameter table head at `$0B8D` and name its index/timer/delay bytes
+- [x] Sync `yoshi.sym` to the full `GameTurnParamTable` data boundary
 - [x] Convert Bank 0 matching OAM, score bonus, and tile-base tables at `$117C-$11EF`
+- [x] Name Bank 0 matching OAM template coordinates and initial tiles
+- [x] Name Bank 0 matching tile-base index table entries
+- [x] Macro-structure packed-BCD score delta tables
+- [x] Name unused vertical tile-pair helper constants after matching tables
 - [x] Convert Bank 0 round-complete tables at `$18CB` and `$18D2`
 - [x] Convert Bank 0 field delta tables at `$22CC` and `$230F`
+- [x] Name Bank 0 field animation delta table values
+- [x] Macro-structure field animation delta pairs
 - [x] Name field animation cursors, active flags, and column timers at `$C6C3-$C6CE`
+- [x] Rename field-animation slot dispatcher by behavior
 - [x] Name drop-input animation active/timer/column/cascade state at `$C75D-$C774`
 - [x] Name column top-row array and drop cursor animation state at `$C66A-$C670`
 - [x] Name egg counter digits and level-display tick divider at `$C6D1-$C6D5`
+- [x] Clarify clear-only egg counter padding byte
+- [x] Rename Bank 1 level and egg display local branches by behavior
+- [x] Rename Bank 1 egg text pulse local branches by behavior
 - [x] Name 2P selected settings, peer settings, and link send queue at `$C6EB-$C700`
+- [x] Name 2P settings link packet nibble mask
+- [x] Name 2P settings option count table
+- [x] Clarify clear-only link staging byte
+- [x] Rename round-local link staging clear helper by behavior
+- [x] Name 2P result mark tilemap origins and tiles
+- [x] Name 2P result header, badge, outcome, and status tilemap origins
+- [x] Name 2P result header, badge, status, outcome, score, and confirm-panel tile constants
+- [x] Name 2P result/high-score Bank 3 graphics copy sizes
+- [x] Rename Bank 3 link-result graphics data labels by screen role
+- [x] Name 2P result wait-panel animation timing and final anonymous confirm-loop branches
+- [x] Name matching/link result animation layout origins `$C4ED/$C4CA/$C59B/$C543/$C571`
+- [x] Rename ProcessMatching animation local branches by behavior
+- [x] Name ProcessMatching setup, LCDC, clear, and OAM template constants
+- [x] Name ProcessMatching animation timing, panel, and OAM movement constants
+- [x] Name matching tile-base index scaling constants
+- [x] Rename matching score/result display local branches by behavior
+- [x] Name matching score bonus table record shift and score deltas
+- [x] Name matching result stats display tile, digit, and LCDC constants
+- [x] Rename FillRectAlt as the button-only wait helper
+- [x] Apply PADF_ANY_BUTTON to result-record blink input polling
+- [x] Rename Bank 0 FillRect and gameplay update display local branches by behavior
+- [x] Name round-complete tilemap origins and tiles
+- [x] Convert A-type round-complete summary messages and reveal tables at `$3799-$37DF`
+- [x] Rename misleading Bank 0 draw/wait/fill helper labels by behavior
+- [x] Rename Bank 0 tile-reload and input-aware wait helpers by behavior
+- [x] Rename round-complete reveal and manual-OAM bonus helpers by behavior
+- [x] Rename coordinate-based tilemap helper labels by behavior
 - [x] Name column blink state and result rank position at `$C7A4-$C7AD`
 - [x] Name countdown digit buffers and blit state at `$C7AE-$C7CF`
+- [x] Name countdown digit VRAM blit destinations
+- [x] Name countdown tile slots and playfield digit tile constants
+- [x] Rename countdown digit buffer build/blit local loops by behavior
+- [x] Name countdown digit buffer phase and nibble masks
+- [x] Rename 2P result panel and terminal link-confirm local branches by behavior
 - [x] Name 2P settings cursor and shared settings/result blink timer at `$C6F0-$C6F2`
+- [x] Name settings/result blink phase toggle mask
 - [x] Confirm `$FFB3-$FFB7` as an unused secondary VRAM-copy slot
+- [x] Rename Bank 1 VRAM copy and VBlank local branches by behavior
+- [x] Name BG map shadow copy phase values
+- [x] Name Bank 1 VBlank sync and Select wait masks
+- [x] Sync `yoshi.sym` Bank 1 wave-update and elapsed-timer helper labels
+- [x] Name title screen BG layout rectangle origins
+- [x] Name title screen BG layout fill tile bases
 - [x] Convert Bank 0 tail graphics data at `$3839-$3FFF`
 - [x] Convert Bank 1 field-column tile pattern table at `$442C` and restore the `$445C` code boundary
+- [x] Sync `yoshi.sym` Bank 1 score, field-column, sprite text, and title text labels
 - [x] Reclassify Bank 1 `$55E2` sound setup entry as code and split immediate sound support tables
 - [x] Add internal pointer labels to Bank 1 sound sequence block at `$569A`
+- [x] Name Title BGM sound-index channel sequence entries
+- [x] Macro-structure Title BGM channel 1 setup command records
+- [x] Macro-structure Title BGM channel 2 setup and sub-sequence calls
+- [x] Macro-structure Title BGM channel 3 nested-sound note records
+- [x] Name BGM option and preview sound-index channel sequence entries
+- [x] Macro-structure BGM option/preview 0 channel setup records
+- [x] Macro-structure BGM preview 0 channel 3 visual-update loop records
+- [x] Macro-structure BGM option/preview 1 channel setup records
+- [x] Macro-structure BGM preview 1 channel 3 visual-update loop records
+- [x] Macro-structure BGM option/preview 2 channel setup records
+- [x] Macro-structure BGM preview 2 channel 3 visual-update loop records
+- [x] Name link-role sound-index channel sequence entries
+- [x] Macro-structure link-role sound channel setup and loop records
+- [x] Name confirm and link-result sound-index channel sequence entries
+- [x] Macro-structure confirm sound channel command records
+- [x] Macro-structure link-result nonzero/zero channel command records
+- [x] Macro-structure link-result confirm/menu wait channel setup and branch records
+- [x] Macro-structure link-result confirm/menu wait phrase command records
+- [x] Macro-structure link-result confirm/menu wait inline channel records
+- [x] Name result and 2P preplay sound-index channel sequence entries
+- [x] Macro-structure 1P result channel setup command records
+- [x] Macro-structure 2P result channel setup command records
+- [x] Macro-structure 2P preplay init channel setup command records
+- [x] Macro-structure 2P preplay init phrase command records
 - [x] Convert Bank 1 fake-code music sequence range at `$5FE3`
 - [x] Add exact-boundary labels for Bank 1 music sequence data at `$7191` and `$71E4`
 - [x] Convert Bank 1 fake-code music sequence range at `$71C1`
@@ -83,43 +297,226 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Convert Bank 1 fake-code music sequence range at `$7806` while preserving the real `$7C02` helper
 - [x] Recover Bank 1 sound index table, wave pattern pointer table, and tail sound sequences
 - [x] Document first-pass Bank 1 sound/music command semantics
+- [x] Rename sound visual-update command helper by UI side effects
+- [x] Name sound gate-flag command and suppress bit
+- [x] Name sound parser command byte constants
+- [x] Name sound channel flag bit constants
+- [x] Name sound channel index constants
+- [x] Apply sound counter init value to `$FE` loop reset
+- [x] Rename sound command dispatch and pitch-slide helpers by behavior
+- [x] Rename Bank 1 VBlank sound channel update locals by behavior
+- [x] Rename Bank 1 sound sequence end/loop/vibrato parser locals by behavior
+- [x] Rename Bank 1 sound note/output local branches by behavior
+- [x] Rename Bank 1 ProcessNote, pitch-slide, and sound-index helper locals by behavior
+- [x] Rename Bank 1 StartSoundSequence channel-entry locals by behavior
+- [x] Sync Bank 1 sound setup and tail data boundaries in `yoshi.sym`
+- [x] Sync Bank 1 sound channel/parser/setup helper labels in `yoshi.sym`
+- [x] Sync Bank 1 sound/music sequence data labels in `yoshi.sym`
+- [x] Sync Bank 1 sound index and tail data labels in `yoshi.sym`
+- [x] Macro-structure Bank 1 SoundIndexTable entries
+- [x] Use `_AUD3WAVERAM` for Bank 1 wave RAM writes
+- [x] Name Bank 1 sound wave pattern table labels
+- [x] Macro-structure Bank 1 sound wave pattern pointer table
+- [x] Macro-structure dedicated Bank 1 sound wave pattern bytes
+- [x] Macro-structure early Bank 1 channel-7 effect sequences
+- [x] Macro-structure Bank 1 board-scan step effect sequences
+- [x] Macro-structure Bank 1 DropStart and board-scan extended-note sequences
+- [x] Macro-structure Bank 1 sweep/extended-note effect sequences
+- [x] Macro-structure Bank 1 tail extended-note/channel-7 sequences and padding
+- [x] Macro-structure Bank 1 pause secondary extended-note sequence
+- [x] Macro-structure Bank 1 gate/pitch-slide tail sound sequences
 - [x] Replace high-confidence sound-engine raw addresses with `SOUND_*` constants
+- [x] Name sound reset counter/output/NR50 defaults
+- [x] Name sound channel NR51 output mask table entries
+- [x] Name sound-engine `$FF` sentinel/fill/register-page constants
+- [x] Name Bank 1 wave-update terminal, trigger, and end-marker constants
+- [x] Macro-structure Bank 1 sound support tables
+- [x] Name Bank 1 sound vibrato/duty register masks and offsets
+- [x] Name Bank 1 sound pause mute and wave trigger hardware values
+- [x] Name Bank 1 sound note-length and wave-pattern parameter constants
+- [x] Name Bank 1 sound pitch base table entries
+- [x] Name Bank 1 sound pitch-table shift constants
+- [x] Name Bank 1 sound fixed tempo and pitch-slide tick clamp constants
+- [x] Name Bank 1 sound BGM active-ID gate constant
+- [x] Name Bank 1 sound BGM reset command bounds and clear spans
+- [x] Name Bank 1 sound hardware reset values and full reset clear spans
+- [x] Name Bank 1 sound register base and channel-6 sequence pointer offsets
+- [x] Name Bank 1 sound sequence pointer rewind constants
 - [x] Name high-confidence sound IDs from `PlaySound` call-site evidence
-- [ ] Continue classifying remaining effect IDs once gameplay/link/result routines are better named
+- [x] Name link field-rise pending-consume sound ID
+- [x] Macro-structure link field-rise sound command records
+- [x] Name 2P result/high-score sound IDs from terminal/result wait call sites
+- [x] Name matching animation sound IDs from `ProcessMatching` call sites
+- [x] Name ProcessRoundResultAndEnterRoundEnd result/rank sound IDs
+- [x] Name 2P pre-play init sound IDs from role-specific call sites
+- [x] Audit direct `PlaySound` IDs after link-result helper renames
+- [x] Audit remaining effect IDs and document numeric sound-index continuation entries
+- [x] Express sound-index entry flags as count/channel constants
+- [x] Name sound-index entry 0 sentinel fields
 - [x] Build cross-reference tables for graphics loads
-- **Status:** in_progress
+- **Status:** completed
 
 ### Phase 5: Gameplay Algorithm Recovery
 - [x] Recover first-pass board column-block layout
-- [ ] Recover remaining piece representation semantics inside board cells
+- [x] Name board-cell visible payload offset
+- [x] Name board bottom visible cell base `$C637`
+- [x] Name adjacent visible board-cell delta
+- [x] Name visible board payload pattern records 0..8
+- [x] Recover remaining piece representation semantics inside board cells
 - [x] Recover first-pass drop-input column swap animation state
+- [x] Clarify write-only drop-animation row scratch byte
+- [x] Rename drop animation cascade loop labels by behavior
+- [x] Rename drop animation completion/swap local branches by behavior
+- [x] Rename drop collision and position-update local branches by behavior
+- [x] Rename drop animation down/up state local branches by behavior
+- [x] Rename drop collision helper labels by behavior
+- [x] Rename unused board-pattern and column-blink local branches by behavior
+- [x] Name drop animation accepted return value
+- [x] Name unused board-fill pattern constants
 - [x] Recover first-pass column top-row state and drop cursor animation state
 - [x] Name the high-confidence score addition/display routine at Bank 1 `$432F`
+- [x] Name score BCD cap and score clear-span constants
 - [x] Name the next-round and egg-animation helpers at Bank 1 `$445C` and `$4681`
 - [x] Name high-confidence field timer, level display, OAM DMA HRAM, and link-start wait helpers
-- [ ] Name drop, rotation, match, clear, remaining scoring, level, and game-over routines
+- [x] Rename elapsed timer draw/clear helpers by behavior
+- [x] Name elapsed timer digit bounds and 99:59 clamp constants
+- [x] Rename playfield level/speed/egg HUD helpers by behavior
+- [x] Rename playfield timer/link header helpers by behavior
+- [x] Rename playfield side-panel layout helpers by behavior
+- [x] Rename Bank 1 playfield HUD coordinate-selection locals by behavior
+- [x] Sync `yoshi.sym` Bank 1 playfield side-panel and role-header helper labels
+- [x] Sync egg text animation labels in the symbol file
+- [x] Rename gameplay input and level fall-delay helpers by behavior
+- [x] Clarify unreachable level-3 fall-acceleration reload branch
+- [x] Name drop cursor active and fall-timer animation hold values
+- [x] Sync active architecture stale gameplay/sound labels with recovered names
+- [x] Name fall-acceleration level boundary values
+- [x] Name game-turn table index sentinel and loop boundary values
+- [x] Macro-structure GameTurnParamTable head records
+- [x] Macro-structure GameTurnParamTable continuation records
+- [x] Macro-structure GameTurnParamTable split record around continuation label
+- [x] Correct stale `yoshi.sym` piece-display shuffle/init helper labels
+- [x] Rename HandlePlayfieldInput local branches by behavior
+- [x] Rename playfield board/piece setup helpers by behavior
+- [x] Rename selected-column piece staging helpers by behavior
+- [x] Rename board scan target row helpers by behavior
+- [x] Rename falling-piece fall/landing local branches by behavior
+- [x] Rename board/piece setup local loops by behavior
+- [x] Rename board scan animation and cell-read local branches by behavior
+- [x] Rename round-complete send/display local branches by behavior
+- [x] Name round-complete reveal sounds and transition constants
+- [x] Rename piece display forced-state and menu-selection local branches by behavior
+- [x] Rename link field-rise selection, blink, and option UI helper local branches by behavior
+- [x] Sync option UI cursor/highlight symbol labels with recovered source names
+- [x] Rename misleading gameplay update top-level labels by behavior
+- [x] Apply active sprite slot count to gameplay update loop
+- [x] Apply sprite object slot size to piece-display UI-scratch scan
+- [x] Rename shared UI scratch HRAM byte away from misleading text-fade role
+- [x] Name gameplay object active-scan return value
+- [x] Name drop, rotation, match, clear, remaining scoring, level, and game-over routines
+- [x] Rename matched landing scan-state entry by behavior
+- [x] Apply existing Bank 0 `$FF` sentinel constants to column/wait helpers
 - [x] Investigate remaining score-adjacent state `$C620/$C628/$C629/$C672`
-- [ ] Revisit `$C620/$C628/$C629/$C672` only after finding an independent consumer
+- [x] Clarify score preserved/copy-only bytes as low-confidence unused state
+- [x] Revisit `SCORE_PRESERVED_UNUSED_BYTE` and `SCORE_UNUSED_TILE_BASE_*` only after finding an independent consumer
+- [x] Name score unused tile-base seed value
 - [x] Name sprite object delay reload byte `$C66E`
 - [x] Name sprite object grid-column offset `+$05`
+- [x] Name sprite object grid-column unset sentinel and drop collision constants
+- [x] Name player cursor object initial frame, position, and field-pattern index
+- [x] Clarify sprite object toggled-frame `+$03` and fast-fall clamp `+$0F`
+- [x] Revisit sprite object padding byte `+$01` only after finding a consumer
+- [x] Name sprite object unused byte initialization value
+- [x] Clarify sprite object type `$07` as reserved/no confirmed producer
+- [x] Clarify high-bit sprite object type variants as renderer-supported/no confirmed producer
 - [x] Apply sprite object page constant to direct slot builders
-- [x] Name piece display object base-Y constant
+- [x] Name sprite object renderer scan-end offset
+- [x] Rename Bank 0 sprite object wait/writeback local branches by behavior
+- [x] Name piece sprite object slot clear span
+- [x] Rename piece-display/game-over object builder routines by behavior
+- [x] Name piece-display object slot advance and game-over slot offset constants
+- [x] Correct piece display object initial-delay constant
 - [x] Name piece display blink timer `$C6AF`
+- [x] Name piece display blink slot count, exempt state, and frame toggle mask
 - [x] Name piece display forced-state flags `$C6AD/$C6F7/$C6F8`
+- [x] Name piece-display special-selection threshold and force flag values
+- [x] Name piece-display selection random threshold constants
 - [x] Document unresolved landing/scan bytes `$C69D/$C6AE/$C6BF/$C6C0`
-- [ ] Revisit `$C69D/$C6AE/$C6BF/$C6C0` only after finding stronger producer/consumer evidence
+- [x] Replace final raw WRAM references with explicitly unresolved constants
+- [x] Recheck landing/scan hidden producers and name landing placement sound/score delta
+- [x] Name falling-piece active return, sprite Y step, and overflow sentinel constants
+- [x] Label unreachable falling-piece cleanup pop fragment
+- [x] Name grid-piece draw dimensions, row delta, clear tile, and commit guard constants
+- [x] Name grid-piece and column-sprite pattern helper/table roles
+- [x] Split grid-piece pattern records and column-sprite frame blocks/tail
+- [x] Deduplicate source-only grid/column pattern aliases from `yoshi.sym`
+- [x] Name grid-piece pattern payload labels and piece-display return code constants
+- [x] Name grid-piece pattern tile constants
+- [x] Name live column-sprite encoded tile constants
+- [x] Macro-structure grid-piece and column-sprite pattern rows
+- [x] Mark the static-dead DrawColumnSprite alternate-row fragment
+- [x] Name the unreached column-sprite pattern tail
+- [x] Name unreached column-sprite tail row tile constants
+- [x] Name result flow result-code, link-packet, mark-limit, and first-rank constants
+- [x] Name link-result terminal flag clear value
+- [x] Rename 2P link result mark/screen routine by behavior
+- [x] Rename link result status and score-area helpers by behavior
+- [x] Rename link result menu/confirm/reload helpers by behavior
+- [x] Name link field-count and field-rise packet bit constants
+- [x] Name link field-rise screen-state limit
+- [x] Name link pending field-rise none value
+- [x] Rename round-result entry away from misleading new-high-score role
+- [x] Remove stale high-score wording from round-result flow comments
+- [x] Name ProcessRoundResultAndEnterRoundEnd round-complete object clear span
+- [x] Name ProcessRoundResultAndEnterRoundEnd round-end wait timer initial value
+- [x] Name result-flow inactive and round-end wait high-byte constants
+- [x] Name round-end result delay frame count
+- [x] Name round-end sprite object clear span
+- [x] Name piece-display shuffle mask and initial board fill rotation constants
+- [x] Name B-type initial board seed table and setup constants
+- [x] Name B-type column seed and game-turn level start-index table values
+- [x] Name drop-up boundary side-column clear delta
+- [x] Name 2P round-transition pre-frame constants
+- [x] Name board-scan single-step distance special case
+- [x] Name board-scan reward score delta table values
+- [x] Name inactive sprite object type zero
+- [x] Name drop cursor animation inactive initialization value
+- [x] Use forced-state constant in piece-display object counting
+- [x] Name piece-display slot-order initial indices
+- [x] Revisit `$C69D/$C6AE/$C6BF/$C6C0` only after finding stronger producer/consumer evidence
 - [x] Name repeated result main panel tilemap origin `$C546`
 - [x] Name result main panel right-edge tilemap origin `$C54C`
+- [x] Name result record row labels and placeholder tilemap origins
+- [x] Name result record inserted-row label blink timing
+- [x] Name result record digit rendering counts and tile constants
+- [x] Name result record staging and comparison counts
+- [x] Name result record palette fade timing
+- [x] Macro-structure result record palette fade sequence
+- [x] Name result record setup fill tiles and palette values
+- [x] Name result record screen setup frame, type, header, and detail tilemap origins
+- [x] Rename result record staging/insert/screen local labels by behavior
+- [x] Use first-rank constant in result-record insert shifting
+- [x] Rename result record screen rendering and palette-fade helpers by behavior
 - [x] Name result score value tilemap origin `$C5D6`
 - [x] Name result score label tilemap origin `$C5D1`
 - [x] Name result timer label/value tilemap origins `$C5E5/$C5EA`
+- [x] Rename result-record one-time initialization local labels by behavior
+- [x] Name result rank display origins, tile run, and normalization constants
 - [x] Correct level display digit labels `$C6CF/$C6D0/$C6D1`
+- [x] Name level-display digit bounds and egg count coordinates
+- [x] Name egg-text animation frame and toggle constants
 - [x] Name result level/speed tilemap origins `$C509/$C50F-$C512`
 - [x] Name title player marker row coordinates and tile IDs
 - [x] Name title label row coordinates `$0F06/$1006`
+- [x] Name title label marker, input, and link handshake constants
+- [x] Name title player-mode underflow sentinel
+- [x] Name title reset unused delay initial value and HRAM flag
 - [x] Name option text label row coordinates
 - [x] Name option marker coordinates and tile IDs
 - [x] Name option cursor decoration triplets and tile IDs
+- [x] Name option box frame offsets and option redraw value comparisons
+- [x] Rename option box drawing helpers by behavior
+- [x] Name option box geometry and frame tile bases
 - [x] Name gameplay cursor/drop input masks and fast-fall clamp constants
 - [x] Name board fall-end row boundary
 - [x] Apply board fall-end row boundary consistently in gameplay setup/update
@@ -127,21 +524,63 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 - [x] Name board scan animation/link/sound constants
 - [x] Add board scan sound table alias
 - [x] Alias board scan sound range
-- [ ] Compare inferred behavior with user memory where available
-- [ ] Add comments only where the code evidence supports them
-- **Status:** pending
+- [x] Name board-scan transition frame-limit table values
+- [x] Macro-structure matching tile-base and board-scan frame-limit lookup entries
+- [x] Rename Bank 0 board/tile sprite draw and clear local loops by behavior
+- [x] Apply board/drop geometry stride constants consistently
+- [x] Apply landing/board-scan row-step constants consistently
+- [x] Rename Bank 0 column blink sprite draw local branches by behavior
+- [x] Name 2P field occupancy scan/count packet path
+- [x] Name 2P field occupancy count decimal conversion base
+- [x] Name title/preplay level preview digit coordinate
+- [x] Name A-type round-complete summary layout origins `$C4B4/$C544/$C56A`
+- [x] Name A-type round-complete summary fill/copy constants
+- [x] Decode A-type round-complete summary messages and ROM0 text tile data
+- [x] Macro-structure A-type round-complete summary graphic tile data
+- [x] Macro-structure A-type round-complete summary text glyph tiles
+- [x] Macro-structure A-type round-complete summary message records
+- [x] Rename unreferenced ROM0 tail data as padding
+- [x] Macro-structure unreferenced ROM0 tail padding prefix
+- [x] Name round-complete reveal helper behavior around `00:$3767-$380F`
+- [x] Name round-complete reveal timing, threshold, and fill constants
+- [x] Macro-structure A-type round-complete final tile records
+- [x] Macro-structure A-type round-complete reveal threshold records
+- [x] Name round-complete final tile and reveal threshold table entries
+- [x] Name A-type round-complete bonus score and manual-OAM constants
+- [x] Rename final result-confirm and round-complete summary/reveal local branches by behavior
+- [x] Document GameTurnParamTable record structure and unread tail byte
+- [x] Label unreachable game-turn delay clamp fragments
+- [x] Rename single-player game-over result entry by behavior
+- [x] Rename result-rank resolver by behavior
+- [x] Document zero-result and no-rank game-over paths in source comments
+- [x] Rename link-result confirm outcome branches by behavior
+- [x] Rename link-result score-area fill helpers by observed width
+- [x] Rename link-result packet outcome merge by behavior
+- [x] Rename link packet dispatcher branches by packet class
+- [x] Rename link-result mark-limit and screen-mode branches by behavior
+- [x] Name serial done active value and link send queue slot count
+- [x] Compare inferred behavior with user memory where available
+- [x] Add comments only where the code evidence supports them
+- **Status:** completed
 
 ### Phase 6: Build & Regression Verification
 - [x] Confirm RGBDS build reproduces yoshi.gb or document exact differences
 - [x] Add scripts/checks for checksum, size, header, and binary comparison
-- [ ] Keep source edits behavior-preserving
-- **Status:** pending
+- [x] Keep source edits behavior-preserving
+- **Status:** completed
 
 ### Phase 7: Documentation & Handoff
 - [x] Write a source recovery overview
 - [x] Summarize confidence levels and unresolved questions
 - [x] Provide a next-work checklist
 - **Status:** completed
+
+## Completion Audit
+- Current checklist progress: 541 / 541 items complete.
+- Open checklist items: 0.
+- Final verification passed: `tools/verify_yoshi_build.sh`, `cmp -s Yoshi/yoshi.gb Yoshi/game.gb`, `git diff --check`, conflict-marker scan, raw Bank 0/1 WRAM/direct-branch/generated-label scans, and `Yoshi/yoshi.sym` duplicate/block-overlap audits.
+- `Yoshi/yoshi.gb` and rebuilt `Yoshi/game.gb` share SHA-256 `970096b7ae14bed8de483f02a1c5ac6ff9259503853c17405eb04bba43687253`.
+- Low-confidence bytes remain deliberately low-confidence where the final audit found no independent consumer; those are documented as unresolved evidence limits rather than open checklist work.
 
 ## Key Questions
 1. Which labels/comments are already trusted, and which were guessed by prior analysis?
@@ -165,6 +604,12 @@ recorded in `docs/source_recovery/work_plan_and_estimate.md`.
 | First VRAM transfer rename shifted two assembled HRAM operands | 1 | Binary diff isolated offsets `$4B45/$4B48`; corrected `VRAMCopyDMA` to store updated destination low/high at `$FFB1/$FFB2`, restoring byte-identical output. |
 | Two Bank 3 transfer labels were initially inserted at repeated-looking `db` rows instead of exact source offsets | 1 | Address-counted `bank_003.asm` by 16-byte tile rows, moved the labels to `$5C00` and `$6AB0`, and restored byte-identical output. |
 | Initial `$C5D1` label patch used stale `task_plan.md` context | 1 | Re-read the live plan section and reapplied the edit with the current surrounding lines. |
+| First round-end local-label cleanup moved the 1P branch target past the `GAME_TYPE` load | 1 | Moved `HandleSinglePlayerRoundCompleteFlow` back before `ld a, [GAME_TYPE]`; `tools/verify_yoshi_build.sh` returned to byte-identical output. |
+| Piece-display stale-immediate scan used bad shell escaping | 1 | Reran the targeted `sed | rg` scans with single-quoted regex patterns; both returned no matches. |
+| Board tile pattern stale-name scan used an overbroad substring | 1 | Reran the scan with exact old table/offset/copy helper names; it returned no matches. |
+| First field animation delta alias pass omitted four bytes from `FieldSideDeltaTable` | 1 | `tools/verify_yoshi_build.sh` reported a byte mismatch; rechecked the original table rows, restored the missing four zero/positive delta bytes, and returned to byte-identical output. |
+| Auxiliary `rgbasm -E` check was run from repo root, so relative includes under `Yoshi/` were not found | 1 | Reran the command from `Yoshi/`; the authoritative `tools/verify_yoshi_build.sh` gate had already passed. |
+| Initial round-complete glyph macro used `$Cxxx`-shaped row literals | 1 | Re-expressed the affected glyph rows without `$Cxxx` literals so the raw Bank 0/1 WRAM-reference scan remains clean. |
 
 ## Notes
 - User testimony: the user programmed the GB version with Yuji Shinkai; source was lost in an accident.

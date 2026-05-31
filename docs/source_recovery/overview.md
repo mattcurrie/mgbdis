@@ -1,8 +1,9 @@
 # Source Recovery Overview
 
 This document is the entry point for the current Game Boy YOSSY NO TAMAGO
-source recovery state. It summarizes what is already evidence-backed, where to
-look next, and which invariants must stay true while restoring the source.
+source recovery state. It summarizes what is evidence-backed, which evidence
+limits remain documented, and which invariants must stay true if the source is
+refined later.
 
 ## Baseline
 
@@ -52,7 +53,7 @@ High-confidence recovery areas already have dedicated notes:
 | Link protocol/state | `link_state.md`, `Yoshi/SERIAL_PROTOCOL.md` |
 | Sound engine | `sound_engine.md` |
 | Graphics loads and tile sheets | `graphics_loads.md`, `tile_sheets/README.md` |
-| Next recovery chunks | `next_work_checklist.md` |
+| Optional future refinement notes | `next_work_checklist.md` |
 
 ## Confidence Policy
 
@@ -67,22 +68,24 @@ Names and comments should remain tied to evidence:
 When a byte has only write patterns or one narrow consumer, keep it unresolved
 until there is an independent producer/consumer relationship.
 
-## Current Open Fronts
+## Completion Status
 
-The most valuable remaining recovery work is:
+The 541-item recovery checklist is complete for this pass. The rebuilt
+`Yoshi/game.gb` is byte-identical to `Yoshi/yoshi.gb`, and the source no longer
+has raw Bank 0/1 WRAM references, raw direct branch targets, generated local
+labels, or anonymous relative branch labels in the audited paths.
 
-- Complete the board cell and piece representation model beyond the first-pass
-  four-column layout.
-- Name drop, rotation, match, clear, remaining-score, level, and game-over
-  routines where control flow evidence is strong enough.
-- Keep separating real code from fake code/data islands in Bank 0 and Bank 1.
+The most valuable optional future refinements are:
+
+- Map any remaining player-visible piece payload identities if independent
+  evidence appears.
 - Refine medium-confidence sound channel fields by decoding more sequence
   examples.
 - Compare ambiguous behavior with user memory when static analysis leaves more
   than one plausible interpretation.
 
-Use `next_work_checklist.md` for the concrete chunk order and per-chunk safety
-checks.
+Use `next_work_checklist.md` as optional refinement guidance, not as required
+remaining work for the completed checklist.
 
 ## Handoff Rule
 
