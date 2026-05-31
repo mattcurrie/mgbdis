@@ -53,6 +53,7 @@ High-confidence recovery areas already have dedicated notes:
 | Link protocol/state | `link_state.md`, `Yoshi/SERIAL_PROTOCOL.md` |
 | Sound engine | `sound_engine.md` |
 | Graphics loads and tile sheets | `graphics_loads.md`, `tile_sheets/README.md` |
+| PR handoff and self-review | `pr_handoff.md` |
 | Optional future refinement notes | `next_work_checklist.md` |
 
 ## Confidence Policy
