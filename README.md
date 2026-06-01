@@ -80,12 +80,6 @@ Adding a label for 256 bytes padding:
 0d:3e00 .padding:100
 ```
 
-Adding a label for 256 bytes of 0xff padding:
-
-```
-0d:3f00 .padding:100:ff
-```
-
 #### Custom Character Maps
 
 If the game doesn't use ASCII encoding, it may be practical to use one or more [character maps](https://rgbds.gbdev.io/docs/v0.9.1/rgbasm.5#Character_maps).
