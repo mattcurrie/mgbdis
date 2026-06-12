@@ -874,12 +874,24 @@ class Symbols:
             self.symbols[bank] = {}
 
         is_symbol_banked = self.bank_size <= address < 0x8000
-        if is_symbol_banked:
+        is_ram = address >= 0x8000
+
+        if is_ram:
+            if 'ram' not in self.symbols:
+                self.symbols['ram'] = {}
+            self.symbols['ram'][address] = label
+        elif is_symbol_banked:
             self.symbols[bank][address] = label
         else:
             self.symbols[0][address] = label
 
     def get_label(self, bank, address):
+        # attempt to find ram symbol
+        if address >= 0x8000:
+            if 'ram' in self.symbols and address in self.symbols['ram']:
+                return self.symbols['ram'][address]
+            return None
+        
         # attempt to find a banked symbol
         is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked and bank in self.symbols and address in self.symbols[bank]:
@@ -900,6 +912,9 @@ class Symbols:
             self.add_block(bank, memory_base_address, 'code', self.bank_size)
 
         return self.blocks[bank]
+    
+    def get_ram_symbols(self):
+        return self.symbols.get('ram', {})
 
 class ROM:
 
@@ -1026,6 +1041,7 @@ class ROM:
 
         self.copy_hardware_inc()
         self.copy_charater_map()
+        self.write_ram_inc()
         self.write_game_asm()
         self.write_makefile()
 
@@ -1076,6 +1092,11 @@ class ROM:
         self.write_header(f)
 
         f.write('INCLUDE "hardware.inc"')
+
+        # avoid creating ram.inc if there are no ram symbols
+        if self.symbols.get_ram_symbols():
+            f.write('\nINCLUDE "ram.inc"')
+
         character_maps = self.get_character_map_paths()
         if(len(character_maps) > 0):
             for map in character_maps:
@@ -1240,6 +1261,23 @@ class ROM:
         f.write('\tfind . \\( -iname \'*.1bpp\' -o -iname \'*.2bpp\' \\) -exec rm {} +')
 
         f.close()
+    
+    def write_ram_inc(self):
+        ram_symbols = self.symbols.get_ram_symbols()
+        if not ram_symbols:
+            return
+        
+        path = os.path.join(self.output_directory, 'ram.inc')
+        f = open(path, 'w', encoding="utf-8")
+        
+        self.write_header(f)
+
+        for address in sorted(ram_symbols.keys()):
+            label = ram_symbols[address]
+            f.write('DEF {} EQU {}\n'.format(label, hex_word(address)))
+        
+        f.close()
+
 
 class CharacterMap():
     def __init__(self, name, path):
