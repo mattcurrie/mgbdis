@@ -1149,8 +1149,8 @@ class ROM:
         num_tiles = len(data) // bytes_per_tile
         tiles_per_row = width // 8
 
-        # if we have fewer tiles than the number of tiles per row, or if an odd number of tiles
-        if (num_tiles < tiles_per_row) or (num_tiles & 1):
+        # if we have fewer tiles than the number of tiles per row, or if tiles_per_row is not an exact divisor of num_tiles:
+        if (num_tiles < tiles_per_row) or (num_tiles % tiles_per_row != 0):
             # then just make a single row of tiles
             tiles_per_row = num_tiles
             width = num_tiles * 8
