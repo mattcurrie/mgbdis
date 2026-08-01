@@ -313,7 +313,14 @@ class Bank:
             # check if this is really a rst vector
             return None
 
-        return self.get_label(value)
+        label = self.get_label(value)
+        # Local labels are only valid within their parent scope in RGBDS.
+        # Avoid substituting them for generic operands (e.g. d16 constants),
+        # or they may leak into unrelated banks/functions and fail to link.
+        if label is not None and label.startswith('.'):
+            return None
+
+        return label
 
     def get_label_for_jump_target(self, instruction_name, address):
         if self.bank_number == 0:
@@ -486,7 +493,14 @@ class Bank:
             if operand == 'a16':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                operand_values.append(hex_word(value))
+                if value in hardware_labels:
+                    operand_values.append(hardware_labels[value])
+                else:
+                    label = self.get_label_for_instruction_operand(value)
+                    if label is not None:
+                        operand_values.append(label)
+                    else:
+                        operand_values.append(hex_word(value))
 
             elif operand == 'vec':
                 value = rom.data[pc] & 0x38
@@ -499,11 +513,14 @@ class Bank:
             elif operand == '[a16]':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                label = self.get_label_for_instruction_operand(value)
-                if label:
-                    operand_values.append('[' + label + ']')
+                if value in hardware_labels:
+                    operand_values.append('[' + hardware_labels[value] + ']')
                 else:
-                    operand_values.append('[' + hex_word(value) + ']')
+                    label = self.get_label_for_instruction_operand(value)
+                    if label:
+                        operand_values.append('[' + label + ']')
+                    else:
+                        operand_values.append('[' + hex_word(value) + ']')
 
             elif operand == '[$ff00+a8]' or operand == '[a8]' or operand == '[$ffa8]':
                 length += 1
@@ -528,11 +545,14 @@ class Bank:
             elif operand == 'd16':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                label = self.get_label_for_instruction_operand(value)
-                if label is not None:
-                    operand_values.append(label)
+                if value in hardware_labels:
+                    operand_values.append(hardware_labels[value])
                 else:
-                    operand_values.append(hex_word(value))
+                    label = self.get_label_for_instruction_operand(value)
+                    if label is not None:
+                        operand_values.append(label)
+                    else:
+                        operand_values.append(hex_word(value))
 
             elif operand == 'r8':
                 length += 1
@@ -763,7 +783,7 @@ class Bank:
                 character_map = rom.character_maps[self.current_map_index]
                 #check for multi length character mapping
                 for length in range(character_map.max_length, 1,-1):                    
-                    if address + length-1 > end_address: 
+                    if address + length-1 >= end_address: 
                         continue                  
                     to_check = tuple(list(rom.data[address: address+length]))                                        
                     if to_check in character_map.character_map:
