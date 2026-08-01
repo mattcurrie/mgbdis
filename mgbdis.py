@@ -900,12 +900,24 @@ class Symbols:
             self.symbols[bank] = {}
 
         is_symbol_banked = self.bank_size <= address < 0x8000
-        if is_symbol_banked:
+        is_ram = address >= 0x8000
+
+        if is_ram:
+            if 'ram' not in self.symbols:
+                self.symbols['ram'] = {}
+            self.symbols['ram'][address] = label
+        elif is_symbol_banked:
             self.symbols[bank][address] = label
         else:
             self.symbols[0][address] = label
 
     def get_label(self, bank, address):
+        # attempt to find ram symbol
+        if address >= 0x8000:
+            if 'ram' in self.symbols and address in self.symbols['ram']:
+                return self.symbols['ram'][address]
+            return None
+        
         # attempt to find a banked symbol
         is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked and bank in self.symbols and address in self.symbols[bank]:
@@ -926,17 +938,21 @@ class Symbols:
             self.add_block(bank, memory_base_address, 'code', self.bank_size)
 
         return self.blocks[bank]
+    
+    def get_ram_symbols(self):
+        return self.symbols.get('ram', {})
 
 class ROM:
 
-    def __init__(self, rom_path, style, tiny, character_maps):
+    def __init__(self, rom_path, style, tiny, character_maps, exclude_default_symbols=None):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
-        self.character_maps = character_maps        
+        self.character_maps = character_maps
+        self.exclude_default_symbols = exclude_default_symbols or set()
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1005,12 +1021,48 @@ class ROM:
     def load_symbols(self):
         symbols = Symbols(0x8000 if self.tiny else 0x4000)
 
+        # First pass: identify which locations will be excluded
+        excluded_locations = set()
         for symbol_def in default_symbols:
-            symbols.add_symbol_definition(symbol_def)
+            parts = symbol_def.split()
+            if len(parts) >= 2:
+                label = parts[1]
+                location = parts[0]
+                if label in self.exclude_default_symbols or location in self.exclude_default_symbols:
+                    excluded_locations.add(location)
+
+        # Second pass: add symbols, skipping both labels and their paired blocks at excluded locations
+        for symbol_def in default_symbols:
+            parts = symbol_def.split()
+            if len(parts) >= 2:
+                label = parts[1]
+                location = parts[0]
+                # Skip if location is excluded (excludes both label and block definitions at that address)
+                if location not in excluded_locations:
+                    symbols.add_symbol_definition(symbol_def)
+            else:
+                symbols.add_symbol_definition(symbol_def)
 
         if self.supports_gbc():
+            # Same process for GBC symbols
+            excluded_locations = set()
             for symbol_def in gbc_symbols:
-                symbols.add_symbol_definition(symbol_def)
+                parts = symbol_def.split()
+                if len(parts) >= 2:
+                    label = parts[1]
+                    location = parts[0]
+                    if label in self.exclude_default_symbols or location in self.exclude_default_symbols:
+                        excluded_locations.add(location)
+
+            for symbol_def in gbc_symbols:
+                parts = symbol_def.split()
+                if len(parts) >= 2:
+                    label = parts[1]
+                    location = parts[0]
+                    if location not in excluded_locations:
+                        symbols.add_symbol_definition(symbol_def)
+                else:
+                    symbols.add_symbol_definition(symbol_def)
 
         symbols_path = os.path.splitext(self.rom_path)[0] + '.sym'
         if os.path.isfile(symbols_path):
@@ -1052,6 +1104,7 @@ class ROM:
 
         self.copy_hardware_inc()
         self.copy_charater_map()
+        self.write_ram_inc()
         self.write_game_asm()
         self.write_makefile()
 
@@ -1102,6 +1155,11 @@ class ROM:
         self.write_header(f)
 
         f.write('INCLUDE "hardware.inc"')
+
+        # avoid creating ram.inc if there are no ram symbols
+        if self.symbols.get_ram_symbols():
+            f.write('\nINCLUDE "ram.inc"')
+
         character_maps = self.get_character_map_paths()
         if(len(character_maps) > 0):
             for map in character_maps:
@@ -1266,6 +1324,23 @@ class ROM:
         f.write('\tfind . \\( -iname \'*.1bpp\' -o -iname \'*.2bpp\' \\) -exec rm {} +')
 
         f.close()
+    
+    def write_ram_inc(self):
+        ram_symbols = self.symbols.get_ram_symbols()
+        if not ram_symbols:
+            return
+        
+        path = os.path.join(self.output_directory, 'ram.inc')
+        f = open(path, 'w', encoding="utf-8")
+        
+        self.write_header(f)
+
+        for address in sorted(ram_symbols.keys()):
+            label = ram_symbols[address]
+            f.write('DEF {} EQU {}\n'.format(label, hex_word(address)))
+        
+        f.close()
+
 
 class CharacterMap():
     def __init__(self, name, path):
@@ -1329,6 +1404,7 @@ parser.add_argument('--ld_c', help='Mnemonic to use for \'ldh [c], a\' type inst
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
+parser.add_argument('--exclude-default-symbols', help='Comma-separated list of default symbol names or addresses to exclude (e.g., "RST_08,RST_10,00:0040")', action='store')
 args = parser.parse_args()
 
 debug = args.debug
@@ -1345,8 +1421,15 @@ style = {
     'ld_c': args.ld_c,
 }
 instructions = apply_style_to_instructions(style, instructions)
+
+# Parse excluded symbols
+exclude_symbols = set()
+if args.exclude_default_symbols:
+    exclude_symbols = set(s.strip() for s in args.exclude_default_symbols.split(','))
+    print('Excluding default symbols: {}'.format(', '.join(sorted(exclude_symbols))))
+
 charMap = []
 if args.character_map_path is not None:
     charMap = CharacterMap.create_character_maps(args.character_map_path)
-rom = ROM(args.rom_path, style, args.tiny, charMap)
+rom = ROM(args.rom_path, style, args.tiny, charMap, exclude_symbols)
 rom.disassemble(args.output_dir)
