@@ -140,20 +140,20 @@ def hex_word(value):
     if style['uppercase_hex']:
         return f'${value:04X}'
     else:
-        return f'${value:04x}'        
+        return f'${value:04x}'
 
 
 def hex_byte(value):
     if style['uppercase_hex']:
         return f'${value:02X}'
     else:
-        return f'${value:02x}'   
+        return f'${value:02x}'
 
 def hex(value):
     if style['uppercase_hex']:
         return f'${value:X}'
     else:
-        return f'${value:x}'   
+        return f'${value:x}'
 
 def format_hex(hex_string):
     if style['uppercase_hex']:
@@ -357,7 +357,7 @@ class Bank:
     def format_label(self, instruction_name, address):
         formatted_bank = format_hex(f'{self.bank_number:03x}')
         formatted_address = format_hex(f'{address:04x}')
-        return f'{self.instruction_label_prefixes[instruction_name]}_{formatted_bank}_{formatted_address}'                
+        return f'{self.instruction_label_prefixes[instruction_name]}_{formatted_bank}_{formatted_address}'
 
 
     def format_image_label(self, address):
@@ -540,7 +540,7 @@ class Bank:
                 value = rom_address_to_mem_address(rom_address)
 
                 # is the jump target is in this bank?
-                if (rom_address >= self.rom_base_address + self.memory_base_address and 
+                if (rom_address >= self.rom_base_address + self.memory_base_address and
                     rom_address < self.rom_base_address + self.memory_base_address + self.size):
                     # yep!
                     pass
@@ -672,7 +672,7 @@ class Bank:
                 abort("Declared .padding block contradicts ROM contents at address {} ({} != {})".format(hex(address), hex_byte(paddingByte), hex_byte(rom.data[address])))
 
         self.append_output(f"{self.style['indentation']}; padding")
-        
+
         self.append_output(self.format_padding(end_address - start_address, paddingByte))
 
     def get_character_map_index(self, arguments):
@@ -694,37 +694,37 @@ class Bank:
         #map name
         for m in range(len(rom.character_maps)):
             if rom.character_maps[m].name == name:
-                return m     
+                return m
         #index
         if name.isnumeric():
             map_index = int(name)
             if map_index >= len(rom.character_maps):
                 abort("Character map index {} out of range".format(name))
             return map_index
-        #no charmap found                       
-        abort("Character map '{}' does not exist.".format(name)) 
+        #no charmap found
+        abort("Character map '{}' does not exist.".format(name))
 
     def process_text_in_range(self, rom, start_address, end_address, arguments = None):
         if not self.first_pass and debug:
             print('Outputting text in range: {} - {}'.format(hex_word(start_address), hex_word(end_address)))
         # process arguments
-        custom_map = False                          
+        custom_map = False
         map_index = self.get_character_map_index(arguments)
         if map_index != -1 and map_index < len(rom.character_maps):
             custom_map = True
             if self.current_map_index != map_index:
-                self.current_map_index = map_index                       
-                self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)                                                   
-        if map_index == -1 and self.current_map_index != None:  
+                self.current_map_index = map_index
+                self.append_output("SETCHARMAP "+rom.character_maps[map_index].name)
+        if map_index == -1 and self.current_map_index != None:
             self.current_map_index = None
             self.append_output("SETCHARMAP main")
         values = []
         text = ''
-        address = start_address - 1        
+        address = start_address - 1
         while(address < end_address-1):
-            address += 1   
+            address += 1
             mem_address = rom_address_to_mem_address(address)
-        
+
             labels = self.get_labels_for_non_code_address(mem_address)
             if len(labels):
                 # add any existing values to the output and reset the list
@@ -743,13 +743,13 @@ class Bank:
                 key = None
                 character_map = rom.character_maps[self.current_map_index]
                 #check for multi length character mapping
-                for length in range(character_map.max_length, 1,-1):                    
-                    if address + length-1 > end_address: 
-                        continue                  
-                    to_check = tuple(list(rom.data[address: address+length]))                                        
+                for length in range(character_map.max_length, 1,-1):
+                    if address + length-1 > end_address:
+                        continue
+                    to_check = tuple(list(rom.data[address: address+length]))
                     if to_check in character_map.character_map:
                         key = to_check
-                        break            
+                        break
                 if key == None:
                     if byte in character_map.character_map:
                         key = byte
@@ -758,7 +758,7 @@ class Bank:
                     if isinstance(key, tuple):
                         address += len(key)-1
                 else:
-                   
+
                     if len(text):
                         values.append('"{}"'.format(text))
                         text = ''
@@ -917,7 +917,7 @@ class ROM:
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
-        self.character_maps = character_maps        
+        self.character_maps = character_maps
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1254,7 +1254,7 @@ class ROM:
 
 class CharacterMap():
     def __init__(self, name, path):
-        self.name = name        
+        self.name = name
         self.path = path
         self.character_map = {}
         self.max_length = 1
@@ -1274,17 +1274,17 @@ class CharacterMap():
             line = line.strip()
             mapSearch = re.match(r"newcharmap", line, re.IGNORECASE)
             if mapSearch is not None:
-                if new_map != None: 
+                if new_map != None:
                     maps.append(new_map)
                     if debug:
                         print("Loaded character map: "+new_map.name)
                         print("Mappings:")
                         print(new_map.character_map)
-                new_map = CharacterMap(line[mapSearch.end():].strip(), file_path)                               
+                new_map = CharacterMap(line[mapSearch.end():].strip(), file_path)
             else:
                 mapSearch = re.search('[ \t]*charmap[ \t]*"((?:[^"]|\\")+)",[ \t]*([^;]+)', line, re.IGNORECASE)
-                if(mapSearch == None): continue               
-                mapping = mapSearch[1].rsplit('"', 1)[0]              
+                if(mapSearch == None): continue
+                mapping = mapSearch[1].rsplit('"', 1)[0]
                 ints = mapSearch[2].strip().split(",")
                 if(len(ints) == 1):
                     key = CharacterMap.read_number(ints[0])
