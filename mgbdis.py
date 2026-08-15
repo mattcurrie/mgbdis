@@ -313,14 +313,7 @@ class Bank:
             # check if this is really a rst vector
             return None
 
-        label = self.get_label(value)
-        # Local labels are only valid within their parent scope in RGBDS.
-        # Avoid substituting them for generic operands (e.g. d16 constants),
-        # or they may leak into unrelated banks/functions and fail to link.
-        if label is not None and label.startswith('.'):
-            return None
-
-        return label
+        return self.get_label(value)
 
     def get_label_for_jump_target(self, instruction_name, address):
         if self.bank_number == 0:
@@ -493,14 +486,7 @@ class Bank:
             if operand == 'a16':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                if value in hardware_labels:
-                    operand_values.append(hardware_labels[value])
-                else:
-                    label = self.get_label_for_instruction_operand(value)
-                    if label is not None:
-                        operand_values.append(label)
-                    else:
-                        operand_values.append(hex_word(value))
+                operand_values.append(hex_word(value))
 
             elif operand == 'vec':
                 value = rom.data[pc] & 0x38
@@ -513,14 +499,11 @@ class Bank:
             elif operand == '[a16]':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                if value in hardware_labels:
-                    operand_values.append('[' + hardware_labels[value] + ']')
+                label = self.get_label_for_instruction_operand(value)
+                if label:
+                    operand_values.append('[' + label + ']')
                 else:
-                    label = self.get_label_for_instruction_operand(value)
-                    if label:
-                        operand_values.append('[' + label + ']')
-                    else:
-                        operand_values.append('[' + hex_word(value) + ']')
+                    operand_values.append('[' + hex_word(value) + ']')
 
             elif operand == '[$ff00+a8]' or operand == '[a8]' or operand == '[$ffa8]':
                 length += 1
@@ -545,14 +528,11 @@ class Bank:
             elif operand == 'd16':
                 length += 2
                 value = rom.data[pc + 1] + rom.data[pc + 2] * 256
-                if value in hardware_labels:
-                    operand_values.append(hardware_labels[value])
+                label = self.get_label_for_instruction_operand(value)
+                if label is not None:
+                    operand_values.append(label)
                 else:
-                    label = self.get_label_for_instruction_operand(value)
-                    if label is not None:
-                        operand_values.append(label)
-                    else:
-                        operand_values.append(hex_word(value))
+                    operand_values.append(hex_word(value))
 
             elif operand == 'r8':
                 length += 1
@@ -920,24 +900,12 @@ class Symbols:
             self.symbols[bank] = {}
 
         is_symbol_banked = self.bank_size <= address < 0x8000
-        is_ram = address >= 0x8000
-
-        if is_ram:
-            if 'ram' not in self.symbols:
-                self.symbols['ram'] = {}
-            self.symbols['ram'][address] = label
-        elif is_symbol_banked:
+        if is_symbol_banked:
             self.symbols[bank][address] = label
         else:
             self.symbols[0][address] = label
 
     def get_label(self, bank, address):
-        # attempt to find ram symbol
-        if address >= 0x8000:
-            if 'ram' in self.symbols and address in self.symbols['ram']:
-                return self.symbols['ram'][address]
-            return None
-        
         # attempt to find a banked symbol
         is_symbol_banked = self.bank_size <= address < 0x8000
         if is_symbol_banked and bank in self.symbols and address in self.symbols[bank]:
@@ -958,9 +926,6 @@ class Symbols:
             self.add_block(bank, memory_base_address, 'code', self.bank_size)
 
         return self.blocks[bank]
-    
-    def get_ram_symbols(self):
-        return self.symbols.get('ram', {})
 
 class ROM:
 
@@ -1124,7 +1089,6 @@ class ROM:
 
         self.copy_hardware_inc()
         self.copy_charater_map()
-        self.write_ram_inc()
         self.write_game_asm()
         self.write_makefile()
 
@@ -1175,11 +1139,6 @@ class ROM:
         self.write_header(f)
 
         f.write('INCLUDE "hardware.inc"')
-
-        # avoid creating ram.inc if there are no ram symbols
-        if self.symbols.get_ram_symbols():
-            f.write('\nINCLUDE "ram.inc"')
-
         character_maps = self.get_character_map_paths()
         if(len(character_maps) > 0):
             for map in character_maps:
@@ -1344,23 +1303,6 @@ class ROM:
         f.write('\tfind . \\( -iname \'*.1bpp\' -o -iname \'*.2bpp\' \\) -exec rm {} +')
 
         f.close()
-    
-    def write_ram_inc(self):
-        ram_symbols = self.symbols.get_ram_symbols()
-        if not ram_symbols:
-            return
-        
-        path = os.path.join(self.output_directory, 'ram.inc')
-        f = open(path, 'w', encoding="utf-8")
-        
-        self.write_header(f)
-
-        for address in sorted(ram_symbols.keys()):
-            label = ram_symbols[address]
-            f.write('DEF {} EQU {}\n'.format(label, hex_word(address)))
-        
-        f.close()
-
 
 class CharacterMap():
     def __init__(self, name, path):
