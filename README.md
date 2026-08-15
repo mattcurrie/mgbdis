@@ -32,6 +32,27 @@ There are also a number of options available to control the formatting and instr
 
     ./mgbdis.py -h
 
+## Default Symbols
+
+`mgbdis` injects a set of built-in labels and block definitions (vectors, header fields, etc.).
+These are defined directly in `mgbdis.py` as structured lists:
+
+- `default_symbols` for regular Game Boy defaults
+- `gbc_symbols` for Game Boy Color-specific defaults
+
+Each entry has the shape:
+
+```
+{
+    'address': '00:0010',
+    'name': 'RST_10',
+    'block': '.code:8',
+    'toggle': True,
+}
+```
+
+To disable a built-in symbol/block pair, set `toggle` to `False` on that entry.
+
 ## Symbol Files
 
 Symbol files allow you to indicate where code, data, test and image data blocks are in the ROM. 
