@@ -19,59 +19,40 @@ from shutil import copyfile
 from instruction_set import instructions, cb_instructions, instruction_variants
 
 default_symbols = [
-    '00:0000 RST_00',
-    '00:0000 .code:8',
-    '00:0008 RST_08',
-    '00:0008 .code:8',
-    '00:0010 RST_10',
-    '00:0010 .code:8',
-    '00:0018 RST_18',
-    '00:0018 .code:8',
-    '00:0020 RST_20',
-    '00:0020 .code:8',
-    '00:0028 RST_28',
-    '00:0028 .code:8',
-    '00:0030 RST_30',
-    '00:0030 .code:8',
-    '00:0038 RST_38',
-    '00:0038 .code:8',
+    {'address': '00:0000', 'name': 'RST_00', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0008', 'name': 'RST_08', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0010', 'name': 'RST_10', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0018', 'name': 'RST_18', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0020', 'name': 'RST_20', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0028', 'name': 'RST_28', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0030', 'name': 'RST_30', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0038', 'name': 'RST_38', 'block': '.code:8', 'toggle': True},
 
-    '00:0040 VBlankInterrupt',
-    '00:0040 .code:8',
-    '00:0048 LCDCInterrupt',
-    '00:0048 .code:8',
-    '00:0050 TimerOverflowInterrupt',
-    '00:0050 .code:8',
-    '00:0058 SerialTransferCompleteInterrupt',
-    '00:0058 .code:8',
-    '00:0060 JoypadTransitionInterrupt',
-    '00:0060 .code:8',
+    {'address': '00:0040', 'name': 'VBlankInterrupt', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0048', 'name': 'LCDCInterrupt', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0050', 'name': 'TimerOverflowInterrupt', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0058', 'name': 'SerialTransferCompleteInterrupt', 'block': '.code:8', 'toggle': True},
+    {'address': '00:0060', 'name': 'JoypadTransitionInterrupt', 'block': '.code:8', 'toggle': True},
 
-    '00:0100 Boot',
-    '00:0100 .code:4',
-    '00:0104 HeaderLogo',
-    '00:0104 .data:30',
-    '00:0134 HeaderTitle',
-    '00:0134 .text:10',
-    '00:0144 .data:c',
-    '00:0144 HeaderNewLicenseeCode',
-    '00:0146 HeaderSGBFlag',
-    '00:0147 HeaderCartridgeType',
-    '00:0148 HeaderROMSize',
-    '00:0149 HeaderRAMSize',
-    '00:014a HeaderDestinationCode',
-    '00:014b HeaderOldLicenseeCode',
-    '00:014c HeaderMaskROMVersion',
-    '00:014d HeaderComplementCheck',
-    '00:014e HeaderGlobalChecksum',
+    {'address': '00:0100', 'name': 'Boot', 'block': '.code:4', 'toggle': True},
+    {'address': '00:0104', 'name': 'HeaderLogo', 'block': '.data:30', 'toggle': True},
+    {'address': '00:0134', 'name': 'HeaderTitle', 'block': '.text:10', 'toggle': True},
+    {'address': '00:0144', 'name': 'HeaderNewLicenseeCode', 'block': '.data:2', 'toggle': True},
+    {'address': '00:0146', 'name': 'HeaderSGBFlag', 'block': '.data:1', 'toggle': True},
+    {'address': '00:0147', 'name': 'HeaderCartridgeType', 'block': '.data:1', 'toggle': True},
+    {'address': '00:0148', 'name': 'HeaderROMSize', 'block': '.data:1', 'toggle': True},
+    {'address': '00:0149', 'name': 'HeaderRAMSize', 'block': '.data:1', 'toggle': True},
+    {'address': '00:014a', 'name': 'HeaderDestinationCode', 'block': '.data:1', 'toggle': True},
+    {'address': '00:014b', 'name': 'HeaderOldLicenseeCode', 'block': '.data:1', 'toggle': True},
+    {'address': '00:014c', 'name': 'HeaderMaskROMVersion', 'block': '.data:1', 'toggle': True},
+    {'address': '00:014d', 'name': 'HeaderComplementCheck', 'block': '.data:1', 'toggle': True},
+    {'address': '00:014e', 'name': 'HeaderGlobalChecksum', 'block': '.data:2', 'toggle': True},
 ]
 
 gbc_symbols = [
-    '00:0134 .text:b',
-    '00:013f HeaderManufacturerCode',
-    '00:013f .text:4',
-    '00:0143 HeaderCGBFlag',
-    '00:0143 .data:1'
+    {'address': '00:0134', 'name': 'HeaderTitle', 'block': '.text:b', 'toggle': True},
+    {'address': '00:013f', 'name': 'HeaderManufacturerCode', 'block': '.text:4', 'toggle': True},
+    {'address': '00:0143', 'name': 'HeaderCGBFlag', 'block': '.data:1', 'toggle': True},
 ]
 
 hardware_labels = {
@@ -763,7 +744,7 @@ class Bank:
                 character_map = rom.character_maps[self.current_map_index]
                 #check for multi length character mapping
                 for length in range(character_map.max_length, 1,-1):                    
-                    if address + length-1 >= end_address: 
+                    if address + length-1 > end_address: 
                         continue                  
                     to_check = tuple(list(rom.data[address: address+length]))                                        
                     if to_check in character_map.character_map:
@@ -929,15 +910,14 @@ class Symbols:
 
 class ROM:
 
-    def __init__(self, rom_path, style, tiny, character_maps, exclude_default_symbols=None):
+    def __init__(self, rom_path, style, tiny, character_maps):
         self.style = style
         self.script_dir = os.path.dirname(os.path.realpath(__file__))
         self.rom_path = rom_path
         self.load(tiny)
         self.split_instructions()
         self.tiny = tiny
-        self.character_maps = character_maps
-        self.exclude_default_symbols = exclude_default_symbols or set()
+        self.character_maps = character_maps        
 
         self.image_output_directory = 'gfx'
         self.image_dependencies = []
@@ -1006,48 +986,16 @@ class ROM:
     def load_symbols(self):
         symbols = Symbols(0x8000 if self.tiny else 0x4000)
 
-        # First pass: identify which locations will be excluded
-        excluded_locations = set()
-        for symbol_def in default_symbols:
-            parts = symbol_def.split()
-            if len(parts) >= 2:
-                label = parts[1]
-                location = parts[0]
-                if label in self.exclude_default_symbols or location in self.exclude_default_symbols:
-                    excluded_locations.add(location)
-
-        # Second pass: add symbols, skipping both labels and their paired blocks at excluded locations
-        for symbol_def in default_symbols:
-            parts = symbol_def.split()
-            if len(parts) >= 2:
-                label = parts[1]
-                location = parts[0]
-                # Skip if location is excluded (excludes both label and block definitions at that address)
-                if location not in excluded_locations:
-                    symbols.add_symbol_definition(symbol_def)
-            else:
-                symbols.add_symbol_definition(symbol_def)
-
+        built_in_symbols = list(default_symbols)
         if self.supports_gbc():
-            # Same process for GBC symbols
-            excluded_locations = set()
-            for symbol_def in gbc_symbols:
-                parts = symbol_def.split()
-                if len(parts) >= 2:
-                    label = parts[1]
-                    location = parts[0]
-                    if label in self.exclude_default_symbols or location in self.exclude_default_symbols:
-                        excluded_locations.add(location)
+            built_in_symbols.extend(gbc_symbols)
 
-            for symbol_def in gbc_symbols:
-                parts = symbol_def.split()
-                if len(parts) >= 2:
-                    label = parts[1]
-                    location = parts[0]
-                    if location not in excluded_locations:
-                        symbols.add_symbol_definition(symbol_def)
-                else:
-                    symbols.add_symbol_definition(symbol_def)
+        for symbol in built_in_symbols:
+            if not symbol['toggle']:
+                continue
+
+            symbols.add_symbol_definition('{} {}'.format(symbol['address'], symbol['name']))
+            symbols.add_symbol_definition('{} {}'.format(symbol['address'], symbol['block']))
 
         symbols_path = os.path.splitext(self.rom_path)[0] + '.sym'
         if os.path.isfile(symbols_path):
@@ -1366,7 +1314,6 @@ parser.add_argument('--ld_c', help='Mnemonic to use for \'ldh [c], a\' type inst
 parser.add_argument('--overwrite', help='Allow generating a disassembly into an already existing directory', action='store_true')
 parser.add_argument('--debug', help='Display debug output', action='store_true')
 parser.add_argument('--tiny', help='Emulate RGBLINK `-t` option (non-banked / "32k" ROMs)', action='store_true')
-parser.add_argument('--exclude-default-symbols', help='Comma-separated list of default symbol names or addresses to exclude (e.g., "RST_08,RST_10,00:0040")', action='store')
 args = parser.parse_args()
 
 debug = args.debug
@@ -1383,15 +1330,8 @@ style = {
     'ld_c': args.ld_c,
 }
 instructions = apply_style_to_instructions(style, instructions)
-
-# Parse excluded symbols
-exclude_symbols = set()
-if args.exclude_default_symbols:
-    exclude_symbols = set(s.strip() for s in args.exclude_default_symbols.split(','))
-    print('Excluding default symbols: {}'.format(', '.join(sorted(exclude_symbols))))
-
 charMap = []
 if args.character_map_path is not None:
     charMap = CharacterMap.create_character_maps(args.character_map_path)
-rom = ROM(args.rom_path, style, args.tiny, charMap, exclude_symbols)
+rom = ROM(args.rom_path, style, args.tiny, charMap)
 rom.disassemble(args.output_dir)
